@@ -2659,6 +2659,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	      placeRequestKey: '',
 	      placedOrder: null,
 	      cancellingOrderId: 0,
+	      showAllPurchaseOrders: false,
 	      modeSaving: {},
 	      modeDesired: {},
 	      modePersisted: {},
@@ -9000,7 +9001,14 @@ document.addEventListener('DOMContentLoaded', () => {
 	      inventoryRecapRefs.poList.innerHTML = '<p class="admin-empty">Your first placed PO will appear here with live receiving progress.</p>';
 	      return;
 	    }
-	    inventoryRecapRefs.poList.innerHTML = orders.slice(0, 8).map((order) => {
+	    const previewLimit = 8;
+	    const showAll = Boolean(state.inventoryRecap.showAllPurchaseOrders);
+	    const visibleOrders = showAll ? orders : orders.slice(0, previewLimit);
+	    const hiddenCount = orders.length - visibleOrders.length;
+	    const toggle = orders.length > previewLimit
+	      ? `<button type="button" class="admin-inventory-po-toggle" data-inventory-po-toggle aria-expanded="${showAll ? 'true' : 'false'}">${showAll ? 'Show fewer' : `Show all ${formatRegionalInteger(orders.length)} · ${formatRegionalInteger(hiddenCount)} more`}</button>`
+	      : '';
+	    inventoryRecapRefs.poList.innerHTML = visibleOrders.map((order) => {
 	      const ordered = Math.max(0, Number(order.ordered_qty || 0));
 	      const received = Math.max(0, Number(order.received_qty || 0));
 	      const progress = Math.max(0, Math.min(100, Number(order.progress_percent || (ordered > 0 ? (received / ordered) * 100 : 0))));
@@ -9034,7 +9042,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	          <small>${escapeHtml(itemPreview || 'No item lines')}</small>
 	        </article>
 	      `;
-	    }).join('');
+	    }).join('') + toggle;
 	  };
 
 	  const cancelInventoryPurchaseOrder = async (orderId, poNumber) => {
@@ -14646,6 +14654,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	  inventoryRecapRefs.poList?.addEventListener('click', (event) => {
 	    const target = event.target instanceof Element ? event.target : null;
+	    if (target?.closest('[data-inventory-po-toggle]')) {
+	      state.inventoryRecap.showAllPurchaseOrders = !state.inventoryRecap.showAllPurchaseOrders;
+	      renderInventoryPurchaseOrders();
+	      return;
+	    }
 	    const cancel = target?.closest('[data-inventory-po-cancel]');
 	    if (cancel instanceof HTMLButtonElement) {
 	      cancelInventoryPurchaseOrder(Number(cancel.getAttribute('data-inventory-po-cancel') || 0), String(cancel.getAttribute('data-inventory-po-number') || '')).catch(() => {});

@@ -29207,6 +29207,26 @@ button.admin-order-payment-dot:focus-visible {
   gap: 10px;
 }
 
+.admin-inventory-po-toggle {
+  grid-column: 1 / -1;
+  justify-self: center;
+  min-height: 36px;
+  padding: 8px 18px;
+  border: 1px solid var(--inventory-line);
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-inventory-po-toggle:hover,
+.admin-inventory-po-toggle:focus-visible {
+  border-color: currentColor;
+}
+
 .admin-inventory-po-card {
   display: grid;
   gap: 10px;
