@@ -13,6 +13,7 @@ if (!jg_admin_is_authenticated()) {
 $adminCssVersion = (string) @filemtime(dirname(__DIR__) . '/admin.css');
 $historyCssVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-order-history.css');
 $detailJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-order-detail.js');
+$shippingDialogJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-shipping-dialog.js');
 $storeOpsBaseUrl = rtrim(
     jg_dashboard_env_value('JG_STORE_OPS_BASE_URL')
         ?: (string) (jg_dashboard_load_local_config()['store_ops_base_url'] ?? 'https://store.jenanggemi.com'),
@@ -35,7 +36,7 @@ $storeOpsBaseUrl = rtrim(
     <link rel="stylesheet" href="../whatsapp-order-history.css?v=<?php echo urlencode($historyCssVersion ?: '1'); ?>">
 </head>
 <body class="admin-body is-dashboard is-whatsapp-history-page">
-    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.92.7</div>
+    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.98.41</div>
     <div class="admin-app admin-app-suite" data-whatsapp-order-detail data-endpoint="../api/whatsapp-orders/" data-invoice-printer-url="<?php echo htmlspecialchars($storeOpsBaseUrl . '/invoice-printer/', ENT_QUOTES, 'UTF-8'); ?>">
         <div class="admin-backdrop admin-backdrop-a"></div>
         <div class="admin-backdrop admin-backdrop-b"></div>
@@ -78,7 +79,7 @@ $storeOpsBaseUrl = rtrim(
                                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M5 7l1 13h12l1-13M9 11h6M8 4h8l1 3H7l1-3Z"/></svg>
                                     Archived
                                 </span>
-                                <button type="button" class="whatsapp-detail-queue-action is-send" data-detail-attach title="A shipping label is needed before this order can go to Store Ops" hidden>Add shipping label</button>
+                                <button type="button" class="whatsapp-detail-queue-action is-send" data-detail-attach title="A shipping label is needed before this order can go to Store Ops" hidden>Add label and shipping cost</button>
                                 <button type="button" class="whatsapp-detail-queue-action is-send" data-detail-send hidden>Send to Store Ops</button>
                                 <button type="button" class="whatsapp-detail-queue-action" data-detail-queue title="Pull this order out of Store Ops while it is unclaimed and its label is unprinted" hidden>Move to queue</button>
                                 <button type="button" class="whatsapp-detail-icon-action is-archive" data-detail-archive aria-label="Archive order" title="Archive order">
@@ -179,6 +180,7 @@ $storeOpsBaseUrl = rtrim(
 
     <?php render_admin_notification_drawer(); ?>
     <?php render_admin_chrome_script(); ?>
+    <script type="module" src="../whatsapp-shipping-dialog.js?v=<?php echo urlencode($shippingDialogJsVersion ?: '1'); ?>"></script>
     <script type="module" src="../whatsapp-order-detail.js?v=<?php echo urlencode($detailJsVersion ?: '1'); ?>"></script>
 </body>
 </html>

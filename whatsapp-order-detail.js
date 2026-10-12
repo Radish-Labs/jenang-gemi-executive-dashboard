@@ -122,8 +122,13 @@ document.addEventListener('DOMContentLoaded', () => {
       refs.send.disabled = false;
     }
     if (refs.attach) {
-      refs.attach.hidden = !needsLabel || order.archived === true;
-      refs.attach.disabled = false;
+      // Stays available after the label is added so the shipping cost can still change.
+      refs.attach.hidden = order.queued !== true || order.archived === true;
+      refs.attach.classList.toggle('is-send', needsLabel);
+      refs.attach.textContent = needsLabel ? 'Add label and shipping cost' : 'Edit shipping';
+      refs.attach.title = needsLabel
+        ? 'A shipping label is needed before this order can go to Store Ops'
+        : 'Change the shipping cost or replace the label before sending';
     }
     if (refs.queue) {
       refs.queue.hidden = order.can_queue !== true;
@@ -205,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   refs.cancel?.addEventListener('click', cancelOrder);
 
-  const moveOrder = async (action, button, label = null) => {
+  const moveOrder = async (action, button) => {
     if (!orderId || !button || button.disabled) return;
     button.disabled = true;
     if (refs.error) {
@@ -213,17 +218,12 @@ document.addEventListener('DOMContentLoaded', () => {
       refs.error.textContent = '';
     }
     try {
-      const upload = new FormData();
-      if (label) {
-        upload.append('order_id', orderId);
-        upload.append('label', label, label.name);
-      }
       const response = await fetch(`${endpoint}?action=${action}`, {
         method: 'POST',
         credentials: 'same-origin',
         cache: 'no-store',
-        headers: label ? { Accept: 'application/json' } : { Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: label ? upload : JSON.stringify({ order_id: orderId })
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId })
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload.ok) throw new Error(payload.error || 'Unable to update this WhatsApp order.');
@@ -238,15 +238,15 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   refs.send?.addEventListener('click', () => moveOrder('send', refs.send));
   refs.queue?.addEventListener('click', () => moveOrder('queue', refs.queue));
-  const labelPicker = Object.assign(document.createElement('input'), { type: 'file', accept: '.pdf,application/pdf', hidden: true });
-  root.append(labelPicker);
-  refs.attach?.addEventListener('click', () => {
-    labelPicker.value = '';
-    labelPicker.click();
-  });
-  labelPicker.addEventListener('change', () => {
-    const file = labelPicker.files?.[0];
-    if (file) moveOrder('attach_label', refs.attach, file);
+  refs.attach?.addEventListener('click', async () => {
+    if (!currentOrder || currentOrder.queued !== true) return;
+    const result = await window.openWhatsappShippingDialog({ endpoint, order: currentOrder });
+    if (!result.saved) return;
+    if (refs.error) {
+      refs.error.textContent = result.error;
+      refs.error.hidden = !result.error;
+    }
+    await loadOrder();
   });
 
   const closeArchiveDialog = () => {

@@ -182,7 +182,16 @@ whatsapp_expect(true, str_contains($historySource, "\$queued ? 'QUEUED' : 'PENDI
 whatsapp_expect(true, str_contains($historySource, "['QUEUED', 'PENDING_PUBLISH', 'PUBLISH_FAILED']"), 'A queued direct order must be publishable on demand.');
 whatsapp_expect(true, str_contains($historySource, '$labelDeferred = $queued &&') && str_contains($historySource, 'Add the shipping label before sending this order to Store Ops.'), 'The shipping label must be optional while queued and required before sending.');
 whatsapp_expect(true, str_contains($historySource, "/api/website-orders/?action=recall"), 'Queueing a listed order must first recall it from Store Ops.');
+whatsapp_expect(true, str_contains($historySource, "\$payload['shipping_cost'] ?? (\$queued ? 0 : null)"), 'Shipping cost must be optional while queued and required for an order sent immediately.');
 $apiSource = (string) file_get_contents(dirname(__DIR__) . '/api/whatsapp-orders/index.php');
+whatsapp_expect(
+    true,
+    str_contains($apiSource, "\$action === 'store_ops_order'") && str_contains($apiSource, 'jg_whatsapp_store_ops_invoice_order'),
+    'Store Ops must be able to read one order, queued or not, to print its invoice.'
+);
+$invoiceEndpoint = substr($apiSource, (int) strpos($apiSource, "\$action === 'store_ops_order'"), 200);
+whatsapp_expect(true, str_contains($invoiceEndpoint, 'jg_whatsapp_api_require_store_ops()'), 'The invoice order endpoint must require the Store Ops token.');
+whatsapp_expect(true, str_contains($apiSource, "\$_POST['shipping_cost'] ?? null"), 'Attaching a label must accept the shipping cost that goes with it.');
 whatsapp_expect(
     true,
     str_contains($apiSource, "\$salesChannel === 'walk_in' || !empty(\$order['queued'])")
@@ -245,6 +254,25 @@ if (in_array('sqlite', PDO::getAvailableDrivers(), true)) {
         $lateLabelRejected = true;
     }
     whatsapp_expect(true, $lateLabelRejected, 'Labels can only be added while an order is still queued.');
+    whatsapp_expect(17000.0, jg_whatsapp_attach_label($queuePdo, 'WAEXEC-QUEUED', [], '17000')['shipping_cost'], 'A queued order that has its label must accept a shipping cost on its own.');
+    $costWithoutLabelRejected = false;
+    try {
+        jg_whatsapp_attach_label($queuePdo, 'WAEXEC-NOLABEL', [], 9000);
+    } catch (InvalidArgumentException) {
+        $costWithoutLabelRejected = true;
+    }
+    whatsapp_expect(true, $costWithoutLabelRejected, 'A shipping cost must not stand in for a missing shipping label.');
+    $negativeCostRejected = false;
+    try {
+        jg_whatsapp_attach_label($queuePdo, 'WAEXEC-QUEUED', [], -1);
+    } catch (InvalidArgumentException) {
+        $negativeCostRejected = true;
+    }
+    whatsapp_expect(true, $negativeCostRejected, 'A queued shipping cost must be a valid amount.');
+    $queuedInvoice = jg_whatsapp_store_ops_invoice_order($queuePdo, 'WAEXEC-QUEUED');
+    whatsapp_expect('QUEUED', $queuedInvoice['status'], 'The invoice order must report a queued order as queued, not listed.');
+    whatsapp_expect(17000.0, $queuedInvoice['financials']['shippingCost'], 'The invoice order must carry the shipping cost saved while queued.');
+    whatsapp_expect(17000.0, $queuedInvoice['financials']['customerTotal'], 'The invoice total must include the queued shipping cost.');
     $cancelledQueued = jg_whatsapp_cancel_order($queuePdo, 'WAEXEC-DROP');
     whatsapp_expect('CANCELLED', $cancelledQueued['status'], 'A queued order must cancel locally because Store Ops never listed it.');
     whatsapp_expect('canceled', $cancelledQueued['payment_status'], 'Cancelling a queued order must clear its receivable.');

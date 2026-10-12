@@ -38757,6 +38757,133 @@ body:has(#admin-rail-nav.ed-nav) .whatsapp-history-status.queued {
   }
 }
 
+.whatsapp-shipping-dialog {
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: 20px;
+  color: var(--admin-text);
+  background: var(--admin-surface);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, .42);
+}
+
+.whatsapp-shipping-dialog::backdrop {
+  background: rgba(0, 0, 0, .72);
+}
+
+.whatsapp-shipping-dialog form {
+  display: grid;
+  gap: 18px;
+  padding: clamp(20px, 4vw, 30px);
+}
+
+.whatsapp-shipping-dialog-head h2 {
+  margin: 4px 0 0;
+  color: var(--admin-text);
+  font: 700 clamp(21px, 4vw, 26px)/1.1 "Space Grotesk", sans-serif;
+  letter-spacing: -.03em;
+}
+
+.whatsapp-shipping-dialog-copy {
+  margin: 0;
+  color: var(--admin-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.whatsapp-shipping-dialog-copy strong {
+  color: var(--admin-text);
+}
+
+.whatsapp-shipping-dialog-field {
+  display: grid;
+  gap: 7px;
+}
+
+.whatsapp-shipping-dialog-field > span {
+  color: var(--admin-text);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.whatsapp-shipping-dialog-field > small {
+  color: var(--admin-muted);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.whatsapp-shipping-dialog-field > input[type="file"],
+.whatsapp-shipping-dialog-field > div {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  color: var(--admin-text);
+  background: var(--admin-surface-soft);
+  font: inherit;
+  font-size: 13px;
+}
+
+.whatsapp-shipping-dialog-field > input[type="file"] {
+  padding: 10px 12px;
+}
+
+.whatsapp-shipping-dialog-field > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+}
+
+.whatsapp-shipping-dialog-field > div:focus-within,
+.whatsapp-shipping-dialog-field > input[type="file"]:focus-visible {
+  outline: 2px solid #f59e0b;
+  outline-offset: 1px;
+}
+
+.whatsapp-shipping-dialog-field b {
+  color: var(--admin-muted);
+  font-size: 12px;
+}
+
+.whatsapp-shipping-dialog-field > div input {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  border-radius: 0;
+  color: var(--admin-text);
+  background: transparent !important;
+  box-shadow: none;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.whatsapp-shipping-dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.whatsapp-shipping-dialog-actions button:disabled {
+  opacity: .5;
+  cursor: progress;
+}
+
+@media (max-width: 560px) {
+  .whatsapp-shipping-dialog-actions button {
+    flex: 1 1 100%;
+  }
+}
+
 /* Partner billing notification remodel */
 .admin-partner-billing-drawer {
   width: min(470px, calc(100vw - 24px));

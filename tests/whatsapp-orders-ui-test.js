@@ -78,8 +78,21 @@ assert.match(script, /state\.salesChannel === 'whatsapp' && Boolean\(queueInput\
 assert.match(script, /data-send-order=[\s\S]*?Send to Store Ops/, 'Queued orders must offer a Send to Store Ops action.');
 assert.match(script, /order\.status === 'IS_LISTED'[\s\S]*?data-queue-order-id=[\s\S]*?Move to queue/, 'Listed orders must offer a way back to the queue.');
 assert.match(script, /const needsLabel = isWhatsapp && !isQueueing\(\)/, 'The shipping label must be optional while Queue is on.');
-assert.match(script, /data-attach-label=[\s\S]*?Add shipping label[\s\S]*?isQueued && !needsLabel[\s\S]*?data-send-order=/, 'A queued order without a label must ask for the label before offering Send to Store Ops.');
+assert.match(script, /needsLabel \? `[^`]*data-order-shipping=[^`]*Add label and shipping cost[\s\S]*?isQueued && !needsLabel[\s\S]*?data-send-order=/, 'A queued order without a label must ask for the label and shipping cost before offering Send to Store Ops.');
+assert.match(script, /isQueued && !needsLabel \? `[^`]*data-order-shipping=[^`]*Edit shipping/, 'A queued order that already has its label must still let the shipping cost change.');
+assert.match(script, /shippingInput\.required = state\.salesChannel === 'whatsapp' && !queueing/, 'Shipping cost must be optional while Queue is on.');
+assert.match(page, /whatsapp-shipping-dialog\.js[\s\S]*?whatsapp-orders\.js/, 'The shipping dialog must load before the builder script that opens it.');
+const shippingDialog = fs.readFileSync(path.join(root, 'whatsapp-shipping-dialog.js'), 'utf8');
+assert.match(shippingDialog, /body\.append\('shipping_cost', cost\)[\s\S]*?action=attach_label/, 'The shipping dialog must save the shipping cost together with the label.');
+assert.match(shippingDialog, /if \(!file && !hasLabel\) return fail/, 'The shipping dialog must require a label for an order that has none.');
+assert.match(shippingDialog, /action=attach_label[\s\S]*?if \(send\)[\s\S]*?action=send/, 'The shipping dialog must only send an order after its label and cost are saved.');
+const detailPage = fs.readFileSync(path.join(root, 'whatsapp-order', 'index.php'), 'utf8');
+const detailScript = fs.readFileSync(path.join(root, 'whatsapp-order-detail.js'), 'utf8');
+assert.match(detailPage, /whatsapp-shipping-dialog\.js[\s\S]*?whatsapp-order-detail\.js/, 'The order page must load the shipping dialog before its own script.');
+assert.match(detailScript, /refs\.attach\.hidden = order\.queued !== true \|\| order\.archived === true/, 'The order page must keep shipping editable for every queued order.');
+assert.match(detailScript, /refs\.invoice\.hidden = false/, 'The order page must always offer invoice printing, including for queued orders.');
 assert.match(script, /whatsapp-queue-reminder/, 'The recent orders list must remind the user about unsent queued orders.');
+assert.match(whatsappStyles, /\.whatsapp-shipping-dialog \{[\s\S]*?background: var\(--admin-surface\)/, 'The shipping dialog must follow the active dashboard theme.');
 assert.match(whatsappStyles, /\.whatsapp-queue-toggle \{[\s\S]*?border: 2px dashed #f59e0b;/, 'The Queue toggle must stand out from the neighbouring payment controls.');
 assert.match(whatsappStyles, /body:has\(#admin-rail-nav\.ed-nav\) \.admin-primary-btn\.is-queue/, 'The queue accent must survive the executive theme button override.');
 

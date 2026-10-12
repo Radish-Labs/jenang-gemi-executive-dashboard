@@ -11,6 +11,7 @@ if (!jg_admin_is_authenticated()) {
 
 $adminCssVersion = (string) @filemtime(dirname(__DIR__) . '/admin.css');
 $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
+$shippingDialogJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-shipping-dialog.js');
 ?>
 <!DOCTYPE html>
 <html lang="id" data-admin-theme="dark">
@@ -27,7 +28,7 @@ $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
     <link rel="stylesheet" href="../admin.css?v=<?php echo urlencode($adminCssVersion ?: '1'); ?>">
 </head>
 <body class="admin-body is-dashboard is-whatsapp-orders-page">
-    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.98.40</div>
+    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.98.41</div>
     <div class="admin-app admin-app-suite" data-whatsapp-orders data-endpoint="../api/whatsapp-orders/">
         <div class="admin-backdrop admin-backdrop-a"></div>
         <div class="admin-backdrop admin-backdrop-b"></div>
@@ -134,7 +135,7 @@ $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
                                     <label class="whatsapp-money-field" data-fulfillment-panel>
                                         <span>Shipping cost</span>
                                         <div><b>Rp</b><input type="number" name="shipping_cost" min="0" max="99999999999999" step="1" value="0" inputmode="numeric" required></div>
-                                        <small>Saved for metrics and the customer invoice total</small>
+                                        <small data-shipping-hint>Saved for metrics and the customer invoice total</small>
                                     </label>
                                     <div class="whatsapp-discount-field">
                                         <span>Order discount</span>
@@ -160,7 +161,7 @@ $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
                                     <span class="is-total">Customer total <strong data-customer-total>Rp0</strong></span>
                                 </div>
                                 <p class="admin-form-error" data-form-error hidden></p>
-                                <p class="whatsapp-queue-notice" data-queue-notice role="status" hidden><strong>Queue is on.</strong> This order will be saved here and stay hidden from Store Ops until you press “Send to Store Ops”. The shipping label can be added later.</p>
+                                <p class="whatsapp-queue-notice" data-queue-notice role="status" hidden><strong>Queue is on.</strong> This order will be saved here and stay hidden from Store Ops until you press “Send to Store Ops”. The shipping label and shipping cost can be added later.</p>
                                 <div class="whatsapp-payment-controls">
                                     <div class="whatsapp-payment-method" data-payment-method>
                                         <span>Paid via</span>
@@ -201,6 +202,7 @@ $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
 
     <?php render_admin_notification_drawer(); ?>
     <?php render_admin_chrome_script(); ?>
+    <script type="module" src="../whatsapp-shipping-dialog.js?v=<?php echo urlencode($shippingDialogJsVersion ?: '1'); ?>"></script>
     <script type="module" src="../whatsapp-orders.js?v=<?php echo urlencode($pageJsVersion ?: '1'); ?>"></script>
 </body>
 </html>

@@ -62,6 +62,13 @@ try {
     if ($method === 'GET' && in_array($action, ['label', 'store_ops_label'], true)) {
         jg_whatsapp_api_emit_label($pdo, trim((string) ($_GET['order'] ?? '')), $action === 'store_ops_label');
     }
+    if ($method === 'GET' && $action === 'store_ops_order') {
+        jg_whatsapp_api_require_store_ops();
+        jg_whatsapp_api_json(['ok' => true, 'order' => jg_whatsapp_store_ops_invoice_order(
+            $pdo,
+            trim((string) ($_GET['order'] ?? $_GET['order_id'] ?? ''))
+        )]);
+    }
     if ($method === 'POST' && $action === 'status_callback') {
         jg_whatsapp_api_require_store_ops();
         $body = jg_whatsapp_api_body();
@@ -177,7 +184,8 @@ try {
         jg_whatsapp_api_json(['ok' => true, 'order' => jg_whatsapp_attach_label(
             $pdo,
             trim((string) ($_POST['order_id'] ?? '')),
-            is_array($upload) ? $upload : []
+            is_array($upload) ? $upload : [],
+            $_POST['shipping_cost'] ?? null
         )]);
     }
     if ($action === 'queue') {
