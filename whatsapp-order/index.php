@@ -78,6 +78,7 @@ $storeOpsBaseUrl = rtrim(
                                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M5 7l1 13h12l1-13M9 11h6M8 4h8l1 3H7l1-3Z"/></svg>
                                     Archived
                                 </span>
+                                <button type="button" class="whatsapp-detail-queue-action is-send" data-detail-attach title="A shipping label is needed before this order can go to Store Ops" hidden>Add shipping label</button>
                                 <button type="button" class="whatsapp-detail-queue-action is-send" data-detail-send hidden>Send to Store Ops</button>
                                 <button type="button" class="whatsapp-detail-queue-action" data-detail-queue title="Pull this order out of Store Ops while it is unclaimed and its label is unprinted" hidden>Move to queue</button>
                                 <button type="button" class="whatsapp-detail-icon-action is-archive" data-detail-archive aria-label="Archive order" title="Archive order">

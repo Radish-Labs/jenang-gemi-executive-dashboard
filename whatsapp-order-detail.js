@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     invoice: root.querySelector('[data-detail-invoice-link]'),
     cancel: root.querySelector('[data-detail-cancel]'),
     send: root.querySelector('[data-detail-send]'),
+    attach: root.querySelector('[data-detail-attach]'),
     queue: root.querySelector('[data-detail-queue]'),
     archive: root.querySelector('[data-detail-archive]'),
     archived: root.querySelector('[data-detail-archived]'),
@@ -115,9 +116,14 @@ document.addEventListener('DOMContentLoaded', () => {
       refs.cancel.disabled = false;
       refs.cancel.classList.remove('is-loading');
     }
+    const needsLabel = order.queued === true && !order.has_label;
     if (refs.send) {
-      refs.send.hidden = order.queued !== true || order.archived === true;
+      refs.send.hidden = order.queued !== true || needsLabel || order.archived === true;
       refs.send.disabled = false;
+    }
+    if (refs.attach) {
+      refs.attach.hidden = !needsLabel || order.archived === true;
+      refs.attach.disabled = false;
     }
     if (refs.queue) {
       refs.queue.hidden = order.can_queue !== true;
@@ -199,7 +205,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   refs.cancel?.addEventListener('click', cancelOrder);
 
-  const moveOrder = async (action, button) => {
+  const moveOrder = async (action, button, label = null) => {
     if (!orderId || !button || button.disabled) return;
     button.disabled = true;
     if (refs.error) {
@@ -207,12 +213,17 @@ document.addEventListener('DOMContentLoaded', () => {
       refs.error.textContent = '';
     }
     try {
+      const upload = new FormData();
+      if (label) {
+        upload.append('order_id', orderId);
+        upload.append('label', label, label.name);
+      }
       const response = await fetch(`${endpoint}?action=${action}`, {
         method: 'POST',
         credentials: 'same-origin',
         cache: 'no-store',
-        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: orderId })
+        headers: label ? { Accept: 'application/json' } : { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: label ? upload : JSON.stringify({ order_id: orderId })
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload.ok) throw new Error(payload.error || 'Unable to update this WhatsApp order.');
@@ -227,6 +238,16 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   refs.send?.addEventListener('click', () => moveOrder('send', refs.send));
   refs.queue?.addEventListener('click', () => moveOrder('queue', refs.queue));
+  const labelPicker = Object.assign(document.createElement('input'), { type: 'file', accept: '.pdf,application/pdf', hidden: true });
+  root.append(labelPicker);
+  refs.attach?.addEventListener('click', () => {
+    labelPicker.value = '';
+    labelPicker.click();
+  });
+  labelPicker.addEventListener('change', () => {
+    const file = labelPicker.files?.[0];
+    if (file) moveOrder('attach_label', refs.attach, file);
+  });
 
   const closeArchiveDialog = () => {
     if (archiveSaving) return;

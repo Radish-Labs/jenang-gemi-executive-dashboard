@@ -172,6 +172,14 @@ try {
         }
         jg_whatsapp_api_json(['ok' => true, 'order' => $order], 201);
     }
+    if ($action === 'attach_label') {
+        $upload = $_FILES['label'] ?? [];
+        jg_whatsapp_api_json(['ok' => true, 'order' => jg_whatsapp_attach_label(
+            $pdo,
+            trim((string) ($_POST['order_id'] ?? '')),
+            is_array($upload) ? $upload : []
+        )]);
+    }
     if ($action === 'queue') {
         $body = jg_whatsapp_api_body();
         jg_whatsapp_api_json(['ok' => true, 'order' => jg_whatsapp_queue_order(

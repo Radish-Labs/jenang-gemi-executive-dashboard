@@ -27,7 +27,7 @@ $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
     <link rel="stylesheet" href="../admin.css?v=<?php echo urlencode($adminCssVersion ?: '1'); ?>">
 </head>
 <body class="admin-body is-dashboard is-whatsapp-orders-page">
-    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.98.39</div>
+    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.98.40</div>
     <div class="admin-app admin-app-suite" data-whatsapp-orders data-endpoint="../api/whatsapp-orders/">
         <div class="admin-backdrop admin-backdrop-a"></div>
         <div class="admin-backdrop admin-backdrop-b"></div>
@@ -124,7 +124,7 @@ $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
                                         <input type="file" name="label" accept=".pdf,application/pdf" data-label-input required>
                                         <span class="whatsapp-label-icon" aria-hidden="true">PDF</span>
                                         <strong data-label-name>Choose shipping label</strong>
-                                        <small>Required, following the Partner order flow</small>
+                                        <small data-label-hint>Required, following the Partner order flow</small>
                                     </label>
                                     <label class="whatsapp-range-field" data-fulfillment-panel>
                                         <span>Store Ops deadline <strong data-deadline-value>24h</strong></span>
@@ -160,7 +160,7 @@ $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
                                     <span class="is-total">Customer total <strong data-customer-total>Rp0</strong></span>
                                 </div>
                                 <p class="admin-form-error" data-form-error hidden></p>
-                                <p class="whatsapp-queue-notice" data-queue-notice role="status" hidden><strong>Queue is on.</strong> This order will be saved here and stay hidden from Store Ops until you press “Send to Store Ops”.</p>
+                                <p class="whatsapp-queue-notice" data-queue-notice role="status" hidden><strong>Queue is on.</strong> This order will be saved here and stay hidden from Store Ops until you press “Send to Store Ops”. The shipping label can be added later.</p>
                                 <div class="whatsapp-payment-controls">
                                     <div class="whatsapp-payment-method" data-payment-method>
                                         <span>Paid via</span>

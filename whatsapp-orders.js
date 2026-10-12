@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const cartCount = root.querySelector('[data-cart-count]');
   const labelInput = root.querySelector('[data-label-input]');
   const labelName = root.querySelector('[data-label-name]');
+  const labelHint = root.querySelector('[data-label-hint]');
   const deadlineInput = root.querySelector('[data-deadline-input]');
   const deadlineValue = root.querySelector('[data-deadline-value]');
   const merchandiseSubtotal = root.querySelector('[data-merchandise-subtotal]');
@@ -125,7 +126,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const updateSubmitState = () => {
-    const needsLabel = state.salesChannel === 'whatsapp';
+    const isWhatsapp = state.salesChannel === 'whatsapp';
+    const needsLabel = isWhatsapp && !isQueueing();
     const hasPaymentMethod = Boolean(form?.querySelector('input[name="payment_method"]:checked'));
     const ready = state.cart.size > 0 && (!needsLabel || Boolean(labelInput?.files?.[0])) && Boolean(customerNameInput?.value.trim())
       && totals().discount.valid && (Boolean(payLaterInput?.checked) || hasPaymentMethod);
@@ -135,13 +137,17 @@ document.addEventListener('DOMContentLoaded', () => {
       submitButton.classList.toggle('is-queue', queueing);
       if (queueing) submitButton.textContent = state.submitting ? 'Saving to queue…' : 'Save to queue · not sent yet';
       else submitButton.textContent = state.submitting
-        ? (needsLabel ? 'Sending to Store Ops…' : 'Recording walk-in sale…')
-        : (needsLabel ? 'Send listed order to Store Ops' : 'Complete walk-in sale');
+        ? (isWhatsapp ? 'Sending to Store Ops…' : 'Recording walk-in sale…')
+        : (isWhatsapp ? 'Send listed order to Store Ops' : 'Complete walk-in sale');
     }
   };
 
   const syncQueueChoice = () => {
     const queueing = isQueueing();
+    if (labelInput) labelInput.required = state.salesChannel === 'whatsapp' && !queueing;
+    if (labelHint) labelHint.textContent = queueing
+      ? 'Optional while queued · add it before sending'
+      : 'Required, following the Partner order flow';
     form?.classList.toggle('is-queueing', queueing);
     queueInput?.closest('[data-queue-toggle]')?.classList.toggle('is-on', queueing);
     if (queueHint) queueHint.textContent = queueing ? 'On · held until you send it' : 'Off · sends to Store Ops now';
@@ -163,7 +169,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const isWalkIn = state.salesChannel === 'walk_in';
     form?.classList.toggle('is-walk-in', isWalkIn);
     channelInputs.forEach((input) => input.closest('[data-channel-option]')?.classList.toggle('is-active', input.checked));
-    if (labelInput) labelInput.required = !isWalkIn;
     if (builderTitle) builderTitle.textContent = isWalkIn ? 'Record walk-in order' : 'Create WhatsApp order';
     if (builderDescription) builderDescription.textContent = isWalkIn
       ? 'Record the customer and products at the counter. The sale is completed immediately and appears in Orders and Customer Profiles.'
@@ -263,6 +268,11 @@ document.addEventListener('DOMContentLoaded', () => {
     renderTotals();
   };
 
+  // One shared picker adds a label to whichever queued order asked for it.
+  const labelPicker = Object.assign(document.createElement('input'), { type: 'file', accept: '.pdf,application/pdf', hidden: true });
+  root.append(labelPicker);
+  let labelPickerOrder = '';
+
   const statusLabel = (status) => ({
     QUEUED: 'Queued · not in Store Ops', PENDING_PUBLISH: 'Sending', PUBLISH_FAILED: 'Needs retry', IS_LISTED: 'Listed',
     IS_BEING_FULFILLED: 'Being fulfilled', FULFILLED: 'Fulfilled'
@@ -281,6 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const quantity = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
       const failed = order.status === 'PUBLISH_FAILED';
       const isQueued = order.status === 'QUEUED';
+      const needsLabel = isQueued && !order.has_label;
       const canQueue = order.status === 'IS_LISTED' && order.sales_channel !== 'walk_in';
       return `<article class="whatsapp-history-card${failed ? ' has-error' : ''}${isQueued ? ' is-queued' : ''}">
         <div class="whatsapp-history-card-main">
@@ -289,11 +300,12 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="whatsapp-history-card-state">
           <span class="whatsapp-payment-badge is-${escapeHtml(order.payment_status || 'unpaid')}">${escapeHtml(order.payment_status === 'paid' ? `Paid · ${order.payment_method || 'confirmed'}` : (order.payment_status === 'canceled' ? 'Canceled' : 'Unpaid'))}</span>
-          <span class="whatsapp-status is-${escapeHtml(String(order.status || '').toLowerCase().replaceAll('_', '-'))}">${escapeHtml(statusLabel(order.status))}</span>
+          <span class="whatsapp-status is-${escapeHtml(String(order.status || '').toLowerCase().replaceAll('_', '-'))}">${escapeHtml(needsLabel ? 'Queued · needs label' : statusLabel(order.status))}</span>
           <a class="admin-ghost-btn" href="../whatsapp-order/?order=${encodeURIComponent(order.order_id)}">View details</a>
           ${failed ? `<button type="button" class="admin-ghost-btn" data-retry-order="${escapeHtml(order.order_id)}">Retry Store Ops</button>` : ''}
           ${canQueue ? `<button type="button" class="admin-ghost-btn whatsapp-queue-pull" data-queue-order-id="${escapeHtml(order.order_id)}" title="Pull this order out of Store Ops while it is unclaimed and its label is unprinted">Move to queue</button>` : ''}
-          ${isQueued ? `<button type="button" class="admin-primary-btn whatsapp-queue-send" data-send-order="${escapeHtml(order.order_id)}">Send to Store Ops</button>` : ''}
+          ${needsLabel ? `<button type="button" class="admin-primary-btn whatsapp-queue-send" data-attach-label="${escapeHtml(order.order_id)}" title="A shipping label is needed before this order can go to Store Ops">Add shipping label</button>` : ''}
+          ${isQueued && !needsLabel ? `<button type="button" class="admin-primary-btn whatsapp-queue-send" data-send-order="${escapeHtml(order.order_id)}">Send to Store Ops</button>` : ''}
         </div>
         ${order.publication_error ? `<p>${escapeHtml(order.publication_error)}</p>` : ''}
       </article>`;
@@ -470,7 +482,7 @@ document.addEventListener('DOMContentLoaded', () => {
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     setError();
-    const needsLabel = state.salesChannel === 'whatsapp';
+    const needsLabel = state.salesChannel === 'whatsapp' && !isQueueing();
     if (!form.reportValidity() || !state.cart.size || (needsLabel && !labelInput?.files?.[0])) return;
     const values = totals();
     if (!values.discount.valid) {
@@ -525,6 +537,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  orderList?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-attach-label]');
+    if (!button) return;
+    labelPickerOrder = button.dataset.attachLabel || '';
+    labelPicker.value = '';
+    labelPicker.click();
+  });
+  labelPicker.addEventListener('change', async () => {
+    const file = labelPicker.files?.[0];
+    if (!file || !labelPickerOrder) return;
+    setListError();
+    const body = new FormData();
+    body.append('order_id', labelPickerOrder);
+    body.append('label', file, file.name);
+    try {
+      await request(`${endpoint}?action=attach_label`, { method: 'POST', body });
+    } catch (error) {
+      setListError(error.message);
+    } finally {
+      await loadOrders();
+    }
+  });
   orderList?.addEventListener('click', async (event) => {
     const button = event.target.closest('[data-retry-order], [data-send-order], [data-queue-order-id]');
     if (!button || button.disabled) return;

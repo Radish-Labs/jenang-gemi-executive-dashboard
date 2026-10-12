@@ -180,6 +180,7 @@ whatsapp_expect(false, in_array('QUEUED', JG_WHATSAPP_ORDER_OPEN_STATUSES, true)
 whatsapp_expect(false, in_array('QUEUED', JG_WHATSAPP_ORDER_METRIC_STATUSES, true), 'Queued orders must not count as listed sales before they are sent.');
 whatsapp_expect(true, str_contains($historySource, "\$queued ? 'QUEUED' : 'PENDING_PUBLISH'"), 'A queued direct order must be saved without entering the publication flow.');
 whatsapp_expect(true, str_contains($historySource, "['QUEUED', 'PENDING_PUBLISH', 'PUBLISH_FAILED']"), 'A queued direct order must be publishable on demand.');
+whatsapp_expect(true, str_contains($historySource, '$labelDeferred = $queued &&') && str_contains($historySource, 'Add the shipping label before sending this order to Store Ops.'), 'The shipping label must be optional while queued and required before sending.');
 whatsapp_expect(true, str_contains($historySource, "/api/website-orders/?action=recall"), 'Queueing a listed order must first recall it from Store Ops.');
 $apiSource = (string) file_get_contents(dirname(__DIR__) . '/api/whatsapp-orders/index.php');
 whatsapp_expect(
@@ -228,6 +229,22 @@ if (in_array('sqlite', PDO::getAvailableDrivers(), true)) {
         $fulfilledQueueRejected = true;
     }
     whatsapp_expect(true, $fulfilledQueueRejected, 'A fulfilled order must never return to the queue.');
+    $queuePdo->exec("INSERT INTO whatsapp_orders (id, order_id, status, label_storage_key, label_original_name) VALUES (4, 'WAEXEC-NOLABEL', 'QUEUED', '', '')");
+    whatsapp_expect(false, jg_whatsapp_format_order($queuePdo, jg_whatsapp_internal_order($queuePdo, 'WAEXEC-NOLABEL'))['has_label'], 'A queued order may wait without a shipping label.');
+    $missingLabelRejected = false;
+    try {
+        jg_whatsapp_attach_label($queuePdo, 'WAEXEC-NOLABEL', []);
+    } catch (InvalidArgumentException) {
+        $missingLabelRejected = true;
+    }
+    whatsapp_expect(true, $missingLabelRejected, 'Attaching a label must still require a real PDF upload.');
+    $lateLabelRejected = false;
+    try {
+        jg_whatsapp_attach_label($queuePdo, 'WAEXEC-DONE', []);
+    } catch (RuntimeException) {
+        $lateLabelRejected = true;
+    }
+    whatsapp_expect(true, $lateLabelRejected, 'Labels can only be added while an order is still queued.');
     $cancelledQueued = jg_whatsapp_cancel_order($queuePdo, 'WAEXEC-DROP');
     whatsapp_expect('CANCELLED', $cancelledQueued['status'], 'A queued order must cancel locally because Store Ops never listed it.');
     whatsapp_expect('canceled', $cancelledQueued['payment_status'], 'Cancelling a queued order must clear its receivable.');

@@ -596,7 +596,9 @@ function jg_whatsapp_create_order(PDO $pdo, PDO $skuPdo, array $payload, array $
     $orderDiscount = jg_whatsapp_order_discount($payload, $discountableSubtotal);
     $items = jg_whatsapp_allocate_discount($items, $orderDiscount['total'], $discountableSubtotal);
     $orderId = jg_whatsapp_generate_order_id($salesChannel);
-    $label = $isWalkIn
+    // A queued order may be saved first and receive its label before it is sent.
+    $labelDeferred = $queued && ($upload['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE;
+    $label = $isWalkIn || $labelDeferred
         ? ['storage_key' => '', 'original_name' => '', 'size_bytes' => 0, 'path' => '']
         : jg_whatsapp_prepare_label($upload, $orderId);
     $discountTotal = round($itemDiscountTotal + $orderDiscount['total'], 2);
@@ -770,6 +772,9 @@ function jg_whatsapp_publish_order(PDO $pdo, string $orderId): array
         if (!in_array((string) ($row['status'] ?? ''), ['QUEUED', 'PENDING_PUBLISH', 'PUBLISH_FAILED'], true)) {
             throw new RuntimeException('This WhatsApp order cannot be published again.');
         }
+        if (trim((string) ($row['label_storage_key'] ?? '')) === '') {
+            throw new RuntimeException('Add the shipping label before sending this order to Store Ops.');
+        }
         $pdo->prepare(
             'UPDATE whatsapp_orders
              SET status = "PENDING_PUBLISH", publication_attempts = publication_attempts + 1,
@@ -858,6 +863,42 @@ function jg_whatsapp_queue_order(PDO $pdo, string $orderId): array
          SET status = "QUEUED", deadline_at = NULL, publication_error = "", updated_at = :updated_at
          WHERE order_id = :order_id AND status IN ("IS_LISTED", "IS_BEING_FULFILLED", "PUBLISH_FAILED")'
     )->execute([':updated_at' => jg_whatsapp_now(), ':order_id' => $orderId]);
+    return jg_whatsapp_format_order($pdo, jg_whatsapp_internal_order($pdo, $orderId));
+}
+
+/** Add or replace the shipping label of an order that is still queued. */
+function jg_whatsapp_attach_label(PDO $pdo, string $orderId, array $upload): array
+{
+    jg_whatsapp_ensure_schema($pdo);
+    $orderId = trim($orderId);
+    if ($orderId === '') {
+        throw new InvalidArgumentException('Choose a queued order for this shipping label.');
+    }
+    $row = jg_whatsapp_internal_order($pdo, $orderId);
+    if (!empty($row['archived_at']) || strtoupper(trim((string) ($row['status'] ?? ''))) !== 'QUEUED') {
+        throw new RuntimeException('A shipping label can only be added while the order is queued.');
+    }
+
+    $label = jg_whatsapp_prepare_label($upload, $orderId);
+    $stmt = $pdo->prepare(
+        'UPDATE whatsapp_orders
+         SET label_storage_key = :storage_key, label_original_name = :original_name,
+             label_size_bytes = :size_bytes, updated_at = :updated_at
+         WHERE id = :id AND status = "QUEUED"'
+    );
+    $stmt->execute([
+        ':storage_key' => $label['storage_key'],
+        ':original_name' => $label['original_name'],
+        ':size_bytes' => $label['size_bytes'],
+        ':updated_at' => jg_whatsapp_now(),
+        ':id' => $row['id'],
+    ]);
+    if ($stmt->rowCount() < 1) {
+        @unlink($label['path']);
+        throw new RuntimeException('A shipping label can only be added while the order is queued.');
+    }
+    $previousKey = basename((string) ($row['label_storage_key'] ?? ''));
+    if ($previousKey !== '') @unlink(jg_whatsapp_label_directory() . '/' . $previousKey);
     return jg_whatsapp_format_order($pdo, jg_whatsapp_internal_order($pdo, $orderId));
 }
 

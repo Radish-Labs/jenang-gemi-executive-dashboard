@@ -77,6 +77,8 @@ assert.match(script, /queue: isQueueing\(\)/, 'The builder must tell the server 
 assert.match(script, /state\.salesChannel === 'whatsapp' && Boolean\(queueInput\?\.checked\)/, 'Walk-in sales must never be queued.');
 assert.match(script, /data-send-order=[\s\S]*?Send to Store Ops/, 'Queued orders must offer a Send to Store Ops action.');
 assert.match(script, /order\.status === 'IS_LISTED'[\s\S]*?data-queue-order-id=[\s\S]*?Move to queue/, 'Listed orders must offer a way back to the queue.');
+assert.match(script, /const needsLabel = isWhatsapp && !isQueueing\(\)/, 'The shipping label must be optional while Queue is on.');
+assert.match(script, /data-attach-label=[\s\S]*?Add shipping label[\s\S]*?isQueued && !needsLabel[\s\S]*?data-send-order=/, 'A queued order without a label must ask for the label before offering Send to Store Ops.');
 assert.match(script, /whatsapp-queue-reminder/, 'The recent orders list must remind the user about unsent queued orders.');
 assert.match(whatsappStyles, /\.whatsapp-queue-toggle \{[\s\S]*?border: 2px dashed #f59e0b;/, 'The Queue toggle must stand out from the neighbouring payment controls.');
 assert.match(whatsappStyles, /body:has\(#admin-rail-nav\.ed-nav\) \.admin-primary-btn\.is-queue/, 'The queue accent must survive the executive theme button override.');
