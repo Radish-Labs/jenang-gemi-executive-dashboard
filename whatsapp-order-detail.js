@@ -13,6 +13,8 @@ document.addEventListener('DOMContentLoaded', () => {
     label: root.querySelector('[data-detail-label-link]'),
     invoice: root.querySelector('[data-detail-invoice-link]'),
     cancel: root.querySelector('[data-detail-cancel]'),
+    send: root.querySelector('[data-detail-send]'),
+    queue: root.querySelector('[data-detail-queue]'),
     archive: root.querySelector('[data-detail-archive]'),
     archived: root.querySelector('[data-detail-archived]'),
     archiveDialog: root.querySelector('[data-detail-archive-dialog]'),
@@ -39,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return parsed && Number.isFinite(parsed.getTime()) ? dateTime.format(parsed) : '—';
   };
   const statusLabel = (status) => ({
-    PENDING_PUBLISH: 'Sending', PUBLISH_FAILED: 'Needs retry', IS_LISTED: 'Listed',
+    QUEUED: 'Queued · not in Store Ops', PENDING_PUBLISH: 'Sending', PUBLISH_FAILED: 'Needs retry', IS_LISTED: 'Listed',
     IS_BEING_FULFILLED: 'Processing', FULFILLED: 'Fulfilled', CANCELLED: 'Cancelled'
   }[status] || String(status || 'Unknown').replaceAll('_', ' '));
   const statusClass = (status) => String(status || 'unknown').toLowerCase().replaceAll('_', '-');
@@ -113,6 +115,14 @@ document.addEventListener('DOMContentLoaded', () => {
       refs.cancel.disabled = false;
       refs.cancel.classList.remove('is-loading');
     }
+    if (refs.send) {
+      refs.send.hidden = order.queued !== true || order.archived === true;
+      refs.send.disabled = false;
+    }
+    if (refs.queue) {
+      refs.queue.hidden = order.can_queue !== true;
+      refs.queue.disabled = false;
+    }
     if (refs.archive) {
       refs.archive.hidden = order.can_archive !== true;
       refs.archive.disabled = false;
@@ -155,7 +165,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const cancelOrder = async () => {
     if (!orderId || !refs.cancel || refs.cancel.disabled) return;
-    if (!window.confirm(`Cancel ${orderId}? Cancellation is allowed while the order is unclaimed in Store Ops, including after a claim is released.`)) return;
+    if (!window.confirm(currentOrder?.queued === true
+      ? `Cancel ${orderId}? It is still queued and was never sent to Store Ops.`
+      : `Cancel ${orderId}? Cancellation is allowed while the order is unclaimed in Store Ops, including after a claim is released.`)) return;
     refs.cancel.disabled = true;
     refs.cancel.classList.add('is-loading');
     if (refs.error) {
@@ -186,6 +198,35 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   refs.cancel?.addEventListener('click', cancelOrder);
+
+  const moveOrder = async (action, button) => {
+    if (!orderId || !button || button.disabled) return;
+    button.disabled = true;
+    if (refs.error) {
+      refs.error.hidden = true;
+      refs.error.textContent = '';
+    }
+    try {
+      const response = await fetch(`${endpoint}?action=${action}`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        cache: 'no-store',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'Unable to update this WhatsApp order.');
+      await loadOrder();
+    } catch (error) {
+      button.disabled = false;
+      if (refs.error) {
+        refs.error.textContent = error instanceof Error ? error.message : 'Unable to update this WhatsApp order.';
+        refs.error.hidden = false;
+      }
+    }
+  };
+  refs.send?.addEventListener('click', () => moveOrder('send', refs.send));
+  refs.queue?.addEventListener('click', () => moveOrder('queue', refs.queue));
 
   const closeArchiveDialog = () => {
     if (archiveSaving) return;

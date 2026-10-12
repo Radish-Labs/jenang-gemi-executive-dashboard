@@ -71,4 +71,14 @@ assert.match(salesApi, /jg_sales_apply_executive_context[\s\S]*?jg_whatsapp_merg
 assert.match(ordersApi, /jg_whatsapp_metric_order_rows/, 'WhatsApp order facts must feed the Executive Orders and hourly metrics path.');
 assert.match(bootstrap, /'username' => \(string\) \$row\['customer_name'\][\s\S]*?'address' => \(string\) \$row\['customer_address'\][\s\S]*?'phone' => \(string\) \$row\['customer_phone'\]/, 'Direct-order customer details must populate the central Orders columns.');
 
+assert.match(page, /data-pay-later[\s\S]*?class="whatsapp-queue-toggle"[\s\S]*?data-queue-order>[\s\S]*?data-submit-order/, 'The Queue toggle must sit beside the submit action and be off by default.');
+assert.match(page, /data-queue-notice[^>]*hidden/, 'The queue warning must stay hidden until Queue is switched on.');
+assert.match(script, /queue: isQueueing\(\)/, 'The builder must tell the server when an order is queued.');
+assert.match(script, /state\.salesChannel === 'whatsapp' && Boolean\(queueInput\?\.checked\)/, 'Walk-in sales must never be queued.');
+assert.match(script, /data-send-order=[\s\S]*?Send to Store Ops/, 'Queued orders must offer a Send to Store Ops action.');
+assert.match(script, /order\.status === 'IS_LISTED'[\s\S]*?data-queue-order-id=[\s\S]*?Move to queue/, 'Listed orders must offer a way back to the queue.');
+assert.match(script, /whatsapp-queue-reminder/, 'The recent orders list must remind the user about unsent queued orders.');
+assert.match(whatsappStyles, /\.whatsapp-queue-toggle \{[\s\S]*?border: 2px dashed #f59e0b;/, 'The Queue toggle must stand out from the neighbouring payment controls.');
+assert.match(whatsappStyles, /body:has\(#admin-rail-nav\.ed-nav\) \.admin-primary-btn\.is-queue/, 'The queue accent must survive the executive theme button override.');
+
 console.log('whatsapp-orders-ui-test: ok');

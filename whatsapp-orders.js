@@ -38,6 +38,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const fulfillmentTitle = root.querySelector('[data-fulfillment-title]');
   const payLaterInput = root.querySelector('[data-pay-later]');
   const paymentMethod = root.querySelector('[data-payment-method]');
+  const queueInput = root.querySelector('[data-queue-order]');
+  const queueHint = root.querySelector('[data-queue-hint]');
+  const queueNotice = root.querySelector('[data-queue-notice]');
+  const orderListError = root.querySelector('[data-order-list-error]');
 
   const state = {
     skus: [], cart: new Map(), company: '', product: '', flavor: '', submitting: false,
@@ -87,6 +91,14 @@ document.addEventListener('DOMContentLoaded', () => {
     formError.hidden = !message;
   };
 
+  const setListError = (message = '') => {
+    if (!orderListError) return;
+    orderListError.textContent = message;
+    orderListError.hidden = !message;
+  };
+
+  const isQueueing = () => state.salesChannel === 'whatsapp' && Boolean(queueInput?.checked);
+
   const discount = (subtotal) => {
     const raw = String(discountValue?.value || '').trim();
     if (raw === '') return { type: '', value: 0, total: 0, valid: true, message: '' };
@@ -117,12 +129,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const hasPaymentMethod = Boolean(form?.querySelector('input[name="payment_method"]:checked'));
     const ready = state.cart.size > 0 && (!needsLabel || Boolean(labelInput?.files?.[0])) && Boolean(customerNameInput?.value.trim())
       && totals().discount.valid && (Boolean(payLaterInput?.checked) || hasPaymentMethod);
+    const queueing = isQueueing();
     if (submitButton) {
       submitButton.disabled = state.submitting || !ready;
-      submitButton.textContent = state.submitting
+      submitButton.classList.toggle('is-queue', queueing);
+      if (queueing) submitButton.textContent = state.submitting ? 'Saving to queue…' : 'Save to queue · not sent yet';
+      else submitButton.textContent = state.submitting
         ? (needsLabel ? 'Sending to Store Ops…' : 'Recording walk-in sale…')
         : (needsLabel ? 'Send listed order to Store Ops' : 'Complete walk-in sale');
     }
+  };
+
+  const syncQueueChoice = () => {
+    const queueing = isQueueing();
+    form?.classList.toggle('is-queueing', queueing);
+    queueInput?.closest('[data-queue-toggle]')?.classList.toggle('is-on', queueing);
+    if (queueHint) queueHint.textContent = queueing ? 'On · held until you send it' : 'Off · sends to Store Ops now';
+    if (queueNotice) queueNotice.hidden = !queueing;
+    updateSubmitState();
   };
 
   const syncPaymentChoice = () => {
@@ -148,6 +172,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (customerSectionNote) customerSectionNote.textContent = isWalkIn ? 'Phone number links repeat visits across channels' : 'Only fulfillment details go to Store Ops';
     if (fulfillmentKicker) fulfillmentKicker.textContent = isWalkIn ? 'Pricing' : 'Fulfillment';
     if (fulfillmentTitle) fulfillmentTitle.textContent = isWalkIn ? 'Order discount' : 'Label, deadline, and metrics';
+    syncQueueChoice();
     renderTotals();
   };
 
@@ -239,17 +264,25 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const statusLabel = (status) => ({
-    PENDING_PUBLISH: 'Sending', PUBLISH_FAILED: 'Needs retry', IS_LISTED: 'Listed',
+    QUEUED: 'Queued · not in Store Ops', PENDING_PUBLISH: 'Sending', PUBLISH_FAILED: 'Needs retry', IS_LISTED: 'Listed',
     IS_BEING_FULFILLED: 'Being fulfilled', FULFILLED: 'Fulfilled'
   }[status] || String(status || 'Unknown').replaceAll('_', ' '));
 
   const renderOrders = (orders) => {
     if (!orderList) return;
-    orderList.innerHTML = orders.length ? orders.map((order) => {
+    // Queued orders lead the list so an unsent order is never buried.
+    const queued = orders.filter((order) => order.status === 'QUEUED');
+    const reminder = queued.length
+      ? `<p class="whatsapp-queue-reminder" role="status"><strong>${escapeHtml(queued.length)} queued order${queued.length === 1 ? '' : 's'}</strong> waiting here. Store Ops cannot see ${queued.length === 1 ? 'it' : 'them'} until you press “Send to Store Ops”.</p>`
+      : '';
+    const sorted = [...queued, ...orders.filter((order) => order.status !== 'QUEUED')];
+    orderList.innerHTML = orders.length ? reminder + sorted.map((order) => {
       const items = Array.isArray(order.items) ? order.items : [];
       const quantity = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
       const failed = order.status === 'PUBLISH_FAILED';
-      return `<article class="whatsapp-history-card${failed ? ' has-error' : ''}">
+      const isQueued = order.status === 'QUEUED';
+      const canQueue = order.status === 'IS_LISTED' && order.sales_channel !== 'walk_in';
+      return `<article class="whatsapp-history-card${failed ? ' has-error' : ''}${isQueued ? ' is-queued' : ''}">
         <div class="whatsapp-history-card-main">
           <div class="whatsapp-history-id"><span>${escapeHtml(order.order_id)}</span><strong>${escapeHtml(order.customer?.name || 'Customer')}</strong></div>
           <div class="whatsapp-history-meta"><span>${escapeHtml(quantity)} item${quantity === 1 ? '' : 's'}</span><span>${escapeHtml(money(order.merchandise_total))}${Number(order.discount_total || 0) > 0 ? ` after ${escapeHtml(money(order.discount_total))} discount` : ''} + ${escapeHtml(money(order.shipping_cost))} shipping</span><span>${escapeHtml(dateTime.format(new Date(order.created_at)))}</span></div>
@@ -259,6 +292,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <span class="whatsapp-status is-${escapeHtml(String(order.status || '').toLowerCase().replaceAll('_', '-'))}">${escapeHtml(statusLabel(order.status))}</span>
           <a class="admin-ghost-btn" href="../whatsapp-order/?order=${encodeURIComponent(order.order_id)}">View details</a>
           ${failed ? `<button type="button" class="admin-ghost-btn" data-retry-order="${escapeHtml(order.order_id)}">Retry Store Ops</button>` : ''}
+          ${canQueue ? `<button type="button" class="admin-ghost-btn whatsapp-queue-pull" data-queue-order-id="${escapeHtml(order.order_id)}" title="Pull this order out of Store Ops while it is unclaimed and its label is unprinted">Move to queue</button>` : ''}
+          ${isQueued ? `<button type="button" class="admin-primary-btn whatsapp-queue-send" data-send-order="${escapeHtml(order.order_id)}">Send to Store Ops</button>` : ''}
         </div>
         ${order.publication_error ? `<p>${escapeHtml(order.publication_error)}</p>` : ''}
       </article>`;
@@ -279,7 +314,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const loadOrders = async () => {
     if (refreshButton) refreshButton.disabled = true;
     try {
-      const data = await request(`${endpoint}?action=list`);
+      const data = await request(`${endpoint}?action=list&sync_lifecycle=1`);
       renderOrders(Array.isArray(data.orders) ? data.orders : []);
     } catch (error) {
       if (orderList) orderList.innerHTML = `<p class="admin-form-error">${escapeHtml(error.message)}</p>`;
@@ -429,6 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   channelInputs.forEach((input) => input.addEventListener('change', syncSalesChannel));
   payLaterInput?.addEventListener('change', syncPaymentChoice);
+  queueInput?.addEventListener('change', syncQueueChoice);
   paymentMethod?.addEventListener('change', updateSubmitState);
 
   form?.addEventListener('submit', async (event) => {
@@ -452,6 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
       shipping_cost: Number(fields.get('shipping_cost') || 0),
       deadline_hours: Number(fields.get('deadline_hours') || 24),
       pay_later: Boolean(payLaterInput?.checked),
+      queue: isQueueing(),
       payment_method: payLaterInput?.checked ? '' : String(fields.get('payment_method') || ''),
       discount: values.discount.type ? { type: values.discount.type, value: values.discount.value } : null,
       items: [...state.cart.values()].map((item) => ({
@@ -489,16 +526,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   orderList?.addEventListener('click', async (event) => {
-    const button = event.target.closest('[data-retry-order]');
+    const button = event.target.closest('[data-retry-order], [data-send-order], [data-queue-order-id]');
     if (!button || button.disabled) return;
+    const action = button.dataset.queueOrderId ? 'queue' : (button.dataset.sendOrder ? 'send' : 'retry');
     button.disabled = true;
+    setListError();
     try {
-      await request(`${endpoint}?action=retry`, {
+      await request(`${endpoint}?action=${action}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ order_id: button.dataset.retryOrder })
+        body: JSON.stringify({ order_id: button.dataset.queueOrderId || button.dataset.sendOrder || button.dataset.retryOrder })
       });
     } catch (error) {
-      setError(error.message);
+      setListError(error.message);
     } finally {
       await loadOrders();
     }

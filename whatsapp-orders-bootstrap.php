@@ -534,6 +534,7 @@ function jg_whatsapp_format_order(PDO $pdo, array $row, bool $includeItems = tru
             'restore_stock' => (int) ($row['archive_restore_stock'] ?? 0) === 1,
         ],
         'can_archive' => empty($row['archived_at']),
+        'queued' => strtoupper(trim((string) $row['status'])) === 'QUEUED',
         'can_confirm_payment' => $paymentStatus === 'unpaid' && empty($row['archived_at']),
         'merchandise_subtotal' => (float) (($row['merchandise_subtotal'] ?? 0) ?: $row['merchandise_total']),
         'merchandise_total' => (float) $row['merchandise_total'],
@@ -578,6 +579,7 @@ function jg_whatsapp_create_order(PDO $pdo, PDO $skuPdo, array $payload, array $
     $customerName = jg_whatsapp_text($payload['customer_name'] ?? '', 'Customer name', 160, true);
     $customerAddress = jg_whatsapp_text($payload['customer_address'] ?? '', 'Customer address', 1000);
     $customerPhone = jg_whatsapp_text($payload['customer_phone'] ?? '', 'Customer phone', 50);
+    $queued = !$isWalkIn && jg_whatsapp_bool($payload['queue'] ?? false);
     $payLater = jg_whatsapp_bool($payload['pay_later'] ?? true);
     $paymentMethod = $payLater ? '' : jg_whatsapp_payment_method($payload['payment_method'] ?? '');
     $paymentStatus = $payLater ? 'unpaid' : 'paid';
@@ -603,7 +605,7 @@ function jg_whatsapp_create_order(PDO $pdo, PDO $skuPdo, array $payload, array $
 
     try {
         $pdo->beginTransaction();
-        $initialStatus = $isWalkIn ? 'FULFILLED' : 'PENDING_PUBLISH';
+        $initialStatus = $isWalkIn ? 'FULFILLED' : ($queued ? 'QUEUED' : 'PENDING_PUBLISH');
         $stmt = $pdo->prepare(
             'INSERT INTO whatsapp_orders
                 (order_id, status, sales_channel, customer_name, customer_address, customer_phone,
@@ -764,7 +766,8 @@ function jg_whatsapp_publish_order(PDO $pdo, string $orderId): array
             $pdo->commit();
             return jg_whatsapp_format_order($pdo, $row);
         }
-        if (!in_array((string) ($row['status'] ?? ''), ['PENDING_PUBLISH', 'PUBLISH_FAILED'], true)) {
+        if (!empty($row['archived_at'])) throw new RuntimeException('Archived orders cannot be sent to Store Ops.');
+        if (!in_array((string) ($row['status'] ?? ''), ['QUEUED', 'PENDING_PUBLISH', 'PUBLISH_FAILED'], true)) {
             throw new RuntimeException('This WhatsApp order cannot be published again.');
         }
         $pdo->prepare(
@@ -808,6 +811,56 @@ function jg_whatsapp_publish_order(PDO $pdo, string $orderId): array
     return jg_whatsapp_format_order($pdo, jg_whatsapp_internal_order($pdo, $orderId));
 }
 
+/**
+ * Hold an order in the Executive queue. An order Store Ops already lists is
+ * recalled first, which Store Ops only allows while it is unclaimed and its
+ * label has not been printed.
+ */
+function jg_whatsapp_queue_order(PDO $pdo, string $orderId): array
+{
+    jg_whatsapp_ensure_schema($pdo);
+    $orderId = trim($orderId);
+    if ($orderId === '') {
+        throw new InvalidArgumentException('Choose a WhatsApp order to queue.');
+    }
+
+    $row = jg_whatsapp_internal_order($pdo, $orderId);
+    if (!empty($row['archived_at'])) throw new RuntimeException('Archived orders cannot be queued.');
+    $status = strtoupper(trim((string) ($row['status'] ?? '')));
+    if ($status === 'QUEUED') {
+        return jg_whatsapp_format_order($pdo, $row);
+    }
+    $recallable = ['IS_LISTED', 'IS_BEING_FULFILLED', 'PUBLISH_FAILED'];
+    if (!in_array($status, $recallable, true)) {
+        throw new RuntimeException('Only an order waiting unclaimed in Store Ops can be moved back to the queue.');
+    }
+
+    $base = rtrim(jg_website_config('JG_STORE_OPS_BASE_URL', 'store_ops_base_url'), '/');
+    $token = jg_website_store_ops_token();
+    if ($base === '' || $token === '') {
+        throw new RuntimeException('Store Ops order integration is not configured.');
+    }
+    try {
+        jg_website_http_json('POST', $base . '/api/website-orders/?action=recall', [
+            'platform' => 'whatsapp',
+            'order_id' => $orderId,
+        ], $token);
+    } catch (Throwable $error) {
+        // A failed publication may never have reached Store Ops at all.
+        if ($status !== 'PUBLISH_FAILED' || !str_contains($error->getMessage(), 'missing from Store Ops')) {
+            throw $error;
+        }
+    }
+
+    // The Store Ops deadline restarts when the order is sent again.
+    $pdo->prepare(
+        'UPDATE whatsapp_orders
+         SET status = "QUEUED", deadline_at = NULL, publication_error = "", updated_at = :updated_at
+         WHERE order_id = :order_id AND status IN ("IS_LISTED", "IS_BEING_FULFILLED", "PUBLISH_FAILED")'
+    )->execute([':updated_at' => jg_whatsapp_now(), ':order_id' => $orderId]);
+    return jg_whatsapp_format_order($pdo, jg_whatsapp_internal_order($pdo, $orderId));
+}
+
 function jg_whatsapp_cancel_order(PDO $pdo, string $orderId): array
 {
     $orderId = trim($orderId);
@@ -820,6 +873,15 @@ function jg_whatsapp_cancel_order(PDO $pdo, string $orderId): array
     $status = strtoupper(trim((string) ($row['status'] ?? '')));
     if ($status === 'CANCELLED') {
         return jg_whatsapp_format_order($pdo, $row);
+    }
+    if ($status === 'QUEUED') {
+        // Queued orders are not active in Store Ops, so there is nothing to confirm there.
+        $pdo->prepare(
+            'UPDATE whatsapp_orders
+             SET status = "CANCELLED", payment_status = "canceled", updated_at = :updated_at
+             WHERE id = :id AND status = "QUEUED"'
+        )->execute([':updated_at' => jg_whatsapp_now(), ':id' => $row['id']]);
+        return jg_whatsapp_format_order($pdo, jg_whatsapp_internal_order($pdo, $orderId));
     }
     if (!in_array($status, ['IS_LISTED', 'IS_BEING_FULFILLED'], true)) {
         throw new RuntimeException('Only an active direct order can be cancelled while unclaimed in Store Ops.');
@@ -1134,7 +1196,7 @@ function jg_whatsapp_sync_history_lifecycle(PDO $pdo): void
     foreach ($rows as $row) {
         $currentByOrder[(string) $row['order_id']] = strtoupper((string) $row['status']);
     }
-    $allowed = ['IS_LISTED', 'IS_BEING_FULFILLED', 'FULFILLED', 'CANCELLED'];
+    $allowed = ['QUEUED', 'IS_LISTED', 'IS_BEING_FULFILLED', 'FULFILLED', 'CANCELLED'];
     $now = jg_whatsapp_now();
     $updateStatus = $pdo->prepare(
         'UPDATE whatsapp_orders
@@ -1169,6 +1231,14 @@ function jg_whatsapp_order_detail(PDO $pdo, string $orderId): array
 {
     $row = jg_whatsapp_internal_order($pdo, $orderId);
     $order = jg_whatsapp_format_order($pdo, $row);
+    $order['can_queue'] = false;
+    if (!empty($order['queued'])) {
+        $order['can_cancel'] = empty($order['archived']);
+        $order['claimed'] = false;
+        $order['processed'] = false;
+        $order['lifecycle_status'] = 'QUEUED';
+        return $order;
+    }
     try {
         $state = jg_whatsapp_store_ops_state($orderId);
         if (!empty($state['cancelled']) && in_array(strtoupper((string) ($row['status'] ?? '')), ['IS_LISTED', 'IS_BEING_FULFILLED'], true)) {
@@ -1180,6 +1250,7 @@ function jg_whatsapp_order_detail(PDO $pdo, string $orderId): array
             $order = jg_whatsapp_format_order($pdo, $row);
         }
         $order['can_cancel'] = empty($order['archived']) && !empty($state['can_cancel']);
+        $order['can_queue'] = empty($order['archived']) && !empty($state['can_queue']);
         $order['claimed'] = !empty($state['claimed']);
         $order['processed'] = !empty($state['processed']);
         $order['lifecycle_status'] = (string) ($state['display_status'] ?? $order['status']);
@@ -1193,9 +1264,10 @@ function jg_whatsapp_order_detail(PDO $pdo, string $orderId): array
     return $order;
 }
 
-function jg_whatsapp_list_orders(PDO $pdo, int $limit = 100): array
+function jg_whatsapp_list_orders(PDO $pdo, int $limit = 100, bool $syncLifecycle = false): array
 {
     jg_whatsapp_ensure_schema($pdo);
+    if ($syncLifecycle) jg_whatsapp_sync_history_lifecycle($pdo);
     $limit = max(1, min(250, $limit));
     $stmt = $pdo->query('SELECT * FROM whatsapp_orders WHERE archived_at IS NULL ORDER BY created_at DESC, id DESC LIMIT ' . $limit);
     return array_map(static fn (array $row): array => jg_whatsapp_format_order($pdo, $row), $stmt->fetchAll());
@@ -1231,7 +1303,7 @@ function jg_whatsapp_order_history(PDO $pdo, int $page = 1, int $perPage = 50, s
     $query = trim($query);
     $status = strtoupper(trim($status));
     $archive = strtolower(trim($archive));
-    $allowedStatuses = ['', 'PAID', 'UNPAID', 'CANCELED', 'PENDING_PUBLISH', 'PUBLISH_FAILED', 'IS_LISTED', 'IS_BEING_FULFILLED', 'FULFILLED', 'CANCELLED'];
+    $allowedStatuses = ['', 'PAID', 'UNPAID', 'CANCELED', 'QUEUED', 'PENDING_PUBLISH', 'PUBLISH_FAILED', 'IS_LISTED', 'IS_BEING_FULFILLED', 'FULFILLED', 'CANCELLED'];
     if (!in_array($status, $allowedStatuses, true)) {
         throw new InvalidArgumentException('Choose a valid WhatsApp order status.');
     }

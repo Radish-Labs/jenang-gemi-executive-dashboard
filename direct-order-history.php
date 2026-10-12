@@ -8,7 +8,7 @@ function jg_direct_order_history(PDO $pdo, ?PDO $skuPdo, int $page, int $perPage
     $perPage = max(10, min(100, $perPage));
     $query = mb_substr(trim($query), 0, 160);
     $status = strtoupper(trim($status));
-    if (!in_array($status, ['', 'PAID', 'UNPAID', 'CANCELED', 'PENDING_PUBLISH', 'PUBLISH_FAILED', 'IS_LISTED', 'IS_BEING_FULFILLED', 'FULFILLED', 'CANCELLED'], true)
+    if (!in_array($status, ['', 'PAID', 'UNPAID', 'CANCELED', 'QUEUED', 'PENDING_PUBLISH', 'PUBLISH_FAILED', 'IS_LISTED', 'IS_BEING_FULFILLED', 'FULFILLED', 'CANCELLED'], true)
         || !in_array($archive, ['active', 'archived', 'all'], true)
         || !in_array($channel, ['all', 'whatsapp', 'walk_in'], true)) {
         throw new InvalidArgumentException('Choose valid history filters.');

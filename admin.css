@@ -38580,6 +38580,183 @@ button.admin-accounting-metric {
   }
 }
 
+/* Direct order queue */
+.whatsapp-queue-toggle {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 11px;
+  border: 2px dashed #f59e0b;
+  border-radius: 12px;
+  background: color-mix(in srgb, #f59e0b 10%, var(--admin-surface));
+  cursor: pointer;
+}
+
+.whatsapp-queue-toggle > span {
+  display: grid;
+  gap: 2px;
+}
+
+.whatsapp-queue-toggle strong {
+  color: #f59e0b;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.whatsapp-queue-toggle small {
+  color: var(--admin-text);
+  font-size: 10px;
+}
+
+.whatsapp-queue-toggle input {
+  position: absolute;
+  opacity: 0;
+}
+
+.whatsapp-queue-toggle i {
+  position: relative;
+  flex: 0 0 auto;
+  width: 44px;
+  height: 26px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #f59e0b 30%, var(--admin-surface));
+}
+
+.whatsapp-queue-toggle i::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 160ms ease;
+}
+
+.whatsapp-queue-toggle input:checked + i {
+  background: #1f1300;
+}
+
+.whatsapp-queue-toggle input:checked + i::after {
+  transform: translateX(18px);
+}
+
+.whatsapp-queue-toggle input:focus-visible + i {
+  outline: 2px solid var(--admin-text);
+  outline-offset: 2px;
+}
+
+.whatsapp-queue-toggle.is-on {
+  border-style: solid;
+  background: #f59e0b;
+  animation: whatsapp-queue-pulse 1.8s ease-in-out infinite;
+}
+
+.whatsapp-queue-toggle.is-on :is(strong, small) {
+  color: #1f1300 !important;
+}
+
+@keyframes whatsapp-queue-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, #f59e0b 55%, transparent); }
+  50% { box-shadow: 0 0 0 7px color-mix(in srgb, #f59e0b 0%, transparent); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-queue-toggle.is-on {
+    animation: none;
+  }
+}
+
+.whatsapp-queue-notice,
+.whatsapp-queue-reminder {
+  margin: 0 0 12px;
+  padding: 11px 14px;
+  border: 1px solid #f59e0b;
+  border-left-width: 5px;
+  border-radius: 10px;
+  color: var(--admin-text);
+  background: color-mix(in srgb, #f59e0b 14%, var(--admin-surface));
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.whatsapp-order-form.is-queueing .whatsapp-order-submit-panel {
+  flex-wrap: wrap;
+}
+
+.whatsapp-queue-notice {
+  flex: 0 0 auto;
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+}
+
+.whatsapp-queue-notice strong,
+.whatsapp-queue-reminder strong {
+  color: #f59e0b;
+}
+
+/* The executive theme layer forces its own button and panel colors, so the
+   queue accents repeat its selector to stay visible in both themes. */
+.whatsapp-order-form.is-queueing .whatsapp-order-submit-panel,
+body:has(#admin-rail-nav.ed-nav) .whatsapp-order-form.is-queueing .whatsapp-order-submit-panel {
+  border-color: #f59e0b !important;
+}
+
+.admin-primary-btn.is-queue,
+.admin-primary-btn.whatsapp-queue-send,
+.whatsapp-detail-queue-action.is-send,
+body:has(#admin-rail-nav.ed-nav) .admin-primary-btn.is-queue,
+body:has(#admin-rail-nav.ed-nav) .admin-primary-btn.whatsapp-queue-send {
+  border-color: #f59e0b !important;
+  color: #1f1300 !important;
+  background: #f59e0b !important;
+  font-weight: 800 !important;
+}
+
+.whatsapp-history-card.is-queued {
+  border-color: #f59e0b;
+  border-left-width: 5px;
+  background: color-mix(in srgb, #f59e0b 7%, var(--admin-surface));
+}
+
+.whatsapp-status.is-queued,
+.whatsapp-history-status.queued,
+body:has(#admin-rail-nav.ed-nav) .whatsapp-history-status.queued {
+  border-color: #f59e0b !important;
+  color: #1f1300 !important;
+  background: #f59e0b !important;
+}
+
+.whatsapp-detail-queue-action {
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--admin-border);
+  border-radius: 9px;
+  color: var(--admin-text);
+  background: transparent;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.whatsapp-detail-queue-action:disabled {
+  opacity: .5;
+  cursor: progress;
+}
+
+@media (max-width: 720px) {
+  .whatsapp-queue-toggle {
+    flex: 1 1 100%;
+    justify-content: space-between;
+  }
+}
+
 /* Partner billing notification remodel */
 .admin-partner-billing-drawer {
   width: min(470px, calc(100vw - 24px));

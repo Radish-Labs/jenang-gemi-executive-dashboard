@@ -176,4 +176,61 @@ $metricSummaryAgain = jg_whatsapp_apply_sales_aggregates($metricSummary, [[
 ]], [], 2026);
 whatsapp_expect(50000.0, $metricSummaryAgain['totals']['revenue'], 'WhatsApp metrics merge must be idempotent.');
 
+whatsapp_expect(false, in_array('QUEUED', JG_WHATSAPP_ORDER_OPEN_STATUSES, true), 'Queued orders must stay out of the Store Ops feed until they are sent.');
+whatsapp_expect(false, in_array('QUEUED', JG_WHATSAPP_ORDER_METRIC_STATUSES, true), 'Queued orders must not count as listed sales before they are sent.');
+whatsapp_expect(true, str_contains($historySource, "\$queued ? 'QUEUED' : 'PENDING_PUBLISH'"), 'A queued direct order must be saved without entering the publication flow.');
+whatsapp_expect(true, str_contains($historySource, "['QUEUED', 'PENDING_PUBLISH', 'PUBLISH_FAILED']"), 'A queued direct order must be publishable on demand.');
+whatsapp_expect(true, str_contains($historySource, "/api/website-orders/?action=recall"), 'Queueing a listed order must first recall it from Store Ops.');
+$apiSource = (string) file_get_contents(dirname(__DIR__) . '/api/whatsapp-orders/index.php');
+whatsapp_expect(
+    true,
+    str_contains($apiSource, "\$salesChannel === 'walk_in' || !empty(\$order['queued'])")
+        && str_contains($apiSource, "\$action === 'queue'")
+        && str_contains($apiSource, "\$action === 'retry' || \$action === 'send'"),
+    'The direct-order API must skip publication for queued orders and expose queue and send actions.'
+);
+
+if (in_array('sqlite', PDO::getAvailableDrivers(), true)) {
+    $queuePdo = new PDO('sqlite::memory:');
+    $queuePdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $queuePdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $queuePdo->exec('CREATE TABLE whatsapp_orders (
+        id INTEGER PRIMARY KEY, order_id TEXT, status TEXT, sales_channel TEXT DEFAULT "whatsapp",
+        customer_name TEXT DEFAULT "", customer_address TEXT DEFAULT "", customer_phone TEXT DEFAULT "",
+        pay_later INTEGER DEFAULT 1, payment_status TEXT DEFAULT "unpaid", payment_method TEXT DEFAULT "",
+        payment_account_key TEXT DEFAULT "", paid_at TEXT NULL, archived_at TEXT NULL,
+        archive_hide_charts INTEGER DEFAULT 0, archive_hide_financials INTEGER DEFAULT 0, archive_restore_stock INTEGER DEFAULT 0,
+        merchandise_subtotal REAL DEFAULT 0, merchandise_total REAL DEFAULT 0, discount_type TEXT DEFAULT "",
+        discount_value REAL DEFAULT 0, discount_total REAL DEFAULT 0, shipping_cost REAL DEFAULT 0,
+        deadline_hours INTEGER DEFAULT 24, deadline_at TEXT NULL, label_storage_key TEXT DEFAULT "label.pdf",
+        label_original_name TEXT DEFAULT "label.pdf", label_size_bytes INTEGER DEFAULT 1, notes TEXT DEFAULT "",
+        publication_attempts INTEGER DEFAULT 0, publication_error TEXT DEFAULT "", listed_at TEXT NULL,
+        fulfilled_at TEXT NULL, created_at TEXT DEFAULT "2026-10-12 03:00:00.000000", updated_at TEXT DEFAULT "2026-10-12 03:00:00.000000"
+    )');
+    $queuePdo->exec('CREATE TABLE whatsapp_order_items (
+        id INTEGER PRIMARY KEY, whatsapp_order_id INTEGER, sku TEXT, product_name TEXT, brand_name TEXT,
+        base_product_name TEXT, flavor_name TEXT, quantity INTEGER, unit_price REAL, unit_cogs REAL,
+        discount_rate REAL, discount_total REAL, line_total REAL, created_at TEXT
+    )');
+    $queuePdo->exec("INSERT INTO whatsapp_orders (id, order_id, status) VALUES
+        (1, 'WAEXEC-QUEUED', 'QUEUED'), (2, 'WAEXEC-DONE', 'FULFILLED'), (3, 'WAEXEC-DROP', 'QUEUED')");
+
+    $queuedOrder = jg_whatsapp_queue_order($queuePdo, 'WAEXEC-QUEUED');
+    whatsapp_expect(true, $queuedOrder['queued'], 'Queueing an already queued order must be idempotent and need no Store Ops call.');
+    $queuedDetail = jg_whatsapp_order_detail($queuePdo, 'WAEXEC-QUEUED');
+    whatsapp_expect('QUEUED', $queuedDetail['lifecycle_status'], 'A queued order must report its queued lifecycle without asking Store Ops.');
+    whatsapp_expect(true, $queuedDetail['can_cancel'], 'A queued order can be cancelled from the dashboard.');
+    whatsapp_expect(false, $queuedDetail['can_queue'], 'A queued order cannot be queued again.');
+    $fulfilledQueueRejected = false;
+    try {
+        jg_whatsapp_queue_order($queuePdo, 'WAEXEC-DONE');
+    } catch (RuntimeException) {
+        $fulfilledQueueRejected = true;
+    }
+    whatsapp_expect(true, $fulfilledQueueRejected, 'A fulfilled order must never return to the queue.');
+    $cancelledQueued = jg_whatsapp_cancel_order($queuePdo, 'WAEXEC-DROP');
+    whatsapp_expect('CANCELLED', $cancelledQueued['status'], 'A queued order must cancel locally because Store Ops never listed it.');
+    whatsapp_expect('canceled', $cancelledQueued['payment_status'], 'Cancelling a queued order must clear its receivable.');
+}
+
 echo "whatsapp-orders-test: ok\n";

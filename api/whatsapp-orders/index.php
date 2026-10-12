@@ -77,7 +77,11 @@ try {
         jg_whatsapp_api_json(['ok' => true, 'skus' => jg_whatsapp_catalog()]);
     }
     if ($method === 'GET' && $action === 'list') {
-        jg_whatsapp_api_json(['ok' => true, 'orders' => jg_whatsapp_list_orders($pdo)]);
+        jg_whatsapp_api_json(['ok' => true, 'orders' => jg_whatsapp_list_orders(
+            $pdo,
+            100,
+            (string) ($_GET['sync_lifecycle'] ?? '') === '1'
+        )]);
     }
     if ($method === 'GET' && $action === 'unpaid_summary') {
         jg_whatsapp_api_json(['ok' => true, 'unpaid' => jg_whatsapp_unpaid_summary($pdo)]);
@@ -153,7 +157,7 @@ try {
             throw new InvalidArgumentException('Upload a PDF shipping label.');
         }
         $order = jg_whatsapp_create_order($pdo, jg_sku_db(), $payload, is_array($upload) ? $upload : []);
-        if ($salesChannel === 'walk_in') {
+        if ($salesChannel === 'walk_in' || !empty($order['queued'])) {
             jg_whatsapp_api_json(['ok' => true, 'order' => $order], 201);
         }
         try {
@@ -168,7 +172,14 @@ try {
         }
         jg_whatsapp_api_json(['ok' => true, 'order' => $order], 201);
     }
-    if ($action === 'retry') {
+    if ($action === 'queue') {
+        $body = jg_whatsapp_api_body();
+        jg_whatsapp_api_json(['ok' => true, 'order' => jg_whatsapp_queue_order(
+            $pdo,
+            trim((string) ($body['order_id'] ?? $body['order'] ?? ''))
+        )]);
+    }
+    if ($action === 'retry' || $action === 'send') {
         $body = jg_whatsapp_api_body();
         jg_whatsapp_api_json(['ok' => true, 'order' => jg_whatsapp_publish_order(
             $pdo,

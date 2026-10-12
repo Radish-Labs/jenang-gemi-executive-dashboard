@@ -27,7 +27,7 @@ $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
     <link rel="stylesheet" href="../admin.css?v=<?php echo urlencode($adminCssVersion ?: '1'); ?>">
 </head>
 <body class="admin-body is-dashboard is-whatsapp-orders-page">
-    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.97.14</div>
+    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.98.39</div>
     <div class="admin-app admin-app-suite" data-whatsapp-orders data-endpoint="../api/whatsapp-orders/">
         <div class="admin-backdrop admin-backdrop-a"></div>
         <div class="admin-backdrop admin-backdrop-b"></div>
@@ -160,6 +160,7 @@ $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
                                     <span class="is-total">Customer total <strong data-customer-total>Rp0</strong></span>
                                 </div>
                                 <p class="admin-form-error" data-form-error hidden></p>
+                                <p class="whatsapp-queue-notice" data-queue-notice role="status" hidden><strong>Queue is on.</strong> This order will be saved here and stay hidden from Store Ops until you press “Send to Store Ops”.</p>
                                 <div class="whatsapp-payment-controls">
                                     <div class="whatsapp-payment-method" data-payment-method>
                                         <span>Paid via</span>
@@ -169,6 +170,11 @@ $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
                                     <label class="whatsapp-pay-later-toggle">
                                         <span><strong>Pay later</strong><small>Leave this order unpaid</small></span>
                                         <input type="checkbox" name="pay_later" value="1" data-pay-later checked>
+                                        <i aria-hidden="true"></i>
+                                    </label>
+                                    <label class="whatsapp-queue-toggle" data-queue-toggle data-fulfillment-panel>
+                                        <span><strong>Queue order</strong><small data-queue-hint>Off · sends to Store Ops now</small></span>
+                                        <input type="checkbox" name="queue" value="1" data-queue-order>
                                         <i aria-hidden="true"></i>
                                     </label>
                                     <button type="submit" class="admin-primary-btn" data-submit-order disabled>Send listed order to Store Ops</button>
@@ -185,6 +191,7 @@ $pageJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-orders.js');
                                 <button type="button" class="admin-ghost-btn" data-refresh-orders>Refresh</button>
                             </div>
                         </div>
+                        <p class="admin-form-error" data-order-list-error hidden></p>
                         <div class="whatsapp-order-history-list" data-order-list><p class="admin-empty">Loading orders…</p></div>
                     </section>
                 </main>
