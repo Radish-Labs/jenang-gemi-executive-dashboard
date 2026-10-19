@@ -35,6 +35,7 @@ Private admin dashboard for `admin.jenanggemi.com` behind a public Launch Pad.
 - `/api/jenang-gemi-store/`
 - `/api/website-orders/`
 - `/api/whatsapp-orders/`
+- `/api/profit-share/` (Bearer-token, read-only monthly profit share for one allocation recipient; used by Arus)
 - `/api/zero-website-orders/`
 - `/api/zero-commerce/` (Biteship rates/orders, Duitku POP, and A5 labels; feature-gated)
 - `/api/jenang-gemi-website-orders/`
@@ -257,6 +258,21 @@ geometry under Lucide's ISC license.
   enqueued again. Use
   `POST /api/wallet/?action=backfill_releases` to run a larger marketplace
   release backfill and log before/after wallet totals.
+- `GET /api/profit-share/?recipient=Branch[&year=YYYY]` returns, per month of the year
+  (default: current Jakarta year, through the current Jakarta month, plus the previous
+  December in January), `net_profit` computed server-side with the same formula as the
+  P&L page (`profit-and-loss/pnl.js` `combine()`, ported in `profit-share-bootstrap.php`),
+  the recipient's allocation `path`, effective `percentage_of_net_profit`, `amount`,
+  `complete` and `payout_date` (the 1st of the following month). Sales come from the last
+  verified complete `/api/sales/` snapshot (`sales_snapshot_at`); the endpoint never starts
+  a sales refresh, and returns 503 `sales_snapshot_unavailable` instead of treating a missing
+  snapshot as zero sales. Recipients match allocation names case-insensitively at any depth.
+  Auth is `Authorization: Bearer <token>` only (no admin session, no query token). The
+  token is `JG_ARUS_PROFIT_SHARE_TOKEN` / `arus_profit_share_token`; when neither is set it
+  is derived as `hash_hmac('sha256', 'arus-profit-share-v1', <marketplace API setup token>)`,
+  so Arus can derive the same value from the shared setup credential. No token and no
+  setup credential returns 503 `profit_share_token_not_configured`; a wrong token returns 401.
+  Validation: `php tests/profit-share-test.php` (also checks parity with `pnl.js` via node).
 - Website checkout notifications and paid metrics are independent of the Hard Set switch. An explicit high-entropy `store_ops_website_token` can be configured on both applications; otherwise both deployments derive the bearer token from their existing shared marketplace setup credential. Configure `store_ops_base_url` and `executive_dashboard_url` before activation readiness can pass.
 - ZERO Blog Studio lives at `/blog-builder/`. It stores authenticated drafts,
   cover images, revision history, review state, SEO metadata, and WIB schedules

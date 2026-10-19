@@ -1,0 +1,9 @@
+{
+  "year": 2026,
+  "months": [
+    {"month": 1, "period_key": "2026-01", "manual_refunds": 0, "partner_payments": 0, "other_income": 0, "ad_cost": 10000000, "marketing_other": 1000000, "payroll": 15000000, "operations": 2500000, "transfer_fees": 50000, "fees": 50000},
+    {"month": 2, "period_key": "2026-02", "manual_refunds": 250000, "partner_payments": 1200000, "other_income": 0, "ad_cost": 9000000, "marketing_other": 0, "payroll": 15000000, "operations": 2000000, "transfer_fees": 0, "fees": 75000},
+    {"period_key": "2026-09", "ad_cost": 30000000, "payroll": 15000000, "fees": null, "transfer_fees": 100000},
+    {"month": 10, "period_key": "2026-10", "manual_refunds": 500000, "partner_payments": 8000000, "other_income": 1500000, "ad_cost": 12000000, "marketing_other": 2000000, "payroll": 15000000, "operations": 3000000, "transfer_fees": 91567, "fees": 491567}
+  ]
+}

@@ -1,0 +1,6 @@
+{
+  "year": 2025,
+  "months": [
+    {"month": 12, "period_key": "2025-12", "manual_refunds": 0, "partner_payments": 0, "other_income": 2000000, "ad_cost": 15000000, "marketing_other": 1000000, "payroll": 15000000, "operations": 3000000, "transfer_fees": 0, "fees": 123456}
+  ]
+}
