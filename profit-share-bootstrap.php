@@ -32,7 +32,16 @@ function jg_profit_share_token(?string $seed = null): string
 
 function jg_profit_share_authorization_header(): string
 {
-    return trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? ''));
+    $authorization = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? $_SERVER['REDIRECT_HTTP_AUTHORIZATION'] ?? ''));
+    // Some LiteSpeed/Apache setups drop Authorization from $_SERVER; read the raw request headers instead.
+    if ($authorization === '' && function_exists('getallheaders')) {
+        foreach ((array) getallheaders() as $name => $value) {
+            if (strcasecmp((string) $name, 'Authorization') === 0) $authorization = trim((string) $value);
+        }
+    }
+    // Arus also sends the token in a custom header, which hosts never strip.
+    $custom = trim((string) ($_SERVER['HTTP_X_ARUS_PROFIT_SHARE_TOKEN'] ?? ''));
+    return $authorization === '' && $custom !== '' ? 'Bearer ' . $custom : $authorization;
 }
 
 /**
@@ -45,8 +54,11 @@ function jg_profit_share_authorize(string $expected, string $authorization): ?ar
         return [503, ['ok' => false, 'error' => 'profit_share_token_not_configured']];
     }
     $provided = preg_match('/^Bearer\s+(\S+)$/i', trim($authorization), $match) === 1 ? $match[1] : '';
-    if ($provided === '' || !hash_equals($expected, $provided)) {
-        return [401, ['ok' => false, 'error' => 'unauthorized']];
+    if ($provided === '') {
+        return [401, ['ok' => false, 'error' => 'missing_token']];
+    }
+    if (!hash_equals($expected, $provided)) {
+        return [401, ['ok' => false, 'error' => 'invalid_token']];
     }
     return null;
 }

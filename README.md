@@ -267,7 +267,7 @@ geometry under Lucide's ISC license.
   verified complete `/api/sales/` snapshot (`sales_snapshot_at`); the endpoint never starts
   a sales refresh, and returns 503 `sales_snapshot_unavailable` instead of treating a missing
   snapshot as zero sales. Recipients match allocation names case-insensitively at any depth.
-  Auth is `Authorization: Bearer <token>` only (no admin session, no query token). The
+  Auth is `Authorization: Bearer <token>` or, where the host strips Authorization, `X-Arus-Profit-Share-Token: <token>` (no admin session, no query token); a missing token returns 401 `missing_token`, a wrong one 401 `invalid_token`. The
   token is `JG_ARUS_PROFIT_SHARE_TOKEN` / `arus_profit_share_token`; when neither is set it
   is derived as `hash_hmac('sha256', 'arus-profit-share-v1', <marketplace API setup token>)`,
   so Arus can derive the same value from the shared setup credential. No token and no
