@@ -38,6 +38,7 @@ These endpoints live inside this executive dashboard and are already normalized 
 | `GET/POST /api/product-costs/` | Admin-only grouped Product Costs API for quarter/period COGS and monthly, month-range, or retroactive per-item packing. |
 | `GET /api/partner-db-status/` | Partner profile database status. |
 | `GET /api/partners/` | Partner profile management API. |
+| `GET /api/profit-share/?recipient=NAME[&year=YYYY]` | Bearer-token (`JG_ARUS_PROFIT_SHARE_TOKEN`, or HMAC-derived from the setup token) read-only monthly net profit and one allocation recipient's share, path, payout date and completeness. Same net-profit formula as `/profit-and-loss/`; sales from the last complete `/api/sales/` snapshot. Used by Arus. |
 
 ## Chart Notes
 

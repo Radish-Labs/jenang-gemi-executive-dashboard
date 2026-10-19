@@ -1,0 +1,9 @@
+{
+  "ok": true,
+  "year": 2025,
+  "meta": {"summary_complete": true, "snapshot_at": "2026-01-02T01:00:00.000000Z"},
+  "months": [
+    {"month": 12, "revenue": 120000000, "item_count": 4000, "cogs": 48000000}
+  ],
+  "totals": {}
+}

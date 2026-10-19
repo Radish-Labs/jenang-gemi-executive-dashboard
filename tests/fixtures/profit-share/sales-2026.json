@@ -1,0 +1,13 @@
+{
+  "ok": true,
+  "year": 2026,
+  "meta": {"summary_complete": true, "snapshot_at": "2026-10-19T03:15:00.000000Z"},
+  "months": [
+    {"month": 1, "revenue": 90000000, "item_count": 3000, "cogs": 36000000},
+    {"month": 2, "revenue": 80000000, "items_qty": 2800, "cost_of_goods_sold": 32000000, "accounts": {"zero-shopee": {"revenue": 79000000}, "partner": {"revenue": 1000000}}},
+    {"period_key": "2026-03", "net_revenue": "70000000.50", "units": 2500, "cogs": 28000000},
+    {"month": 9, "revenue": 50000000, "item_count": "1200", "cogs": 20000000, "platforms": {"shopee": {"revenue": 48000000}, "partner": {"revenue": 2000000}}},
+    {"month": 10, "revenue": 150000000, "item_count": 5000, "cogs": 60000000, "revenue_breakdown": {"partner_orders": 10000000}, "platforms": [{"key": "shopee", "revenue": 140000000}]}
+  ],
+  "totals": {}
+}
