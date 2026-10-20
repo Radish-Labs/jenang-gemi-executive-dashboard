@@ -58,7 +58,7 @@ $sidebarSection = match (true) {
     in_array($requestedView ?? '', ['website', 'site', 'home', 'campaign', 'campaigns', 'landing', 'landing-pages'], true) => 'website',
     default => 'home',
 };
-$dashboardBuildVersion = 'exec3.98.41';
+$dashboardBuildVersion = 'exec3.98.42';
 $adminCssVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/admin.css');
 $adminJsVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/admin.js');
 $storeOpsJsVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/store-ops.js');
@@ -2002,6 +2002,11 @@ $shipmentArrangementJsVersion = $dashboardBuildVersion . '-' . (string) @filemti
                             <p class="admin-empty">Checking Shopee authorization status...</p>
                         </div>
                         <p class="admin-marketplace-auth-footnote">Shopee will ask the shop owner or administrator to sign in, complete OTP if required, and confirm access. The Dashboard handles everything else.</p>
+                    </article>
+
+                    <article class="admin-panel admin-settings-card admin-settings-card-wide">
+                        <div class="admin-settings-card-head"><div><span class="admin-panel-kicker">Assistant access</span><h3>Assistant connection</h3><p>Choose read and report-note write capabilities, review activity, and revoke persistent access.</p></div></div>
+                        <a class="admin-destination-button" href="../assistant/settings/">Manage assistant connection</a>
                     </article>
 
                     <article class="admin-panel admin-settings-card admin-settings-destination-card admin-settings-card-wide">

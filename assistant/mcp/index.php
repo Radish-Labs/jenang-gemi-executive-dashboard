@@ -23,7 +23,7 @@ try {
     if (strlen($raw)>32768) jsonResponse(['error'=>'request_too_large'],413);
     try { $q=json_decode($raw,true,32,JSON_THROW_ON_ERROR); } catch (Throwable) { jsonResponse(['jsonrpc'=>'2.0','id'=>null,'error'=>['code'=>-32700,'message'=>'Parse error.']],400); }
     if (!is_array($q) || array_is_list($q)) jsonResponse(['jsonrpc'=>'2.0','id'=>null,'error'=>['code'=>-32600,'message'=>'Single JSON-RPC object required.']],400);
-    $c['_actor_scope']=$actor['scope'];
+    $c['_actor_scope']=$actor['scope'];$c['_actor_token_hash']=JenangMcp\digest($token);
     $result=rpc($q,$c,new JenangMcp\Reader($c));
     JenangMcp\state($c,function(array &$s) use($q,$actor,$result): void { $action=substr((string)($q['method'] ?? 'invalid').':'.(string)($q['params']['name'] ?? ''),0,180);$failed=isset($result['error'])||!empty($result['result']['isError']);JenangMcp\audit($s,$action,$failed?'failed':'handled',$actor['subject']); });
     if ($result===null) { http_response_code(202);exit; } jsonResponse($result);

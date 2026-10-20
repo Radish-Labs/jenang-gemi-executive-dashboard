@@ -17,7 +17,7 @@ function state(array $c, callable $fn): mixed {
         foreach (['codes','tokens','refresh'] as $bucket) foreach ($s[$bucket] as $k=>$v) if (($v['exp'] ?? 0) <= time()) unset($s[$bucket][$k]);
         if (count($s['codes']) + count($s['tokens']) + count($s['refresh']) > 20000) throw new \RuntimeException('Adapter state capacity reached.');
         $result = $fn($s);
-        $s['audit'] = array_slice(array_values(array_filter($s['audit'], fn($r)=>(strtotime($r['at']) ?: 0)>time()-7*86400)), -1000);
+        $s['audit'] = array_slice(array_values(array_filter($s['audit'], fn($r)=>(strtotime($r['at']) ?: 0)>time()-180*86400)), -10000);
         foreach (($s['rates'] ?? []) as $key=>$rate) if ($rate['until']<=time()) unset($s['rates'][$key]);
         $encoded = json_encode($s, JSON_THROW_ON_ERROR);
         $tmp=tempnam(dirname($c['state_file']),'.mcp-');
@@ -42,13 +42,14 @@ function validateAuthorization(array $c, array $q): array {
 function issueCode(array $c, array $q): string {
     $q = validateAuthorization($c, $q); $code = opaque();
     state($c, function(array &$s) use($c,$q,$code) {
-        $s['codes'][digest($code)] = ['exp'=>time()+120,'client'=>$q['client_id'],'redirect'=>$q['redirect_uri'],'aud'=>resource($c),'challenge'=>$q['code_challenge'],'subject'=>$c['subject'],'scope'=>$q['scope'],'epoch'=>$c['revocation_epoch'] ?? 0];
+        $s['codes'][digest($code)] = ['exp'=>time()+120,'client'=>$q['client_id'],'redirect'=>$q['redirect_uri'],'aud'=>resource($c),'challenge'=>$q['code_challenge'],'subject'=>$c['subject'],'scope'=>$q['scope'],'epoch'=>$c['revocation_epoch'] ?? 0,'grant_id'=>$c['_owner_grant']['id'] ?? null];
+        if (!recordGrantValid($c,$s,$s['codes'][digest($code)])) throw new \InvalidArgumentException('Owner approval required.');
         audit($s,'consent','approved',$c['subject']);
     }); return $code;
 }
 function mint(array &$s, array $record): array {
     $token=opaque(); $refresh=opaque(); $family=$record['family'] ?? opaque();
-    $base=['subject'=>$record['subject'],'scope'=>$record['scope'],'client'=>$record['client'],'aud'=>$record['aud'],'epoch'=>$record['epoch'],'family'=>$family];
+    $base=['subject'=>$record['subject'],'scope'=>$record['scope'],'client'=>$record['client'],'aud'=>$record['aud'],'epoch'=>$record['epoch'],'family'=>$family,'grant_id'=>$record['grant_id'] ?? null];
     $s['tokens'][digest($token)]=$base+['exp'=>time()+900];
     $s['refresh'][digest($refresh)]=$base+['exp'=>time()+30*86400,'used'=>false];
     return ['access_token'=>$token,'token_type'=>'Bearer','expires_in'=>900,'refresh_token'=>$refresh,'scope'=>$record['scope']];
@@ -59,12 +60,12 @@ function exchange(array $c, array $q): array {
         if (($q['grant_type'] ?? '') === 'authorization_code') {
             $hash=digest((string)($q['code'] ?? '')); $r=$s['codes'][$hash] ?? null;
             $v=(string)($q['code_verifier'] ?? ''); $challenge=rtrim(strtr(base64_encode(hash('sha256',$v,true)),'+/','-_'),'=');
-            if (!$r || !validGrantedScope($c,$r['scope']) || ($r['epoch'] ?? 0) !== ($c['revocation_epoch'] ?? 0) || $r['subject'] !== $c['subject'] || $r['client'] !== $q['client_id'] || $r['aud'] !== $q['resource'] || $r['redirect'] !== ($q['redirect_uri'] ?? '') || preg_match('/^[A-Za-z0-9._~-]{43,128}$/D',$v)!==1 || !hash_equals($r['challenge'],$challenge)) { audit($s,'token','invalid_grant'); return ['error'=>'invalid_grant']; }
+            if (!$r || !recordGrantValid($c,$s,$r) || !validGrantedScope($c,$r['scope']) || ($r['epoch'] ?? 0) !== ($c['revocation_epoch'] ?? 0) || $r['subject'] !== $c['subject'] || $r['client'] !== $q['client_id'] || $r['aud'] !== $q['resource'] || $r['redirect'] !== ($q['redirect_uri'] ?? '') || preg_match('/^[A-Za-z0-9._~-]{43,128}$/D',$v)!==1 || !hash_equals($r['challenge'],$challenge)) { audit($s,'token','invalid_grant'); return ['error'=>'invalid_grant']; }
             unset($s['codes'][$hash]); audit($s,'token','issued',$r['subject']); return mint($s,$r);
         }
         if (($q['grant_type'] ?? '') === 'refresh_token') {
             $hash=digest((string)($q['refresh_token'] ?? '')); $r=$s['refresh'][$hash] ?? null;
-            if (!$r || !validGrantedScope($c,$r['scope']) || $r['client'] !== $q['client_id'] || $r['aud'] !== $q['resource'] || $r['subject'] !== $c['subject'] || $r['epoch'] !== ($c['revocation_epoch'] ?? 0) || (isset($q['scope']) && (!is_string($q['scope']) || canonicalGrantedScope($q['scope']) !== $r['scope']))) { audit($s,'refresh','invalid_grant'); return ['error'=>'invalid_grant']; }
+            if (!$r || !recordGrantValid($c,$s,$r) || !validGrantedScope($c,$r['scope']) || $r['client'] !== $q['client_id'] || $r['aud'] !== $q['resource'] || $r['subject'] !== $c['subject'] || $r['epoch'] !== ($c['revocation_epoch'] ?? 0) || (isset($q['scope']) && (!is_string($q['scope']) || canonicalGrantedScope($q['scope']) !== $r['scope']))) { audit($s,'refresh','invalid_grant'); return ['error'=>'invalid_grant']; }
             if ($r['used']) { foreach (['tokens','refresh'] as $b) foreach ($s[$b] as $h=>$item) if ($item['family']===$r['family']) unset($s[$b][$h]); audit($s,'refresh','replay_revoked',$r['subject']); return ['error'=>'invalid_grant']; }
             $s['refresh'][$hash]['used']=true; audit($s,'refresh','rotated',$r['subject']); return mint($s,$r);
         }
@@ -75,7 +76,7 @@ function authenticate(array $c, string $token): ?array {
     if ($token === '' || strlen($token)>128) return null;
     return state($c,function(array &$s) use($c,$token): ?array {
         $r=$s['tokens'][digest($token)] ?? null;
-        if (!$r || $r['aud'] !== resource($c) || !validGrantedScope($c,$r['scope']) || $r['subject'] !== $c['subject'] || $r['epoch'] !== ($c['revocation_epoch'] ?? 0) || $r['client'] !== $c['client_id']) { audit($s,'request','denied'); return null; }
+        if (!$r || !recordGrantValid($c,$s,$r) || $r['aud'] !== resource($c) || !validGrantedScope($c,$r['scope']) || $r['subject'] !== $c['subject'] || $r['epoch'] !== ($c['revocation_epoch'] ?? 0) || $r['client'] !== $c['client_id']) { audit($s,'request','denied'); return null; }
         return $r;
     });
 }
@@ -83,7 +84,7 @@ function revoke(array $c,string $token): void {
     state($c,function(array &$s) use($token): void {
         $r=$s['tokens'][digest($token)] ?? $s['refresh'][digest($token)] ?? null;
         if ($r) foreach (['tokens','refresh'] as $b) foreach ($s[$b] as $h=>$item) if ($item['family']===$r['family']) unset($s[$b][$h]);
-        audit($s,'revoke','processed');
+        audit($s,'revoke','processed',$r['subject'] ?? '');
     });
 }
 
@@ -96,3 +97,5 @@ function rateLimit(array $c,string $route,int $limit=60): bool {
         if ($r['count']>$limit) { audit($s,$route,'rate_limited');return false; } return true;
     });
 }
+
+require_once __DIR__.'/grants.php';

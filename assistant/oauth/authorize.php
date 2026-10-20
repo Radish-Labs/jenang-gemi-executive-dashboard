@@ -39,8 +39,11 @@ try {
 <h1>Connect Jenang Gemi reporting</h1>
 <?php if (!$authenticated): ?><p>Sign in directly to your dashboard here.</p><p><?= $e($loginError ?? '') ?></p>
 <form method="post"><input type="hidden" name="intent" value="<?= $e($intent) ?>"><input type="hidden" name="csrf" value="<?= $e($csrf) ?>"><input type="hidden" name="action" value="login"><label>Dashboard login code <input type="password" name="code" required autocomplete="current-password"></label><button>Sign in</button></form>
-<?php else: ?><p><?php if (JenangMcp\hasScope($q['scope'],JenangMcp\TABLE_SCOPE)): ?>Allow ChatGPT persistent read-only access to all configured dashboard brands, accounts and partners: catalog/sales, stock/purchasing, accounting/wallets, partners, ads/analytics, customer aggregates and website content. Customer identities/contact details, credentials, receipts/proofs and operational raw payloads are excluded.<?php else: ?>Allow ChatGPT to read product sales for <?= $e(implode(', ',$c['brands'])) ?>.<?php endif ?> No business writes or money transfers.</p>
-<?php if (!JenangMcp\hasScope($q['scope'],JenangMcp\TABLE_SCOPE)): ?><p>Accounts: <?= $e(implode(', ',$c['accounts'])) ?>. Partner scope: <?= $e(implode(', ',$c['partners'])) ?>.</p><?php endif ?>
-<p>This uses the shared Executive login and grants the configured reporting identity <?= $e($c['subject']) ?>. Disconnecting revokes this token family; an administrator can revoke all grants.</p>
-<form method="post"><input type="hidden" name="intent" value="<?= $e($intent) ?>"><input type="hidden" name="csrf" value="<?= $e($csrf) ?>"><button name="action" value="approve">Allow reporting</button><button name="action" value="deny">Cancel</button></form>
+<?php else: ?><p>Connect ChatGPT as <?= $e($c['subject']) ?> with these capabilities:</p>
+<ul><?php foreach(explode(' ',$q['scope']) as $scope): ?><li><?= $e($scope) ?></li><?php endforeach ?></ul>
+<?php if(JenangMcp\hasScope($q['scope'],JenangMcp\FINANCE_SCOPE)): ?><p>Computed business P&amp;L and exact recipient allocations: <?= $e(implode(', ',$c['_owner_grant']['recipients'] ?? [])) ?>.</p><?php endif ?>
+<?php if(JenangMcp\hasScope($q['scope'],JenangMcp\NOTES_SCOPE)): ?><p>Write access is limited to monthly report notes. It cannot modify accounting, allocation rules, orders or payments.</p><?php else: ?><p>This request grants read access only.</p><?php endif ?>
+<p>Access tokens expire in 15 minutes. Refresh tokens rotate and expire after 30 days without renewal. Revoke access in <a href="/assistant/settings/">Dashboard Settings · Assistant connection</a>.</p>
+<p>Accounts: <?= $e(implode(', ',$c['accounts'])) ?>. Product scope: <?= $e(implode(', ',$c['brands'])) ?>. Dashboard and finance scopes cover the configured business sources.</p>
+<form method="post"><input type="hidden" name="intent" value="<?= $e($intent) ?>"><input type="hidden" name="csrf" value="<?= $e($csrf) ?>"><button name="action" value="approve">Connect selected capabilities</button><button name="action" value="deny">Cancel</button></form>
 <?php endif ?></html>

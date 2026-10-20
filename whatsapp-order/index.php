@@ -36,7 +36,7 @@ $storeOpsBaseUrl = rtrim(
     <link rel="stylesheet" href="../whatsapp-order-history.css?v=<?php echo urlencode($historyCssVersion ?: '1'); ?>">
 </head>
 <body class="admin-body is-dashboard is-whatsapp-history-page">
-    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.98.41</div>
+    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.98.42</div>
     <div class="admin-app admin-app-suite" data-whatsapp-order-detail data-endpoint="../api/whatsapp-orders/" data-invoice-printer-url="<?php echo htmlspecialchars($storeOpsBaseUrl . '/invoice-printer/', ENT_QUOTES, 'UTF-8'); ?>">
         <div class="admin-backdrop admin-backdrop-a"></div>
         <div class="admin-backdrop admin-backdrop-b"></div>

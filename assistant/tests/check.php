@@ -2,7 +2,7 @@
 declare(strict_types=1);
 if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
 require __DIR__.'/../lib/rpc.php';
-require __DIR__.'/../lib/oauth.php';
+require_once __DIR__.'/../lib/oauth.php';
 use function JenangMcp\{listTables,tableDefinition,tableQuerySpec,compileTableQuery,queryTable,financialRows,annualizeSales,tools,validateAuthorization,issueCode,exchange,authenticate,revoke,allowedScopes};
 $n=0;
 function ok(bool $v,string $label):void{global $n;if(!$v)throw new RuntimeException($label);$n++;}

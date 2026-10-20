@@ -4,6 +4,7 @@ namespace JenangMcp;
 require_once __DIR__.'/reports.php';
 require_once __DIR__.'/tables.php';
 require_once __DIR__.'/table-tools.php';
+require_once __DIR__.'/connection-tools.php';
 function tools(array $c=[]): array {
     $empty=['type'=>'object','additionalProperties'=>false,'properties'=>(object)[]];
     $out=['type'=>'object','properties'=>['data'=>['type'=>'object']],'required'=>['data']];
@@ -17,7 +18,9 @@ function tools(array $c=[]): array {
         $old[0]['securitySchemes']=[['type'=>'oauth2','scopes'=>[TABLE_SCOPE]]];
         $old[0]['_meta']['securitySchemes']=$old[0]['securitySchemes'];
     }
-    return in_array(TABLE_SCOPE,allowedScopes($c),true) ? [...$old,...tableTools()] : $old;
+    if(!empty($c['_owner_grant'])){$old[0]['securitySchemes']=[['type'=>'oauth2','scopes'=>allowedScopes($c)]];$old[0]['_meta']['securitySchemes']=$old[0]['securitySchemes'];}
+    foreach([1,2] as $index){$old[$index]['securitySchemes']=[['type'=>'oauth2','scopes'=>[SCOPE]]];$old[$index]['_meta']['securitySchemes']=$old[$index]['securitySchemes'];}
+    return [...(in_array(TABLE_SCOPE,allowedScopes($c),true) ? [...$old,...tableTools()] : $old),...connectionTools($c)];
 }
 function rpc(array $request,array $c,callable $read): ?array {
     $id=$request['id'] ?? null;
@@ -29,7 +32,7 @@ function rpc(array $request,array $c,callable $read): ?array {
     if (!is_array($params)) return $error(-32602,'Invalid parameters.');
     if ($method==='initialize') {
         $v=$params['protocolVersion'] ?? '';
-        return ['jsonrpc'=>'2.0','id'=>$id,'result'=>['protocolVersion'=>in_array($v,PROTOCOLS,true)?$v:PROTOCOLS[count(PROTOCOLS)-1],'capabilities'=>['tools'=>['listChanged'=>false]],'serverInfo'=>['name'=>'jenang-gemi-reporting','version'=>VERSION],'instructions'=>'Report Jakarta dates, units versus orders, and source freshness. Discover active capabilities with jg_get_context. Tools are discoverable before additional consent. Calling the existing jg_get_context triggers standard scope-upgrade consent when broader access is privately approved but the token is narrow; this works even when new tool names are not yet loaded by the client; do not claim its data is already authorized. With dashboard scope, use list/describe/query for typed rows and groups, and annualize_sales for money. Product reports are units/orders, never revenue. If the requested view or metric is unavailable, say so; never substitute a product count or a zero. Consolidated channel records are not audited all-business revenue; report synchronization and deduplication limitations. No refresh, writes or money movement.']];
+        return ['jsonrpc'=>'2.0','id'=>$id,'result'=>['protocolVersion'=>in_array($v,PROTOCOLS,true)?$v:PROTOCOLS[count(PROTOCOLS)-1],'capabilities'=>['tools'=>['listChanged'=>false]],'serverInfo'=>['name'=>'jenang-gemi-reporting','version'=>VERSION],'instructions'=>'Report Jakarta dates, units versus orders, and source freshness. Discover active capabilities with jg_get_context. Tools are discoverable before additional consent. Calling the existing jg_get_context triggers standard scope-upgrade consent when broader access is privately approved but the token is narrow; this works even when new tool names are not yet loaded by the client; do not claim its data is already authorized. With dashboard scope, use list/describe/query for typed rows and groups, and annualize_sales for money. Product reports are units/orders, never revenue. If the requested view or metric is unavailable, say so; never substitute a product count or a zero. Consolidated channel records are not audited all-business revenue; report synchronization and deduplication limitations. No upstream refresh or money movement. Owner-approved monthly P&L and report-note tools are available only under their explicit grants. Notes are annotations, not accounting writes.']];
     }
     if ($method==='ping') return ['jsonrpc'=>'2.0','id'=>$id,'result'=>(object)[]];
     if ($method==='tools/list') return ['jsonrpc'=>'2.0','id'=>$id,'result'=>['tools'=>tools($c)]];
@@ -37,17 +40,26 @@ function rpc(array $request,array $c,callable $read): ?array {
     $name=$params['name'] ?? ''; $a=$params['arguments'] ?? [];
     if (!is_string($name) || !is_array($a)) return $error(-32602,'Invalid tool parameters.');
     if (!in_array($name,array_column(tools($c),'name'),true)) return $error(-32602,'Tool unavailable; business writes are not enabled.');
-    if((in_array($name,array_column(tableTools(),'name'),true) || ($name==='jg_get_context' && in_array(TABLE_SCOPE,allowedScopes($c),true))) && !hasScope($c['_actor_scope'] ?? '',TABLE_SCOPE)) {
+    if((in_array($name,array_column(tableTools(),'name'),true) || ($name==='jg_get_context' && empty($c['_owner_managed']) && in_array(TABLE_SCOPE,allowedScopes($c),true))) && !hasScope($c['_actor_scope'] ?? '',TABLE_SCOPE)) {
         return ['jsonrpc'=>'2.0','id'=>$id,'result'=>[
             'content'=>[['type'=>'text','text'=>'Additional read-only dashboard consent is required. Your existing reporting grant has not changed.']],
             'isError'=>true,
             '_meta'=>['mcp/www_authenticate'=>['Bearer resource_metadata="'.$c['base_url'].'/.well-known/oauth-protected-resource", error="insufficient_scope", error_description="Additional read-only dashboard consent is required", scope="'.TABLE_SCOPE.'"']]
         ]];
     }
+    $required=connectionToolScope($name);
+    if(in_array($name,['jg_resolve_product','jg_product_report'],true))$required=SCOPE;
+    if($name==='jg_get_context' && !empty($c['_owner_grant'])) {
+        $missing=array_diff(allowedScopes($c),explode(' ',$c['_actor_scope'] ?? ''));
+        if($missing)$required=implode(' ',allowedScopes($c));
+    }
+    if($required && array_diff(explode(' ',$required),explode(' ',$c['_actor_scope'] ?? ''))) {
+        return ['jsonrpc'=>'2.0','id'=>$id,'result'=>['content'=>[['type'=>'text','text'=>'Reconnect to authorize the capabilities the owner selected in Settings. No access has been added to this token.']],'isError'=>true,'_meta'=>['mcp/www_authenticate'=>['Bearer resource_metadata="'.$c['base_url'].'/.well-known/oauth-protected-resource", error="insufficient_scope", scope="'.$required.'"']]]];
+    }
     try {
         if ($name==='jg_get_context') {
             if ($a!==[]) throw new \InvalidArgumentException('Context takes no arguments.');
-            $data=['subject'=>$c['subject'],'scopes'=>explode(' ',$c['_actor_scope'] ?? SCOPE),'brands'=>$c['brands'],'accounts'=>$c['accounts'],'partners'=>$c['partners'],'version'=>VERSION,'capabilities'=>array_column(tools($c),'name'),'database_access_mode'=>$c['database_access_mode'] ?? 'dedicated_select_only','catalog_source'=>$c['catalog_source'] ?? 'database','writes_enabled'=>false,'supported_metrics'=>['product_units','distinct_product_orders'],'unsupported_metrics'=>['revenue','annualized_revenue','business_total','profit','cash'],'table_query_available'=>hasScope($c['_actor_scope'] ?? '',TABLE_SCOPE) && !empty($c['table_access_approved'])]; if($data['table_query_available']) {$data['supported_metrics']=['product_units','distinct_product_orders','typed_table_aggregates','recorded_line_revenue','recorded_order_seller_revenue','monetary_sales_run_rate'];$data['unsupported_metrics']=['audited_business_total','cash_from_sales','forecast','identifiable_customers'];$data['dashboard_families']=$c['table_families'];$data['dashboard_scope']='all configured brands/accounts/partners for table tools; legacy product tool retains original ZERO grant';} $data['requires_reauthorization_for']=!$data['table_query_available'] && in_array(TABLE_SCOPE,allowedScopes($c),true)?array_column(tableTools(),'name'):[]; $output=['data'=>$data];
+            $data=['subject'=>$c['subject'],'scopes'=>explode(' ',$c['_actor_scope'] ?? SCOPE),'brands'=>$c['brands'],'accounts'=>$c['accounts'],'partners'=>$c['partners'],'version'=>VERSION,'capabilities'=>array_column(tools($c),'name'),'database_access_mode'=>$c['database_access_mode'] ?? 'dedicated_select_only','catalog_source'=>$c['catalog_source'] ?? 'database','writes_enabled'=>false,'supported_metrics'=>['product_units','distinct_product_orders'],'unsupported_metrics'=>['revenue','annualized_revenue','business_total','profit','cash'],'table_query_available'=>hasScope($c['_actor_scope'] ?? '',TABLE_SCOPE) && !empty($c['table_access_approved'])]; if($data['table_query_available']) {$data['supported_metrics']=['product_units','distinct_product_orders','typed_table_aggregates','recorded_line_revenue','recorded_order_seller_revenue','monetary_sales_run_rate'];$data['unsupported_metrics']=['audited_business_total','cash_from_sales','forecast','identifiable_customers'];$data['dashboard_families']=$c['table_families'];$data['dashboard_scope']='all configured brands/accounts/partners for table tools; legacy product tool retains original ZERO grant';} $data['requires_reauthorization_for']=!$data['table_query_available'] && in_array(TABLE_SCOPE,allowedScopes($c),true)?array_column(tableTools(),'name'):[]; $data['writes_enabled']=hasScope($c['_actor_scope'] ?? '',NOTES_SCOPE);$data['owner_connection']=['managed'=>!empty($c['_owner_managed']),'approved_recipients'=>$c['_owner_grant']['recipients'] ?? [],'settings_url'=>$c['base_url'].'/assistant/settings/','write_capabilities'=>$data['writes_enabled']?['monthly_report_notes']:[]];if(hasScope($c['_actor_scope'] ?? '',FINANCE_SCOPE)){$data['supported_metrics'][]='computed_monthly_profit_and_saved_recipient_allocation';$data['unsupported_metrics']=array_values(array_diff($data['unsupported_metrics'],['profit']));}$output=['data'=>$data];
         } elseif ($name==='jg_resolve_product') {
             if (array_keys($a)!==['product'] || !is_string($a['product'])) throw new \InvalidArgumentException('Provide product only.');
             $output=['data'=>resolve(catalog($read,$c),$a['product'])];
@@ -55,6 +67,8 @@ function rpc(array $request,array $c,callable $read): ?array {
         } elseif ($name==='jg_list_tables') {if($a!==[])throw new \InvalidArgumentException('No arguments expected.');$output=['data'=>listTables($c)];}
         elseif ($name==='jg_describe_table') {tableAccess($c);if(array_keys($a)!==['table']||!is_string($a['table']))throw new \InvalidArgumentException('Provide table only.');$output=['data'=>tableDefinition($a['table'])];}
         elseif ($name==='jg_query_table') $output=queryTable($c,$a);
+        elseif ($name==='jg_monthly_profit') {require_once __DIR__.'/monthly-profit.php';$output=monthlyProfit($c,$a);}
+        elseif ($name==='jg_get_report_note' || $name==='jg_save_report_note') $output=reportNotes($c,$a,$name==='jg_save_report_note');
         elseif ($name==='jg_annualize_sales') $output=annualizeSales($c,$a);
         else $output=productReport($read,$c,$a);
         $result=['content'=>[['type'=>'text','text'=>json_encode($output,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)]],'structuredContent'=>$output,'isError'=>$name==='jg_annualize_sales' && ($output['data']['status'] ?? '')==='required_sources_unavailable'];
