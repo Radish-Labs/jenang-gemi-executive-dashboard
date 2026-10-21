@@ -5,6 +5,14 @@
 .ad-monitor p { line-height: 1.55; font-size: 13px; margin: 8px 0; }
 .ad-monitor-header, .ad-monitor-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .ad-monitor-header { justify-content: space-between; }
+.ad-monitor-header h2 { flex: 1 1 240px; }
+.ad-monitor-header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.ad-monitor .ad-monitor-close { min-width: 44px; min-height: 44px; font-size: 24px; line-height: 1; padding: 4px; }
+.ad-monitor [hidden] { display: none !important; }
+.ad-monitor.is-collapsed { padding: 0; border: 0; background: transparent; }
+.ad-monitor [data-monitor-compact] { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.ad-monitor-dismissed-note { font-size: 12px; opacity: .8; }
+.ad-monitor button:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; }
 .ad-monitor details > summary { cursor: pointer; padding: 12px 0 4px; font-weight: 600; }
 .ad-monitor-account { padding-top: 16px; }
 .ad-monitor-account h3 { margin: 0; font-size: 16px; }

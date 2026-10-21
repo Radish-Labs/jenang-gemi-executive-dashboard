@@ -25,6 +25,7 @@ const server = http.createServer((req,res)=>{
    account.revision++;res.end(JSON.stringify({ok:true,accounts:[account]}));});return;}
   res.end(JSON.stringify({ok:true,accounts:[account]}));return;
  }
+ if(u.pathname==='/fixture-new-incident'){offline=false;account.campaigns[0].incident={id:'101:new',detected_at:now,last_running_at:now-60,acknowledged_at:null};account.revision++;res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<p>New incident fixture enabled</p>');return;}
  if(u.pathname==='/fixture-offline'){offline=true;res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<p>Offline fixture enabled</p>');return;}
  if(u.pathname==='/fixture-stale'){account.freshness='stale';account.sync_state='failed';account.campaigns.forEach(c=>c.observation_current=false);res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<p>Stale fixture enabled</p>');return;}
  if(u.pathname==='/' && u.searchParams.has('mobile')) {res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<!doctype html><meta charset="UTF-8"><title>Mobile alert fixture</title><iframe title="390px mobile alert" src="/?embedded=1" style="width:390px;height:844px;border:1px solid #aaa"></iframe>');return;}

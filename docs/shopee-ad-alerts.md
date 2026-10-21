@@ -1,4 +1,4 @@
-# Executive homepage Shopee ad warnings — exec3.98.44
+# Executive homepage Shopee ad warnings — exec3.98.45
 
 The homepage has a prominent persistent warning and an expandable account/campaign drilldown. It shows first detection and last-seen-running bounds, observation time, last successful sync, current freshness, expected state and resolution. It does not call a pause “system-caused”: the documented source does not provide the actor or reason.
 
@@ -11,7 +11,7 @@ The separate `/api/ad-monitor/` endpoint requires the existing Executive session
 1. Deploy the paired `Radish-Labs/jenang-gemi-api-ingest/main` release. See its `docs/ads-monitor.md` for the migration and state contract. The dashboard can deploy first safely: its isolated monitor reports source unavailable until ingest is ready.
 2. Its existing 15-minute ads worker initializes the two additive monitor tables and collects the first full snapshot. Manual host CLI migration is optional; no new credential or scope is required.
 3. Push this release to the established `Radish-Labs/jenang-gemi-executive-dashboard/main` Hostinger deployment. Do not include the separate unpushed comprehensive MCP work.
-4. Verify hosted build `exec3.98.44`, `ad-monitor.js`, authentication rejection, and the authenticated monitor GET. Confirm source freshness per account after normal sync. “Deployed” does not imply a successful source sync.
+4. Verify hosted build `exec3.98.45`, `ad-monitor.js`, authentication rejection, and the authenticated monitor GET. Confirm source freshness per account after normal sync. “Deployed” does not imply a successful source sync.
 5. Initially paused campaigns are unselected. An operator can choose Expect running through the preview/confirmation flow. No live selection is changed as a deployment test.
 
 The new monitor uses header authentication only. The separate legacy summary/sync header-transport improvement is prepared locally on branch `prepared/ads-transport-header` at `59d86646d92c53c180bb021ebe8191780f490e8e`, but deferred from this release because hosted ingest header support is not yet verified. Existing legacy behavior remains; do not exercise it with a secret URL token as a verification workaround. Once ingest is verified, apply only that branch’s `ads-bootstrap.php` change and verify the transport separately. No credential rotation, new scope or broader access is included.
@@ -30,3 +30,9 @@ Local browser fixture: `PHP_BINARY=php node tests/ad-monitor-fixture.cjs`, at `h
 Browser checks completed: prominent warning; account/campaign details; unknown attribution; literal rendering of a malicious-looking ad name; acknowledgement stays unresolved; intentional-pause confirmation clears the incident; stale/failed and unavailable-source warnings; retained prior incident after a failed read. Responsive check at a 390px embedded viewport showed no horizontal overflow, 44px action controls and a confirmation dialog within the viewport. The main app's wider business-data functionality is outside this fixture's scope.
 
 The paired ingest suite includes real MariaDB tests of persistence, concurrent locks, stale revisions, idempotency, JSON key reordering, audit rollback, account isolation and sync failure/recovery. Browser mutations were fixture-only; no live ads or monitoring preferences were changed.
+
+## Closing the notice
+
+Close hides the expanded notice in this browser using local storage; Show Shopee ad status reopens it. Monitoring and stored campaign choices keep running unchanged. Unchanged warnings stay hidden across reloads. A new incident ID, a newly uncertain account, a new unselected paused campaign, or newly unavailable source reopens it. Sync timestamps, revisions and acknowledgements alone do not reopen it. If browser storage is blocked, dismissal lasts only for the current page. This is a browser presentation preference, not an incident acknowledgement or resolution.
+
+Verified for exec3.98.45 in the isolated browser fixture: close/reopen with mouse and Enter; focus moves to the newly visible control; unchanged incident and unavailable-source dismissal survive reload; a changed incident identity reopens the banner; 390px mobile layout has no horizontal overflow and both close/reopen controls are 44px tall. No monitoring POST is part of either presentation control.

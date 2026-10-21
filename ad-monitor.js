@@ -7,6 +7,16 @@
   const summary = root.querySelector('[data-monitor-summary]');
   const details = root.querySelector('[data-monitor-details]');
   const error = root.querySelector('[data-monitor-error]');
+  const body = root.querySelector('[data-monitor-body]');
+  const compact = root.querySelector('[data-monitor-compact]');
+  const close = root.querySelector('[data-monitor-close]');
+  const reopen = root.querySelector('[data-monitor-reopen]');
+  const preferenceKey = 'jg.ad-monitor.dismissed.v1';
+  let dismissed = null, signals = [], sourceUnavailable = false;
+  try {
+    const saved = JSON.parse(localStorage.getItem(preferenceKey));
+    if (Array.isArray(saved) && saved.every(s => typeof s === 'string')) dismissed = saved;
+  } catch (_) { /* Storage may be unavailable; dismissal still works for this page. */ }
   const dialog = document.querySelector('[data-monitor-confirm]');
   const title = dialog.querySelector('[data-monitor-confirm-title]');
   const description = dialog.querySelector('[data-monitor-confirm-description]');
@@ -20,6 +30,47 @@
     if (className) el.className = className;
     return el;
   };
+  function setCollapsed(collapsed) {
+    body.hidden = collapsed;
+    compact.hidden = !collapsed;
+    root.classList.toggle('is-collapsed', collapsed);
+  }
+  function saveDismissal(value) {
+    dismissed = value;
+    try {
+      if (value === null) localStorage.removeItem(preferenceKey);
+      else localStorage.setItem(preferenceKey, JSON.stringify(value));
+    } catch (_) { /* Keep the in-memory preference when storage is blocked. */ }
+  }
+  function updatePresentation() {
+    // Ignore sync timestamps, revisions and acknowledgement changes. New incident
+    // identities or newly uncertain accounts must surface even after dismissal.
+    signals = sourceUnavailable ? ['source-unavailable'] : [];
+    for (const account of accounts) {
+      if (account.freshness !== 'fresh' || account.campaigns.some(c => c.missing || c.status === 'unknown')) {
+        signals.push(JSON.stringify(['uncertain', account.account_key]));
+      }
+      for (const row of account.campaigns) {
+        if (row.incident) signals.push(JSON.stringify(['incident', account.account_key, String(row.campaign_id), row.incident.id]));
+        else if (row.desired_state === 'unselected' && row.status === 'paused') signals.push(JSON.stringify(['selection', account.account_key, String(row.campaign_id)]));
+      }
+    }
+    if (dismissed && signals.some(signal => !dismissed.includes(signal))) saveDismissal(null);
+    setCollapsed(dismissed !== null);
+    reopen.title = summary.textContent;
+  }
+  close.addEventListener('click', () => {
+    saveDismissal([...signals]);
+    setCollapsed(true);
+    reopen.focus();
+  });
+  reopen.addEventListener('click', () => {
+    saveDismissal(null);
+    setCollapsed(false);
+    close.focus();
+  });
+  // Honor the saved preference before the first request to avoid a refresh flash.
+  setCollapsed(dismissed !== null);
   function button(text, action, account, row) {
     const el = element('button', text, 'admin-ghost-btn');
     el.type = 'button';
@@ -84,16 +135,18 @@
     try {
       const data = await request('GET');
       accounts = data.accounts;
+      sourceUnavailable = false;
       error.hidden = true;
       render();
     } catch (_) {
+      sourceUnavailable = true;
       // Previously open incidents stay visible, with an explicit freshness downgrade.
       accounts = accounts.map(a => ({...a, freshness: 'unknown', campaigns: a.campaigns.map(c => ({...c, observation_current: false}))}));
       if (accounts.length) render();
       else summary.textContent = 'Shopee ad status unavailable — pauses cannot be checked';
       root.dataset.severity = 'unknown';
       showError('Unable to verify ad status. Check the monitor deployment, sync worker or account authorization. Previous observations are not proof of current delivery.');
-    } finally { loading = false; }
+    } finally { loading = false; updatePresentation(); }
   }
   function preview(action, account, row) {
     if (busy || loading) return;
@@ -127,7 +180,7 @@
         dialogError.textContent = 'Change not confirmed. Retry the same confirmation, or close and refresh status.';
         showError(dialogError.textContent);
       }
-    } finally { busy = false; confirm.disabled = false; render(); }
+    } finally { busy = false; confirm.disabled = false; render(); updatePresentation(); }
   });
   root.querySelector('[data-monitor-refresh]').addEventListener('click', refresh);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) refresh(); });
