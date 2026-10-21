@@ -62,6 +62,29 @@ try {
         expect($r['result']['isError']&&!empty($r['result']['_meta']['mcp/www_authenticate']),'Insufficient-scope challenge '.$name);
     }
     expect($calls===0,'Scope rejected before source access');
+    $contextRequest=['jsonrpc'=>'2.0','id'=>1,'method'=>'tools/call','params'=>['name'=>'jg_get_context','arguments'=>[]]];
+    foreach([JenangMcp\SCOPE,implode(' ',[JenangMcp\SCOPE,JenangMcp\TABLE_SCOPE,JenangMcp\FINANCE_SCOPE]),implode(' ',$all)] as $scope) {
+        $subset=$redeem($approved,issueCode($approved,array_replace($q,['scope'=>$scope])));
+        $subject=$actor($approved,$subset);
+        expect(authenticate($approved,$subset['access_token'])!==null,'Owner-approved subset token is valid');
+        $descriptor=JenangMcp\tools($subject)[0];
+        expect($descriptor['securitySchemes'][0]['scopes']===[] && $descriptor['_meta']['securitySchemes']===$descriptor['securitySchemes'],'Context metadata never requires optional owner scopes');
+        $context=rpc($contextRequest,$subject,$read)['result'];
+        expect(!$context['isError'] && !isset($context['_meta']['mcp/www_authenticate']),'Managed context succeeds without scope upgrade');
+        $data=$context['structuredContent']['data'];
+        expect($data['scopes']===explode(' ',$subset['scope']),'Context reports actual token scopes');
+        expect($data['writes_enabled']===JenangMcp\hasScope($scope,JenangMcp\NOTES_SCOPE),'Optional write status follows token, not owner scope union');
+        if(!JenangMcp\hasScope($scope,JenangMcp\NOTES_SCOPE)) {
+            $deniedNote=rpc(['jsonrpc'=>'2.0','id'=>2,'method'=>'tools/call','params'=>['name'=>'jg_save_report_note','arguments'=>['month'=>'2026-10','text'=>'must not save','expected_revision'=>1]]],$subject,$read)['result'];
+            expect($deniedNote['isError'] && str_contains($deniedNote['_meta']['mcp/www_authenticate'][0],'scope="'.JenangMcp\NOTES_SCOPE.'"'),'Note write still requires its exact scope');
+        }
+        if(JenangMcp\hasScope($scope,JenangMcp\FINANCE_SCOPE)) {
+            $finance=rpc(['jsonrpc'=>'2.0','id'=>3,'method'=>'tools/call','params'=>['name'=>'jg_monthly_profit','arguments'=>['month'=>'2026-10','recipient'=>'Brent']]],$subject,$read)['result'];
+            expect($finance['isError'] && !isset($finance['_meta']['mcp/www_authenticate']) && str_contains($finance['content'][0]['text'],'outside'),'Finance scope reaches recipient guard without requiring note scope');
+        }
+    }
+    expect($calls===0,'Context and authorization tests never read business sources');
+
     $pending=issueCode($approved,$q);$tokens=$redeem($approved,issueCode($approved,$q));$a=$actor($approved,$tokens);
     revokeOwnerGrant($c);$revoked=withOwnerGrant($c);
     expect(allowedScopes($revoked)===[],'Revocation blocks new consent');

@@ -100,6 +100,30 @@ require $file;
         check('&lt;script&gt;alert(1)&lt;/script&gt;' in html and '<script>alert(1)</script>' not in html,'Notes escaped in owner UI')
         status,_,body=call(tokens['access_token'],'jg_monthly_profit',{'month':'2026-10','recipient':'Brent'})
         check(status==200 and json.loads(body)['result']['isError'] and 'outside' in body,'Recipient boundary enforced over HTTP')
+        # Owner approves four capabilities, while OAuth requests only the three reads.
+        readonly_scopes=[scope for scope in selected if scope != 'jg:report-notes:write']
+        status,_,readonly_html=request('/assistant/oauth/authorize.php?'+urllib.parse.urlencode(authorization|{'scope':' '.join(readonly_scopes)}))
+        check(status==200 and 'This request grants read access only' in readonly_html,'Subset consent discloses read-only request')
+        readonly_intent=re.search(r'name="intent" value="([^"]+)"',readonly_html).group(1)
+        status,headers,_=request('/assistant/oauth/authorize.php',{'csrf':csrf(readonly_html),'intent':readonly_intent,'action':'approve'})
+        readonly_code=urllib.parse.parse_qs(urllib.parse.urlparse(headers['Location']).query)['code'][0]
+        status,_,body=request('/assistant/oauth/token.php',exchange|{'code':readonly_code});readonly_tokens=json.loads(body)
+        check(status==200 and readonly_tokens['scope']==' '.join(readonly_scopes),'OAuth issues the requested subset without optional write scope')
+        status,_,body=request('/assistant/mcp/',{'jsonrpc':'2.0','id':2,'method':'tools/list'},bearer=readonly_tokens['access_token'],raw=True)
+        context_tool=next(tool for tool in json.loads(body)['result']['tools'] if tool['name']=='jg_get_context')
+        check(status==200 and context_tool['securitySchemes'][0]['scopes']==[] and context_tool['_meta']['securitySchemes']==context_tool['securitySchemes'],'HTTP context metadata does not request optional capabilities')
+        status,_,body=call(readonly_tokens['access_token'],'jg_get_context',{});context=json.loads(body)['result']
+        check(status==200 and not context['isError'] and not context.get('_meta',{}).get('mcp/www_authenticate'),'Read-only token can inspect managed context')
+        check(context['structuredContent']['data']['scopes']==readonly_scopes and not context['structuredContent']['data']['writes_enabled'],'Context preserves actual read-only access')
+        status,_,body=call(readonly_tokens['access_token'],'jg_save_report_note',{'month':'2026-10','text':'unauthorized','expected_revision':1});note=json.loads(body)['result']
+        check(status==200 and note['isError'] and 'scope="jg:report-notes:write"' in note['_meta']['mcp/www_authenticate'][0],'Optional write remains separately denied over HTTP')
+        status,_,body=call(readonly_tokens['access_token'],'jg_monthly_profit',{'month':'2026-10','recipient':'Brent'});finance=json.loads(body)['result']
+        check(status==200 and finance['isError'] and 'outside' in body and not finance.get('_meta',{}).get('mcp/www_authenticate'),'Finance read needs no note-write scope and still enforces recipient')
+        # Expiration is enforced by the real MCP handler even for scope-free context.
+        test_state=json.loads((directory/'state.json').read_text())
+        test_state['tokens'][hashlib.sha256(readonly_tokens['access_token'].encode()).hexdigest()]['exp']=int(time.time())-1
+        (directory/'state.json').write_text(json.dumps(test_state))
+        check(call(readonly_tokens['access_token'],'jg_get_context',{})[0]==401,'Expired subset token cannot inspect context')
         check(call('x'*43,'jg_get_context',{})[0]==401,'Unknown bearer rejected')
         revoke={'csrf':csrf(html),'action':'revoke','owner_password':'fixture-owner-confirmation','confirm':'yes'}
         check(request('/assistant/settings/',revoke)[0]==200,'Owner revokes through actual Settings handler')

@@ -28,7 +28,7 @@ $shippingDialogJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-shi
     <link rel="stylesheet" href="../admin.css?v=<?php echo urlencode($adminCssVersion ?: '1'); ?>">
 </head>
 <body class="admin-body is-dashboard is-whatsapp-orders-page">
-    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.98.42</div>
+    <div class="admin-build-badge" aria-label="Dashboard build version">Build exec3.98.43</div>
     <div class="admin-app admin-app-suite" data-whatsapp-orders data-endpoint="../api/whatsapp-orders/">
         <div class="admin-backdrop admin-backdrop-a"></div>
         <div class="admin-backdrop admin-backdrop-b"></div>
