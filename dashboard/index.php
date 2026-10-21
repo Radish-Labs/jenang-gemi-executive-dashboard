@@ -58,7 +58,7 @@ $sidebarSection = match (true) {
     in_array($requestedView ?? '', ['website', 'site', 'home', 'campaign', 'campaigns', 'landing', 'landing-pages'], true) => 'website',
     default => 'home',
 };
-$dashboardBuildVersion = 'exec3.98.43';
+$dashboardBuildVersion = 'exec3.98.44';
 $adminCssVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/admin.css');
 $adminJsVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/admin.js');
 $storeOpsJsVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/store-ops.js');
@@ -71,6 +71,7 @@ $shipmentArrangementJsVersion = $dashboardBuildVersion . '-' . (string) @filemti
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <link rel="stylesheet" href="../ad-monitor.css?v=exec3.98.44">
     <title><?php echo $isAdView ? 'AD VIEW' : 'Executive Dashboard'; ?></title>
     <meta name="robots" content="noindex,nofollow">
 <?php render_admin_initial_theme_script(); ?>
@@ -178,6 +179,13 @@ $shipmentArrangementJsVersion = $dashboardBuildVersion . '-' . (string) @filemti
 
                 <main class="admin-layout">
                     <section class="admin-view is-active" data-view-panel="overview">
+                <section class="ad-monitor" data-ad-monitor data-endpoint="../api/ad-monitor/" data-csrf="<?php echo htmlspecialchars($marketplaceAuthCsrf, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>" aria-labelledby="ad-monitor-title">
+                    <div class="ad-monitor-header"><h2 id="ad-monitor-title" data-monitor-summary aria-live="polite">Checking Shopee ad status…</h2><button type="button" class="admin-ghost-btn" data-monitor-refresh>Refresh status</button></div>
+                    <p>Unexpected pauses are checked against ads previously observed running and your monitoring selections. Resume from this dashboard is unavailable until account write eligibility is verified.</p>
+                    <p>Coverage: product-level ads returned by Shopee. Shop GMV Max coverage is not yet verified.</p>
+                    <p data-monitor-error hidden role="status"></p>
+                    <details><summary>Review ads and monitoring choices</summary><div data-monitor-details></div><p><a href="https://seller.shopee.co.id/" target="_blank" rel="noopener noreferrer">Open Shopee Seller Centre</a> to inspect restrictions and make any delivery changes.</p></details>
+                </section>
                 <section class="admin-overview-strip">
                     <div class="admin-overview-year-actions">
                         <label class="admin-overview-year-field" data-overview-year-controls>
@@ -2257,6 +2265,11 @@ $shipmentArrangementJsVersion = $dashboardBuildVersion . '-' . (string) @filemti
             <div class="admin-modal-actions"><button type="button" class="admin-ghost-btn" data-order-payment-cancel>Cancel</button><button type="submit" class="admin-primary-btn" data-order-payment-confirm>Confirm paid</button></div>
         </form>
     </dialog>
+    <dialog class="ad-monitor-dialog" data-monitor-confirm aria-labelledby="monitor-confirm-title">
+        <h2 id="monitor-confirm-title" data-monitor-confirm-title></h2><p data-monitor-confirm-description></p><p data-monitor-confirm-error role="status"></p>
+        <div class="ad-monitor-actions"><button type="button" class="admin-ghost-btn" data-monitor-confirm-cancel>Cancel</button><button type="button" class="admin-primary-btn" data-monitor-confirm-save>Confirm monitoring choice</button></div>
+    </dialog>
+    <script src="../ad-monitor.js?v=exec3.98.44" defer></script>
     <script type="module" src="../admin.js?v=<?php echo urlencode($adminJsVersion ?: '1'); ?>"></script>
     <script type="module" src="../partner-billing-notifications.js?v=<?php echo urlencode((string) @filemtime(dirname(__DIR__) . '/partner-billing-notifications.js')); ?>"></script>
     <script src="../store-ops.js?v=<?php echo urlencode($storeOpsJsVersion ?: '1'); ?>" defer></script>

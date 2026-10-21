@@ -317,3 +317,7 @@ geometry under Lucide's ISC license.
   goods` Accounting category and shown with that category in the activity ledger.
 
 - Executive, SKU, and reauthentication forms identify the account with `autocomplete="username"` beside `current-password` fields, including password-only approval dialogs.
+
+## Shopee pause warnings
+
+See [homepage alerts and rollout](docs/shopee-ad-alerts.md) for the passive monitor, confirmed monitoring choices, freshness semantics and paired ingest deployment. Live ad resume remains disabled.

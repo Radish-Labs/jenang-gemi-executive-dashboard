@@ -1,0 +1,21 @@
+.ad-monitor { margin: 0 0 22px; padding: 20px; border: 1px solid #937340; border-left: 5px solid #e9a63b; border-radius: 14px; background: var(--admin-panel-bg, #1b2028); color: var(--admin-text, #f3f4f6); }
+.ad-monitor[data-severity="warning"] { border-color: #e9a63b; }
+.ad-monitor[data-severity="ok"] { border-color: #4c8f78; }
+.ad-monitor h2 { margin: 0; font-size: 18px; line-height: 1.4; }
+.ad-monitor p { line-height: 1.55; font-size: 13px; margin: 8px 0; }
+.ad-monitor-header, .ad-monitor-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.ad-monitor-header { justify-content: space-between; }
+.ad-monitor details > summary { cursor: pointer; padding: 12px 0 4px; font-weight: 600; }
+.ad-monitor-account { padding-top: 16px; }
+.ad-monitor-account h3 { margin: 0; font-size: 16px; }
+.ad-monitor-campaign { margin: 12px 0; padding: 16px; border: 1px solid #586171; border-radius: 10px; overflow-wrap: anywhere; }
+.ad-monitor-campaign.has-incident { border-color: #e9a63b; }
+.ad-monitor h4 { margin: 0; font-size: 14px; }
+.ad-monitor-caution, [data-monitor-error] { color: #ffcb7c; }
+.ad-monitor-dialog { max-width: min(520px, calc(100vw - 32px)); padding: 24px; border: 1px solid #777; border-radius: 16px; background: #20252d; color: #f3f4f6; }
+.ad-monitor-dialog::backdrop { background: #0009; }
+.ad-monitor-dialog p { line-height: 1.6; }
+[data-admin-theme="light"] .ad-monitor { background: #fffaf0; color: #25221e; }
+[data-admin-theme="light"] .ad-monitor-caution, [data-admin-theme="light"] [data-monitor-error] { color: #815000; }
+[data-admin-theme="light"] .ad-monitor-dialog { background: #fff; color: #25221e; }
+@media (max-width: 600px) { .ad-monitor { padding: 14px; } .ad-monitor button { min-height: 44px; } }
