@@ -1,0 +1,1194 @@
+{
+  "zero_store_items": {
+    "family": "website",
+    "database": "sku",
+    "columns": {
+      "item_key": "string",
+      "product_slug": "string",
+      "product_name": "string",
+      "option_id": "string",
+      "option_name": "string",
+      "size_id": "string",
+      "size_label": "string",
+      "sku": "string",
+      "site_price": "decimal",
+      "is_active": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "fallback_sku": "string",
+      "price_source": "string",
+      "option_group": "string"
+    },
+    "default_order": [
+      "item_key"
+    ],
+    "grain": "One stored storefront item/variant.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Stored zero store items.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "api/zero-store/index.php",
+        "zero-store-pricing.php"
+      ]
+    },
+    "warnings": [
+      "Stored catalog configuration; not sales or a stock reservation. No seed, schema creation, stock sync or refresh occurs.",
+      "site_price is a saved price input, not necessarily the effective catalog or checkout price. Resolve platform-specific SKU price fallback and active discounts through the canonical storefront pricing functions.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "fixed",
+      "platform": "zero_website"
+    }
+  },
+  "zero_store_discounts": {
+    "family": "website",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "name": "string",
+      "discount_type": "string",
+      "amount": "decimal",
+      "starts_on": "date",
+      "ends_on": "date",
+      "is_active": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One stored discount rule.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness. starts_on and ends_on are inclusive Asia/Jakarta calendar dates.",
+    "purpose": "Stored zero store discounts.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "api/zero-store/index.php",
+        "zero-store-pricing.php"
+      ]
+    },
+    "warnings": [
+      "Stored catalog configuration; not sales or a stock reservation. No seed, schema creation, stock sync or refresh occurs.",
+      "amount is percent when discount_type=percent; otherwise it is fixed IDR. Dates are inclusive. Rule activity alone does not establish the final applied price or historical discount usage.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "fixed",
+      "platform": "zero_website"
+    }
+  },
+  "zero_store_discount_items": {
+    "family": "website",
+    "database": "sku",
+    "columns": {
+      "discount_id": "integer",
+      "item_key": "string",
+      "created_at": "datetime"
+    },
+    "default_order": [
+      "discount_id",
+      "item_key"
+    ],
+    "grain": "One stored discount-to-item membership.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Stored zero store discount items.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "api/zero-store/index.php",
+        "zero-store-pricing.php"
+      ]
+    },
+    "warnings": [
+      "Stored catalog configuration; not sales or a stock reservation. No seed, schema creation, stock sync or refresh occurs.",
+      "One discount may cover multiple items. Join discount_id to discounts.id and item_key to items.item_key; do not duplicate discount amounts across memberships.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC"
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "fixed",
+      "platform": "zero_website"
+    }
+  },
+  "jenang_gemi_store_items": {
+    "family": "website",
+    "database": "sku",
+    "columns": {
+      "item_key": "string",
+      "product_slug": "string",
+      "product_name": "string",
+      "option_id": "string",
+      "option_name": "string",
+      "size_id": "string",
+      "size_label": "string",
+      "sku": "string",
+      "site_price": "decimal",
+      "is_active": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "item_key"
+    ],
+    "grain": "One stored storefront item/variant.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Stored jenang gemi store items.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "api/jenang-gemi-store/index.php"
+      ]
+    },
+    "warnings": [
+      "Stored catalog configuration; not sales or a stock reservation. No seed, schema creation, stock sync or refresh occurs.",
+      "site_price is a saved price input, not necessarily the effective catalog or checkout price. Resolve platform-specific SKU price fallback and active discounts through the canonical storefront pricing functions.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "fixed",
+      "platform": "jenang_gemi_website"
+    }
+  },
+  "jenang_gemi_store_discounts": {
+    "family": "website",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "name": "string",
+      "discount_type": "string",
+      "amount": "decimal",
+      "starts_on": "date",
+      "ends_on": "date",
+      "is_active": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One stored discount rule.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness. starts_on and ends_on are inclusive Asia/Jakarta calendar dates.",
+    "purpose": "Stored jenang gemi store discounts.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "api/jenang-gemi-store/index.php"
+      ]
+    },
+    "warnings": [
+      "Stored catalog configuration; not sales or a stock reservation. No seed, schema creation, stock sync or refresh occurs.",
+      "amount is percent when discount_type=percent; otherwise it is fixed IDR. Dates are inclusive. Rule activity alone does not establish the final applied price or historical discount usage.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "fixed",
+      "platform": "jenang_gemi_website"
+    }
+  },
+  "jenang_gemi_store_discount_items": {
+    "family": "website",
+    "database": "sku",
+    "columns": {
+      "discount_id": "integer",
+      "item_key": "string",
+      "created_at": "datetime"
+    },
+    "default_order": [
+      "discount_id",
+      "item_key"
+    ],
+    "grain": "One stored discount-to-item membership.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Stored jenang gemi store discount items.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "api/jenang-gemi-store/index.php"
+      ]
+    },
+    "warnings": [
+      "Stored catalog configuration; not sales or a stock reservation. No seed, schema creation, stock sync or refresh occurs.",
+      "One discount may cover multiple items. Join discount_id to discounts.id and item_key to items.item_key; do not duplicate discount amounts across memberships.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC"
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "fixed",
+      "platform": "jenang_gemi_website"
+    }
+  },
+  "website_orders": {
+    "family": "sales",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "platform": "string",
+      "order_id": "string",
+      "status": "string",
+      "gross_revenue": "decimal",
+      "net_revenue": "decimal",
+      "marketplace_fees": "decimal",
+      "cogs": "decimal",
+      "paid_at": "datetime",
+      "listed_at": "datetime",
+      "fulfilled_at": "datetime",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "era": "string",
+      "voucher_mode": "string",
+      "voucher_applied": "integer",
+      "deadline_hours": "integer",
+      "label_size_bytes": "integer",
+      "publication_attempts": "integer",
+      "voucher_discount_percent": "decimal",
+      "deadline_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One website order; amounts are order totals.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Stored website order revenue, lifecycle, publication and fulfillment state.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "website-commerce-bootstrap.php",
+        "api/website-orders/index.php"
+      ]
+    },
+    "warnings": [
+      "All stored statuses and manual/automatic eras are included. Explicitly filter status and date basis before calling totals sales. Paid, listed and fulfilled are different events.",
+      "Website records can also be delivered to downstream mirrors; do not add both representations. Revenue and COGS fields do not establish business net profit, cash available or payment settlement.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "paid_at": "UTC",
+      "listed_at": "UTC",
+      "fulfilled_at": "UTC",
+      "created_at": "UTC",
+      "updated_at": "UTC",
+      "deadline_at": "UTC"
+    },
+    "scope_requirements": {
+      "platform_column": "platform"
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "platform",
+      "column": "platform"
+    }
+  },
+  "website_order_items": {
+    "family": "sales",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "website_order_id": "integer",
+      "sku": "string",
+      "product_name": "string",
+      "option_name": "string",
+      "size_label": "string",
+      "quantity": "integer",
+      "unit_gross_price": "decimal",
+      "unit_net_price": "decimal",
+      "unit_cogs": "decimal",
+      "created_at": "datetime",
+      "item_key": "string"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One website order item; quantities multiply unit prices and unit COGS.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Stored website purchased item and price/COGS snapshots.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "website-commerce-bootstrap.php",
+        "api/website-orders/index.php"
+      ]
+    },
+    "warnings": [
+      "All stored statuses and manual/automatic eras are included. Explicitly filter status and date basis before calling totals sales. Paid, listed and fulfilled are different events.",
+      "Website records can also be delivered to downstream mirrors; do not add both representations. Revenue and COGS fields do not establish business net profit, cash available or payment settlement.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC"
+    },
+    "scope_requirements": {
+      "parent_table": "website_orders",
+      "join": {
+        "website_order_id": "id"
+      }
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "order_parent",
+      "foreign_key": "website_order_id"
+    }
+  },
+  "website_order_dismissals": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "order_id": "string",
+      "id": "integer",
+      "created_at": "datetime"
+    },
+    "default_order": [
+      "order_id"
+    ],
+    "grain": "One dismissed order reference.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Recorded website-order dismissal/tombstone metadata.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "website-commerce-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "A dismissal records administrative removal; it does not prove cancellation, refund or erased upstream activity. Reason text is excluded.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization.",
+      "This shared metadata has no reliable per-site partition; a partial website grant is explicitly denied, not treated as empty."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC"
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "shared_websites"
+    }
+  },
+  "website_metrics_outbox": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "order_id": "string",
+      "status": "string",
+      "platform": "string",
+      "id": "integer",
+      "attempts": "integer",
+      "created_at": "datetime",
+      "delivered_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One queued delivery record; not another sale.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Website metrics delivery queue status without payload.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "website-commerce-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Pending/failed delivery can explain dashboard/mirror discrepancies. Delivered_at is an acknowledgement timestamp, not proof of complete upstream sales synchronization.",
+      "Do not sum order revenue from multiple outbox/mirror representations. Raw payloads are excluded.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "delivered_at": "UTC"
+    },
+    "scope_requirements": {
+      "parent_table": "website_orders",
+      "join": {
+        "order_id": "order_id"
+      }
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "platform",
+      "column": "platform"
+    }
+  },
+  "zero_website_metrics_outbox": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "order_id": "string",
+      "status": "string",
+      "id": "integer",
+      "attempts": "integer",
+      "created_at": "datetime",
+      "delivered_at": "datetime"
+    },
+    "default_order": [
+      "order_id"
+    ],
+    "grain": "One queued delivery record; not another sale.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Website metrics delivery queue status without payload.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "website-commerce-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Pending/failed delivery can explain dashboard/mirror discrepancies. Delivered_at is an acknowledgement timestamp, not proof of complete upstream sales synchronization.",
+      "Do not sum order revenue from multiple outbox/mirror representations. Raw payloads are excluded.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "delivered_at": "UTC"
+    },
+    "scope_requirements": {
+      "parent_table": "website_orders",
+      "join": {
+        "order_id": "order_id"
+      }
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "fixed",
+      "platform": "zero_website"
+    }
+  },
+  "jenang_gemi_website_metrics_outbox": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "order_id": "string",
+      "status": "string",
+      "id": "integer",
+      "attempts": "integer",
+      "created_at": "datetime",
+      "delivered_at": "datetime"
+    },
+    "default_order": [
+      "order_id"
+    ],
+    "grain": "One queued delivery record; not another sale.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Website metrics delivery queue status without payload.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "website-commerce-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Pending/failed delivery can explain dashboard/mirror discrepancies. Delivered_at is an acknowledgement timestamp, not proof of complete upstream sales synchronization.",
+      "Do not sum order revenue from multiple outbox/mirror representations. Raw payloads are excluded.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "delivered_at": "UTC"
+    },
+    "scope_requirements": {
+      "parent_table": "website_orders",
+      "join": {
+        "order_id": "order_id"
+      }
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "fixed",
+      "platform": "jenang_gemi_website"
+    }
+  },
+  "zero_commerce_orders": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "courier_company": "string",
+      "courier_type": "string",
+      "courier_name": "string",
+      "courier_service_name": "string",
+      "courier_duration": "string",
+      "collection_method": "string",
+      "payment_status": "string",
+      "biteship_status": "string",
+      "id": "integer",
+      "website_order_id": "integer",
+      "total_weight_grams": "integer",
+      "shipping_price": "decimal",
+      "payment_total": "decimal",
+      "biteship_actual_price": "decimal",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "paid_at": "datetime",
+      "shipment_created_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One ZERO commerce checkout linked to website_orders.id.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Stored ZERO checkout payment and courier state; safe operational and monetary fields only.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "zero-commerce-bootstrap.php",
+        "api/zero-commerce/index.php"
+      ]
+    },
+    "warnings": [
+      "Join website_order_id to website_orders.id for platform, order identity and sales amounts. payment_total includes shipping; do not add it to website revenue. shipping_price is quoted customer shipping, while biteship_actual_price is a stored provider amount.",
+      "Provider status is the latest locally stored observation. No provider reconciliation or live tracking call occurs. Payment links, references, public tokens, customer destinations, raw provider payloads and errors are excluded.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC",
+      "paid_at": "UTC",
+      "shipment_created_at": "UTC"
+    },
+    "scope_requirements": {
+      "parent_table": "website_orders",
+      "join": {
+        "website_order_id": "id"
+      }
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "fixed",
+      "platform": "zero_website"
+    }
+  },
+  "customer_activity": {
+    "family": "customer_aggregates",
+    "database": "analytics",
+    "columns": {
+      "event_type": "string",
+      "site_key": "string",
+      "source": "string",
+      "traffic_kind": "string",
+      "product_code": "string",
+      "product_label": "string",
+      "flavor_code": "string",
+      "flavor_label": "string",
+      "package_size": "string",
+      "conversion_status": "string",
+      "occurred_at": "datetime",
+      "site_label": "string",
+      "cta_location": "string",
+      "package_label": "string",
+      "package_price": "string",
+      "country_code": "string",
+      "elapsed_ms": "integer",
+      "created_at": "datetime"
+    },
+    "default_order": [
+      "event_type"
+    ],
+    "grain": "One recorded event; count is event count, not people, sessions, completed orders or revenue.",
+    "date_basis": "occurred_at is UTC event time; created_at is database insert time. Group occurred_at_jakarta_day/month for Jakarta calendar reporting.",
+    "purpose": "Aggregate-only recorded website/landing/affiliate telemetry without visitor identity.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "analytics-bootstrap.php",
+        "analytics-api.php"
+      ]
+    },
+    "warnings": [
+      "Raw event rows are disabled. IP/device/session/order/customer identifiers, URLs, page paths, notes and contacts are excluded.",
+      "Stored event aggregates do not reproduce canonical dashboard visitor/session/funnel metrics: dashboard filters internal traffic, dashboard paths and device/IP exclusions, applies site/dataset filters and distinct-event rules. Use canonical analytics metric reader for dashboard parity.",
+      "package_price is unnormalized text from an event, not currency-normalized revenue. elapsed_ms is observed event duration in milliseconds. Missing events are unknown, not zero traffic.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization.",
+      "A partial website grant restricts this view to authorized website events using canonical site fallback; unpartitioned landing/affiliate events are excluded. Both website accounts are required for full stored event coverage."
+    ],
+    "physical_table": "analytics_events",
+    "aggregate_only": true,
+    "datetime_timezones": {
+      "occurred_at": "UTC",
+      "created_at": "unknown"
+    },
+    "scope_requirements": {
+      "site_column": "site_key"
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "events"
+    }
+  },
+  "affiliates": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "code": "string",
+      "name": "string",
+      "slug": "string",
+      "id": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "code"
+    ],
+    "grain": "One affiliate business profile.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Affiliate business directory and configured platform mapping.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "analytics-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Business directory metadata, not conversion totals or commission owed. Join affiliate_platforms.affiliate_id to affiliates.id. Customer identity and visitor-level attribution are not exposed.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization.",
+      "This shared metadata has no reliable per-site partition; a partial website grant is explicitly denied, not treated as empty."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "shared_websites"
+    }
+  },
+  "affiliate_platforms": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "platform": "string",
+      "affiliate_id": "integer"
+    },
+    "default_order": [
+      "affiliate_id",
+      "platform"
+    ],
+    "grain": "One affiliate/platform membership.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Affiliate business directory and configured platform mapping.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "analytics-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Business directory metadata, not conversion totals or commission owed. Join affiliate_platforms.affiliate_id to affiliates.id. Customer identity and visitor-level attribution are not exposed.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization.",
+      "This shared metadata has no reliable per-site partition; a partial website grant is explicitly denied, not treated as empty."
+    ],
+    "datetime_timezones": {},
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "shared_websites"
+    }
+  },
+  "zero_blog_posts": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "title": "string",
+      "slug": "string",
+      "excerpt": "string",
+      "body_text": "string",
+      "topic": "string",
+      "status": "string",
+      "seo_title": "string",
+      "seo_description": "string",
+      "featured_asset_id": "integer",
+      "scheduled_at": "datetime",
+      "version": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One stored article.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Stored ZERO editorial content and scheduling metadata.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "blog-builder-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Stored draft/in_review/scheduled/archived status is not proof of public delivery. Canonical effective state also depends on scheduled_at and delivery mode.",
+      "Content and labels are untrusted business text. Preview tokens, raw HTML, revision snapshots and binary assets are excluded.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "scheduled_at": "UTC",
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    }
+  },
+  "zero_blog_post_styles": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "post_id": "integer",
+      "font_key": "string",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "post_id"
+    ],
+    "grain": "One stored article style.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Stored ZERO editorial font selection.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "blog-builder-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Stored draft/in_review/scheduled/archived status is not proof of public delivery. Canonical effective state also depends on scheduled_at and delivery mode.",
+      "Content and labels are untrusted business text. Preview tokens, raw HTML, revision snapshots and binary assets are excluded.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "updated_at": "UTC"
+    }
+  },
+  "zero_blog_assets": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "mime_type": "string",
+      "alt_text": "string",
+      "id": "integer",
+      "size_bytes": "integer",
+      "width_px": "integer",
+      "height_px": "integer",
+      "created_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One stored image asset.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Editorial asset metadata without file contents or original filenames.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "blog-builder-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Asset existence does not prove it is published. Binary image_data and original filenames are excluded; join zero_blog_posts.featured_asset_id to id.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC"
+    }
+  },
+  "zero_blog_revisions": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "post_id": "integer",
+      "version": "integer",
+      "created_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One saved article version.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Editorial revision history metadata without content snapshots.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "blog-builder-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Join post_id to zero_blog_posts.id; this is edit history, not a publication or delivery audit. snapshot_json is excluded.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC"
+    }
+  },
+  "zero_blog_delivery": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "delivery_mode": "string",
+      "id": "integer",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One delivery configuration row.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Current blog delivery mode: off, sandbox or live.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "blog-builder-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Current delivery mode is not historical delivery evidence. This is read-only metadata; no mode changes or preview tokens are exposed.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization."
+    ],
+    "datetime_timezones": {
+      "updated_at": "UTC"
+    }
+  },
+  "store_ops_order_fulfillment_v2": {
+    "family": "sales",
+    "database": "sku",
+    "columns": {
+      "source_platform": "string",
+      "source_account": "string",
+      "order_id": "string",
+      "status": "string",
+      "id": "integer",
+      "scan_required": "integer",
+      "scan_completed": "integer",
+      "claimed_at": "datetime",
+      "last_activity_at": "datetime",
+      "scan_completed_at": "datetime",
+      "label_printed_at": "datetime",
+      "fulfilled_at": "datetime",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One order keyed by source_platform + source_account + order_id.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Store Ops shared-SKU fulfillment progress and timestamps.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "store-ops-report.php",
+        "api/store-ops/index.php",
+        "jenang-gemi-store-ops@05fe7d0ce6a80ffb64acd75ca5f3333d8a385fcf:store-ops-fulfillment-runtime.php"
+      ]
+    },
+    "warnings": [
+      "Use the full three-part order key, including empty source_account; identical order IDs can exist on different accounts.",
+      "Fulfillment is an operational event, not courier delivery, payment settlement or revenue recognition. No worker identity, customer name or items_json is exposed.",
+      "Canonical report fulfillment totals use fulfilled_at; active claims are current state. Date-filtered event counts and a current-state snapshot answer different questions.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization.",
+      "Coverage is limited to recognized authorized source conventions: marketplace rows require the exact configured account and matching platform; configured website/direct/counter platforms admit their verified legacy account aliases. Partner rows, including legacy blank account keys, require the existing explicitly approved all-family internal dashboard grant with all-partner configuration. Unknown platforms, ambiguous blank marketplace accounts and unrecognized aliases are excluded, so this is not a claim of complete Store Ops coverage."
+    ],
+    "datetime_timezones": {
+      "claimed_at": "UTC",
+      "last_activity_at": "UTC",
+      "scan_completed_at": "UTC",
+      "label_printed_at": "UTC",
+      "fulfilled_at": "UTC",
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    },
+    "scope_requirements": {
+      "platform_column": "source_platform",
+      "account_column": "source_account"
+    },
+    "row_scope": {
+      "kind": "store_ops",
+      "config": "accounts",
+      "platform_column": "source_platform",
+      "account_column": "source_account"
+    }
+  },
+  "store_ops_order_events_v2": {
+    "family": "sales",
+    "database": "sku",
+    "columns": {
+      "source_platform": "string",
+      "source_account": "string",
+      "order_id": "string",
+      "event_type": "string",
+      "sku": "string",
+      "id": "integer",
+      "progress_scanned": "integer",
+      "progress_required": "integer",
+      "quantity": "decimal",
+      "created_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One recorded operational event; not one order or sold item.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Store Ops fulfillment event timeline without private messages/payload.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "store-ops-report.php",
+        "api/store-ops/index.php",
+        "jenang-gemi-store-ops@05fe7d0ce6a80ffb64acd75ca5f3333d8a385fcf:store-ops-fulfillment-runtime.php"
+      ]
+    },
+    "warnings": [
+      "Use source_platform + source_account + order_id to join fulfillment state. Quantity is event-specific and cannot be summed as sales or inventory consumption without event semantics.",
+      "The dashboard classifies scan_error and error as scan errors. Workers, messages and payload_json are excluded.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization.",
+      "Coverage is limited to recognized authorized source conventions: marketplace rows require the exact configured account and matching platform; configured website/direct/counter platforms admit their verified legacy account aliases. Partner rows, including legacy blank account keys, require the existing explicitly approved all-family internal dashboard grant with all-partner configuration. Unknown platforms, ambiguous blank marketplace accounts and unrecognized aliases are excluded, so this is not a claim of complete Store Ops coverage."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC"
+    },
+    "scope_requirements": {
+      "platform_column": "source_platform",
+      "account_column": "source_account"
+    },
+    "row_scope": {
+      "kind": "store_ops",
+      "config": "accounts",
+      "platform_column": "source_platform",
+      "account_column": "source_account"
+    }
+  },
+  "store_ops_returns": {
+    "family": "stock",
+    "database": "sku",
+    "columns": {
+      "return_number": "string",
+      "order_id": "string",
+      "source_platform": "string",
+      "source_label": "string",
+      "source_account": "string",
+      "fault_party": "string",
+      "condition_code": "string",
+      "partner_code": "string",
+      "destination": "string",
+      "status": "string",
+      "partner_bill_id": "string",
+      "partner_adjustment_key": "string",
+      "id": "integer",
+      "purchase_order_id": "integer",
+      "quote_amount": "decimal",
+      "partner_selected_value": "decimal",
+      "partner_adjustment_amount": "decimal",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "completed_at": "datetime"
+    },
+    "default_order": [
+      "return_number"
+    ],
+    "grain": "One return case; multiple cases may refer to one original order.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Stored return case, disposition and linked replacement/partner-adjustment amounts.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "jenang-gemi-store-ops@05fe7d0ce6a80ffb64acd75ca5f3333d8a385fcf:returns-bootstrap.php",
+        "jenang-gemi-store-ops@05fe7d0ce6a80ffb64acd75ca5f3333d8a385fcf:api/returns/index.php",
+        "jenang-gemi-store-ops@05fe7d0ce6a80ffb64acd75ca5f3333d8a385fcf:sku-db-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Draft cases are not completed returns. Completed dispositions distinguish stock, production and unrecoverable; use completed_at for completion periods.",
+      "quote_amount is a replacement/production quote, not a refund paid. Partner adjustment is not cash; link partner_bill_id/partner_adjustment_key to partner billing without counting the same adjustment twice.",
+      "Customer names/usernames, request keys and created_by are excluded. Records do not establish all marketplace refund cases or settlements.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization.",
+      "Coverage is limited to recognized authorized source conventions: marketplace rows require the exact configured account and matching platform; configured website/direct/counter platforms admit their verified legacy account aliases. Partner rows, including legacy blank account keys, require the existing explicitly approved all-family internal dashboard grant with all-partner configuration. Unknown platforms, ambiguous blank marketplace accounts and unrecognized aliases are excluded, so this is not a claim of complete Store Ops coverage."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC",
+      "completed_at": "UTC"
+    },
+    "scope_requirements": {
+      "platform_column": "source_platform",
+      "account_column": "source_account",
+      "partner_column": "partner_code"
+    },
+    "row_scope": {
+      "kind": "store_ops",
+      "config": "accounts",
+      "platform_column": "source_platform",
+      "account_column": "source_account"
+    }
+  },
+  "store_ops_return_items": {
+    "family": "stock",
+    "database": "sku",
+    "columns": {
+      "sku": "string",
+      "product_name": "string",
+      "id": "integer",
+      "return_id": "integer",
+      "ordered_qty": "integer",
+      "returned_qty": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One SKU line in a return case.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Returned product quantities including draft cases.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "jenang-gemi-store-ops@05fe7d0ce6a80ffb64acd75ca5f3333d8a385fcf:returns-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "Join return_id to store_ops_returns.id and filter case status/disposition before counting completed returned units. ordered_qty repeats per return case; do not sum it as original sales.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization.",
+      "Coverage is limited to recognized authorized source conventions: marketplace rows require the exact configured account and matching platform; configured website/direct/counter platforms admit their verified legacy account aliases. Partner rows, including legacy blank account keys, require the existing explicitly approved all-family internal dashboard grant with all-partner configuration. Unknown platforms, ambiguous blank marketplace accounts and unrecognized aliases are excluded, so this is not a claim of complete Store Ops coverage.",
+      "Authorization uses the parent return record through EXISTS; orphaned or unauthorized return children are excluded without multiplying child rows."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    },
+    "scope_requirements": {
+      "parent_table": "store_ops_returns",
+      "join": {
+        "return_id": "id"
+      }
+    },
+    "row_scope": {
+      "kind": "store_ops",
+      "config": "accounts",
+      "parent_table": "store_ops_returns",
+      "foreign_key": "return_id",
+      "parent_key": "id",
+      "parent_platform_column": "source_platform",
+      "parent_account_column": "source_account"
+    }
+  },
+  "store_ops_return_stock_movements": {
+    "family": "stock",
+    "database": "sku",
+    "columns": {
+      "sku": "string",
+      "base_sku": "string",
+      "id": "integer",
+      "return_id": "integer",
+      "quantity": "integer",
+      "base_quantity": "integer",
+      "stock_before": "integer",
+      "stock_after": "integer",
+      "created_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One returned selling-SKU movement and its converted base-SKU movement.",
+    "date_basis": "Stored datetimes are UTC. Choose the business event timestamp explicitly; updated_at is record freshness, not upstream completeness.",
+    "purpose": "Physical stock additions recorded by completed restock returns.",
+    "source_verified": "Reviewed canonical source schema/projection; live table and column availability must be checked on query.",
+    "provenance": {
+      "source_files": [
+        "jenang-gemi-store-ops@05fe7d0ce6a80ffb64acd75ca5f3333d8a385fcf:returns-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "quantity is selling-SKU units; base_quantity is stock/base-SKU units. Do not add the two or compare units without SKU conversion. stock_before/stock_after are movement snapshots, not current stock.",
+      "Restock movements do not represent production/unrecoverable dispositions, financial refunds or all inventory movements.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization.",
+      "Coverage is limited to recognized authorized source conventions: marketplace rows require the exact configured account and matching platform; configured website/direct/counter platforms admit their verified legacy account aliases. Partner rows, including legacy blank account keys, require the existing explicitly approved all-family internal dashboard grant with all-partner configuration. Unknown platforms, ambiguous blank marketplace accounts and unrecognized aliases are excluded, so this is not a claim of complete Store Ops coverage.",
+      "Authorization uses the parent return record through EXISTS; orphaned or unauthorized return children are excluded without multiplying child rows."
+    ],
+    "datetime_timezones": {
+      "created_at": "UTC"
+    },
+    "scope_requirements": {
+      "parent_table": "store_ops_returns",
+      "join": {
+        "return_id": "id"
+      }
+    },
+    "row_scope": {
+      "kind": "store_ops",
+      "config": "accounts",
+      "parent_table": "store_ops_returns",
+      "foreign_key": "return_id",
+      "parent_key": "id",
+      "parent_platform_column": "source_platform",
+      "parent_account_column": "source_account"
+    }
+  },
+  "live_state": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "state_key": "string",
+      "sequence": "integer",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "state_key"
+    ],
+    "grain": "One local analytics change sequence per state key.",
+    "date_basis": "updated_at is local stored change time UTC, not an upstream source cursor.",
+    "purpose": "Analytics cache/change notification freshness metadata.",
+    "source_verified": "Reviewed analytics-bootstrap.php DDL; live availability checked on query.",
+    "provenance": {
+      "source_files": [
+        "analytics-bootstrap.php"
+      ]
+    },
+    "warnings": [
+      "A change sequence is not a traffic count or source-completeness watermark. Reason text is excluded.",
+      "A missing table/column or denied account must be returned as unavailable/denied, never as zero activity. A newest stored timestamp is not proof of complete synchronization.",
+      "This shared metadata has no reliable per-site partition; a partial website grant is explicitly denied, not treated as empty."
+    ],
+    "datetime_timezones": {
+      "updated_at": "UTC"
+    },
+    "row_scope": {
+      "kind": "website",
+      "config": "accounts",
+      "basis": "shared_websites"
+    }
+  }
+}

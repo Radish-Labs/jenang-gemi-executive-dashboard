@@ -1,0 +1,56 @@
+# Marketplace and platform read coverage
+
+Reviewed 2026-10-22 from application source. This is source-code and fixture evidence, not a claim that every production table or ingest route is currently available. Queries must retain explicit unavailable, unauthorized, incomplete and stale states.
+
+## Implemented projections
+
+`assistant/lib/source-catalog/platform.json` supplies ten definitions and 109 projected fields: six enhanced existing views, four additional sources. Sources use the existing `analytics` or `sku` bindings and existing `sales`, `ads` or `website` family grants. No new credential, scope, migration, bootstrap action or write is introduced.
+
+| View | Actual source and grain | Added coverage / interpretation | Authorization |
+|---|---|---|---|
+| `dashboard_order_mirror` | `api/orders/index.php`, one marketplace order item | Adds item key, source product/company/type labels, timestamp, COGS quantity, release source and source event. Preserves sales/status/date/fee/COGS fields. | Server adds configured `account_key IN (...)`; caller filters cannot broaden it. |
+| `ad_view_campaigns` | `ads-bootstrap.php`, optional local override per account/campaign | Adds actual `unit_cogs_override`; alias/tracking is neither campaign inventory nor performance. | Configured account partition. |
+| `ad_view_budgets` | Same bootstrap, one planned budget/account/month | Planned amount is neither consumed expense nor wallet funding. | Configured account partition. |
+| `ad_view_credit_alerts` | Same bootstrap, one local threshold/account | Threshold is not balance. | Configured account partition. |
+| `ad_view_events` | Same bootstrap, local change annotation | Typed event metadata only; title, note and arbitrary tags remain excluded. | Configured account partition. |
+| `executive_chart_context` | `executive-context.php` and `api/context/index.php` | Historical chart overrides/corrections, not current P&L or sync ledger. | Existing all-configured-dashboard read grant; table has no account partition. |
+| `dashboard_order_location_cache` | `api/orders/index.php`, one range/geocoder cache entry | Range, input row/order counts, mirror checkpoint and generation timestamp only; no addresses or aggregate JSON. | Existing all-configured-dashboard read grant; table has no account partition. |
+
+Additional safe projections cover ZERO voucher rule configuration (without code/hash/hint) and shared-SKU counter invoices/items (without buyer/operator data). Invoice type distinguishes independent walk-in sales from duplicate printed WhatsApp records.
+
+`row_scope` is consumed by the central compiler. Unpartitioned views explicitly identify `scope_requirements.kind=dashboard_all_configured`; their totals must never be described as a filtered single-account total.
+
+### Date, completeness and double-counting rules
+
+- The mirror's `mirrored_at` is dashboard receipt/write time; `source_updated_at` is a record timestamp. Neither verifies a complete successful upstream sync. Use `sales_orders` for deduplicated order revenue and canonical `sales_lines` for sale lines. Physical rows require explicit canceled/deleted filtering. `order_net_revenue` and released amounts can repeat per line; summing them at line grain is invalid.
+- `ad_view_events.event_at` is **Asia/Jakarta wall time**: the app parses a local datetime with the Jakarta timezone and stores the local formatted value. Adding seven hours would corrupt the day. `created_at` and initial configuration timestamps rely on database `CURRENT_TIMESTAMP`; subsequent updates often use `UTC_TIMESTAMP`. Their original session timezone is unverified, so automatic conversion is refused.
+- `executive_chart_context` only accepts monthly periods in 2025 and January–April 2026, and daily periods May 1–19 2026. The canonical merger replaces monthly values; daily values are additive after bundled live-overlap corrections. September's last modification does not establish a failed October sync. Never sum this table directly on top of the sales mirror.
+- Location-cache ranges overlap. Do not sum counts across cache entries. The app checks cached row count, distinct order count and latest mirror timestamp against the requested current range; generation time alone does not prove validity. This reader does not refresh the cache or contact a geocoder.
+- The four local ad views are configuration/annotations. Empty results are not evidence of zero campaign activity, consumed spend, impressions, clicks or attribution.
+
+## Remaining remote ingestion and semantic source paths
+
+These sources are real and were inspected in the separate ingestion repository. They are deliberately not assigned to one of the dashboard's local database bindings. A missing local mapping must not silently produce zero.
+
+| Source family | Real storage / application consumer | Current coverage and exact missing implementation |
+|---|---|---|
+| Marketplace order detail and item facts | Ingest `marketplace_orders`, `marketplace_order_items`; dashboard mirror receives a projection. | Mirror/semantic sales reads cover stored dashboard facts. Full safe upstream reconciliation needs a passive header-authenticated stored-order reader with explicit account, date, status, fields and pagination; raw customer payload stays excluded. |
+| Marketplace order/product rollups | Ingest `marketplace_order_monthly_rollups`, `marketplace_order_product_monthly_rollups`; `/sales/summary` via `MarketplaceSalesSummaryService::yearlySummary`. | Executive/P&L use these canonical totals and local enrichment. Do not replace this with ad-hoc mirror totals. The old HTTP route requires a credential in the URL and constructs token repositories; it must not be reused as a new MCP reader. Needed: passive header-authenticated summary projection that reuses canonical stored rollup reads and carries source completeness. |
+| Marketplace sync ledger | Ingest `marketplace_sync_runs`; `MarketplaceOrderRepository::latestSyncStatus`. | No local mirror equivalent. Passive reader needs run status/mode, requested coverage dates, count, checked/ok account counts and start/finish time, plus sanitized per-account status. Never return `error` or `raw_json` unfiltered. A global latest successful run is not proof that an arbitrary requested account/date was covered. |
+| Shopee campaign history/performance | Ingest `shopee_ad_campaigns`, `shopee_ad_daily_metrics`, `shopee_ad_hourly_metrics`; new `/ads/history`. | Root's bridge supplies all-status stored summary/campaign/daily/hourly reads, subject to deployed-route verification. Daily and hourly metrics overlap. Product attribution mapping and current balance are separate sources, not implied by history availability. |
+| Shopee ad item mapping/balance | Ingest `shopee_ad_items`, `shopee_ad_balances`; old `/ads/summary` and ad-view economics. | Still needs safe passive DTOs for item ID→seller SKU/product mapping and stored balance with observation time. Local campaign unit-COGS override is now exposed but is not a replacement for upstream mapping. Do not call old summary route merely to fill this gap: its live-status filtering hides ended/paused history and its existing URL-token path is unsuitable. |
+| Shopee monitor observations | Ingest monitor state/observations and `/ads/monitor`; dashboard `ad-monitor-bootstrap.php` uses header auth. | Existing route and state deployment must be verified independently. Safe MCP output requires strict projection of balances/spend/observation times/config status, account filtering, and a passive constructor. Never expose monitor secrets, receiver config, mutation instructions or automatically trigger monitor/spend changes. |
+| Marketplace fulfillment | Ingest `marketplace_fulfillment_orders`, `marketplace_fulfillment_jobs`, `marketplace_fulfillment_runtime`; `/fulfillment/*` routes. | Commerce catalog covers local Store Ops projections. The remote lifecycle needs a passive sanitized reader: operational state/cutoffs/retries/counts/date ranges only, not customer contacts, shipping labels or pickup changes. Existing route constructors and request paths require side-effect review before reuse. |
+| Complete executive summary cache | `api/sales/index.php` complete-snapshot cache; joins marketplace, website, direct and partner facts and canonical cost/context logic. | Latest physical row times do not replace `summary_complete` or the snapshot's `sync_status`. Existing fallback explicitly returns the last complete snapshot with `fresh=false` on source failure. Expose a projected passive snapshot with original as-of/source status if using cache, never silently claim current completeness. |
+
+Remote source reader implementation belongs to its owning ingest service. This catalog does not alter that service or create direct database access. Existing business-source authentication can be reused inside a secure passive route only after the route is proven free of schema writes, marketplace refresh calls and credential renewal side effects.
+
+## Deliberately excluded fields and operations
+
+Customer username, identity, phone, address; raw order/event JSON; arbitrary note/tag payloads; auth/session/token tables; receipts/proofs/shipping-label content; migration markers; unrestricted SQL; live sync, recalculation, purge, pickup, spending, monitoring mutations or credential renewal. Safe source metadata reports these exclusions rather than claiming unrestricted parity.
+
+Other catalog owners cover SKU mappings/inventory, wallet backtrack and release-sync logs, website analytics, affiliates, live-state signal, storefronts, accounting and partner rows. Those sources should not be duplicated here.
+
+## Validation
+
+Run `assistant/tests/platform-source-catalog.php` with the project's PHP runtime. Tests extract actual column declarations from canonical DDL (including safe migration-added columns), construct independent SQLite tables, verify each projection, reject sensitive fields and fabricated remote mappings, and exercise the canonical context replacement behavior. Central integration tests additionally load `tableRegistry`, execute account isolation in the compiled query, verify hostile caller filters cannot escape the account partition, and verify Jakarta/unknown timezone behavior. No production source is contacted.

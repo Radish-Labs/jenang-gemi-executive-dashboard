@@ -1,0 +1,737 @@
+{
+  "sku_brands": {
+    "family": "catalog",
+    "database": "sku",
+    "columns": {
+      "id": "string",
+      "name": "string",
+      "code": "string",
+      "created_at": "datetime"
+    },
+    "grain": "One saved catalog dimension record.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Saved catalog dimension; join IDs to SKU records for labels.",
+    "provenance": [
+      "sku-db-bootstrap.php:jg_sku_ensure_schema",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "Missing records are not proof that a product was never sold; sales and purchase history can retain deleted or unmapped products."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "created_at": "UTC"
+    }
+  },
+  "sku_units": {
+    "family": "catalog",
+    "database": "sku",
+    "columns": {
+      "id": "string",
+      "name": "string",
+      "code": "string",
+      "created_at": "datetime"
+    },
+    "grain": "One saved catalog dimension record.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Saved catalog dimension; join IDs to SKU records for labels.",
+    "provenance": [
+      "sku-db-bootstrap.php:jg_sku_ensure_schema",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "Missing records are not proof that a product was never sold; sales and purchase history can retain deleted or unmapped products."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "created_at": "UTC"
+    }
+  },
+  "sku_flavors": {
+    "family": "catalog",
+    "database": "sku",
+    "columns": {
+      "id": "string",
+      "brand_id": "string",
+      "name": "string",
+      "code": "string",
+      "created_at": "datetime"
+    },
+    "grain": "One saved catalog dimension record.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Saved catalog dimension; join IDs to SKU records for labels.",
+    "provenance": [
+      "sku-db-bootstrap.php:jg_sku_ensure_schema",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "Missing records are not proof that a product was never sold; sales and purchase history can retain deleted or unmapped products."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "created_at": "UTC"
+    }
+  },
+  "sku_products": {
+    "family": "catalog",
+    "database": "sku",
+    "columns": {
+      "id": "string",
+      "brand_id": "string",
+      "name": "string",
+      "code": "string",
+      "created_at": "datetime"
+    },
+    "grain": "One saved catalog dimension record.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Saved catalog dimension; join IDs to SKU records for labels.",
+    "provenance": [
+      "sku-db-bootstrap.php:jg_sku_ensure_schema",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "Missing records are not proof that a product was never sold; sales and purchase history can retain deleted or unmapped products."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "created_at": "UTC"
+    }
+  },
+  "sku_skus": {
+    "family": "stock",
+    "database": "sku",
+    "columns": {
+      "sku": "string",
+      "tag": "string",
+      "brand_id": "string",
+      "unit_id": "string",
+      "volume": "decimal",
+      "astra": "decimal",
+      "astra_weight_grams": "integer",
+      "package_length_cm": "decimal",
+      "package_width_cm": "decimal",
+      "package_height_cm": "decimal",
+      "flavor_id": "string",
+      "product_id": "string",
+      "starting_stock": "integer",
+      "current_stock": "integer",
+      "stock_trigger": "integer",
+      "inventory_mode": "string",
+      "purchase_moq": "integer",
+      "skip_scan": "integer",
+      "cogs": "decimal",
+      "packing_required": "integer",
+      "sale_price": "decimal",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "approval_request_id": "integer"
+    },
+    "grain": "One selling SKU; ASTRA-linked selling sizes share one authoritative base stock.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "sku"
+    ],
+    "purpose": "Current catalog, selling-unit attributes, COGS, inventory thresholds, purchase MOQ and shipping dimensions.",
+    "provenance": [
+      "sku-db-bootstrap.php:jg_sku_ensure_schema",
+      "astra-stock-bootstrap.php:jg_astra_stock_map",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "Do not SUM current_stock across ASTRA-linked selling SKUs: larger sizes are derived from shared base stock and would double count inventory.",
+      "Use jg_astra_stock_map and jg_astra_stock_ratio for the canonical stock-SKU relationship; physical table counts alone are not available-to-sell or forecast demand.",
+      "Current COGS is not necessarily historical sale COGS; use effective COGS history and the canonical reporting calculation.",
+      "Volume requires unit_id; ASTRA is a stock conversion quantity, not currency."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    }
+  },
+  "sku_cogs_history": {
+    "family": "stock",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "sku": "string",
+      "old_price": "decimal",
+      "new_price": "decimal",
+      "takes_place": "string",
+      "change_mode": "string",
+      "effective_at": "datetime",
+      "effective_until": "datetime",
+      "recorded_at": "datetime"
+    },
+    "grain": "One COGS change for a SKU.",
+    "date_basis": "effective_at/effective_until have mixed historical storage: quarterly/period paths use Jakarta local boundaries, while opening/legacy rows can copy UTC recorded_at; recorded_at is UTC.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Saved COGS changes and their effective periods; use the canonical COGS resolver for a sale date.",
+    "provenance": [
+      "sku-db-bootstrap.php:jg_sku_ensure_schema",
+      "sku-db-bootstrap.php:jg_sku_cogs_at",
+      "astra-stock-bootstrap.php:jg_astra_cogs_scale_history",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "Do not add old_price and new_price or apply current price to all history. Larger selling sizes scale base COGS using ASTRA ratio.",
+      "effective_at/effective_until do not have a uniform verified timezone across legacy and quarterly/period writers. Do not globally add 7 hours; use the canonical COGS resolver and disclose legacy date uncertainty."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "effective_at": "unknown",
+      "effective_until": "unknown",
+      "recorded_at": "UTC"
+    }
+  },
+  "sku_packing_costs": {
+    "family": "stock",
+    "database": "sku",
+    "columns": {
+      "year": "integer",
+      "month": "integer",
+      "sku": "string",
+      "packing_per_item": "decimal",
+      "updated_at": "datetime"
+    },
+    "grain": "One year/month/SKU packing rate.",
+    "date_basis": "year/month identify the Asia/Jakarta business month; updated_at is UTC.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "year",
+      "month",
+      "sku"
+    ],
+    "purpose": "Per-selling-item packing cost for a saved business month.",
+    "provenance": [
+      "sku-db-bootstrap.php:jg_sku_ensure_schema",
+      "product-costs-bootstrap.php:jg_product_costs_packing_lookup",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "An absent required packing rate is missing cost coverage, not zero cost. Do not SUM monthly rates as expenses."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "updated_at": "UTC"
+    }
+  },
+  "sku_stock_lots": {
+    "family": "stock",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "sku": "string",
+      "po_number": "string",
+      "received_qty_astra": "decimal",
+      "remaining_qty_astra": "decimal",
+      "cogs_per_astra": "decimal",
+      "received_at": "datetime",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "One received or adjustment lot for a base SKU.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Received stock lots and remaining base-stock quantities with FIFO cost.",
+    "provenance": [
+      "api/orders/index.php:jg_orders_ensure_schema",
+      "api/sku-db/index.php:jg_sku_inventory_adjust_lots_to_total",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "Quantities are ASTRA/base stock units; do not combine with selling-SKU stock counts without conversion.",
+      "Lot balance is physical stored inventory; it does not subtract current open fulfillment commitments.",
+      "PO labels can identify opening stock or stock adjustments rather than a real purchase order."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "received_at": "UTC",
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    }
+  },
+  "marketplace_order_inventory_allocations": {
+    "family": "stock",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "platform": "string",
+      "account_key": "string",
+      "sku": "string",
+      "stock_lot_id": "integer",
+      "po_number": "string",
+      "qty_astra_consumed": "decimal",
+      "cogs_per_astra": "decimal",
+      "total_cogs": "decimal",
+      "consumed_at": "datetime",
+      "created_at": "datetime"
+    },
+    "grain": "One order-item/base-lot allocation, with a stored SKU, account and platform.",
+    "date_basis": "consumed_at is copied from the normalized source order timestamp; created_at is UTC allocation-write time. Both describe ledger events, not last upstream sync.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Existing explicit FIFO allocation ledger, not a sales feed or canonical total P&L.",
+    "provenance": [
+      "api/orders/index.php:jg_orders_handle_request",
+      "api/orders/index.php:jg_orders_enrich_for_read",
+      "api/orders/index.php:jg_orders_allocate_fifo",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "This ledger is written only by the explicit POST allocate path; ordinary order reads and lightweight metric reads do not fill missing allocations.",
+      "Old consumed_at/created_at values do not imply no recent orders or no recent COGS. Compare the sales mirror and canonical metric COGS/history coverage independently.",
+      "Lightweight dashboard gross-margin metrics use current/effective SKU COGS and packing through jg_orders_enrich_for_metrics; they are not a SUM of this allocation ledger.",
+      "Reading reporting data never allocates stock, repairs history or refreshes upstream sources."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "row_scope": {
+      "column": "account_key",
+      "config": "accounts"
+    },
+    "datetime_timezones": {
+      "consumed_at": "unknown",
+      "created_at": "UTC"
+    }
+  },
+  "purchase_orders": {
+    "family": "purchasing",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "po_number": "string",
+      "status": "string",
+      "line_count": "integer",
+      "ordered_qty": "integer",
+      "received_qty": "integer",
+      "estimated_total": "decimal",
+      "placed_at": "datetime",
+      "updated_at": "datetime",
+      "completed_at": "datetime",
+      "order_type": "string",
+      "confirmed_at": "datetime"
+    },
+    "grain": "One purchase order header, possibly spanning multiple brands.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Purchase order lifecycle and recorded estimated value.",
+    "provenance": [
+      "purchase-orders-bootstrap.php:jg_purchase_orders_ensure_schema",
+      "product-purchases-bootstrap.php:jg_product_purchases_payload",
+      "purchase-orders-bootstrap.php:jg_purchase_orders_now"
+    ],
+    "warnings": [
+      "Product Purchases uses statuses pending/partially_received/received and COALESCE(confirmed_at, placed_at) for the purchase date. Draft/cancelled orders must not be silently included in that metric.",
+      "Estimated purchase value is neither consumed COGS nor cash paid; reconcile items, receipts and payments separately."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "placed_at": "UTC",
+      "updated_at": "UTC",
+      "completed_at": "UTC",
+      "confirmed_at": "UTC"
+    }
+  },
+  "purchase_order_items": {
+    "family": "purchasing",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "purchase_order_id": "integer",
+      "sku": "string",
+      "product_name": "string",
+      "moq": "integer",
+      "ordered_qty": "integer",
+      "received_qty": "integer",
+      "unit_cost": "decimal",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "One SKU line per purchase order.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Ordered/received SKU quantities and saved unit acquisition cost.",
+    "provenance": [
+      "purchase-orders-bootstrap.php:jg_purchase_orders_ensure_schema",
+      "purchase-orders-bootstrap.php:jg_purchase_orders_incoming_by_sku",
+      "purchase-orders-bootstrap.php:jg_purchase_orders_now"
+    ],
+    "warnings": [
+      "Incoming stock uses max(ordered_qty - received_qty,0) only for parent statuses pending/partially_received. Child rows alone cannot filter parent status.",
+      "Ordered or paid purchases are not automatically profit expenses; use the canonical cost/recognition rules."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    }
+  },
+  "purchase_order_receipts": {
+    "family": "purchasing",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "purchase_order_id": "integer",
+      "purchase_order_item_id": "integer",
+      "sku": "string",
+      "quantity": "integer",
+      "received_at": "datetime"
+    },
+    "grain": "One receipt event for a purchase-order item.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Recorded purchase stock receipt events.",
+    "provenance": [
+      "purchase-orders-bootstrap.php:jg_purchase_orders_ensure_schema",
+      "purchase-orders-bootstrap.php:jg_purchase_orders_now"
+    ],
+    "warnings": [
+      "Do not add receipt quantities to purchase_order_items.received_qty: they describe the same received stock at event and summary grains."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "received_at": "UTC"
+    }
+  },
+  "purchase_order_payments": {
+    "family": "purchasing",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "purchase_order_id": "integer",
+      "amount": "decimal",
+      "payment_mode": "string",
+      "paid_at": "datetime",
+      "accounting_transaction_id": "integer",
+      "account_id": "integer"
+    },
+    "grain": "One recorded payment for a purchase order.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Recorded purchase payment amounts and accounting reconciliation links.",
+    "provenance": [
+      "purchase-orders-bootstrap.php:jg_purchase_orders_ensure_schema",
+      "purchase-orders-bootstrap.php:jg_purchase_orders_record_payment",
+      "purchase-orders-bootstrap.php:jg_purchase_orders_now"
+    ],
+    "warnings": [
+      "accounting_transaction_id links the same payment to the accounting transaction; do not add both amounts as two outflows.",
+      "Proof files, employee identities, idempotency keys and raw item-allocation JSON are excluded.",
+      "A payment is not necessarily a recognized P&L expense or delivered stock."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "paid_at": "UTC"
+    }
+  },
+  "sku_requests": {
+    "family": "catalog",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "brand_id": "string",
+      "unit_id": "string",
+      "volume": "decimal",
+      "astra": "decimal",
+      "flavor_id": "string",
+      "product_id": "string",
+      "proposed_sku": "string",
+      "status": "string",
+      "approved_sku": "string",
+      "created_at": "datetime",
+      "decided_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Catalog SKU proposal status and proposed business attributes.",
+    "grain": "One saved SKU proposal.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "provenance": [
+      "sku-db-bootstrap.php:jg_sku_ensure_schema",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "Requester/approver identities and free-text decision notes are excluded. A pending proposal is not an active SKU."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "decided_at": "UTC"
+    }
+  },
+  "sku_mapping_requests": {
+    "family": "catalog",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "mapping_type": "string",
+      "brand_id": "string",
+      "proposed_name": "string",
+      "status": "string",
+      "created_at": "datetime",
+      "decided_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Catalog dimension proposal status for brand/unit/flavor/product mappings.",
+    "grain": "One saved catalog dimension proposal.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "provenance": [
+      "sku-db-bootstrap.php:jg_sku_ensure_schema",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "Requester/approver identities and free-text decision notes are excluded; proposed_name is a business catalog label, not an approved dimension."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "decided_at": "UTC"
+    }
+  },
+  "direct_order_inventory_restorations": {
+    "family": "stock",
+    "database": "sku",
+    "columns": {
+      "id": "integer",
+      "sku": "string",
+      "quantity": "integer",
+      "restored_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Recorded direct-order inventory restoration quantities.",
+    "grain": "One SKU restoration for an archived direct order.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "provenance": [
+      "whatsapp-orders-bootstrap.php:jg_whatsapp_ensure_inventory_restore_schema",
+      "whatsapp-orders-bootstrap.php:jg_whatsapp_restore_order_inventory",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "This is an exactly-once restoration audit, not a complete returns/refunds feed. Quantity is copied from the direct order items; no refund or cash amount is inferred.",
+      "Order/customer identifiers are omitted."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "sku_skus.brand_id -> sku_brands.id where SKU is present; purchase orders may contain multiple brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "datetime_timezones": {
+      "restored_at": "UTC"
+    }
+  },
+  "sku_inventory_settings": {
+    "family": "stock",
+    "database": "sku",
+    "columns": {
+      "meta_key": "string",
+      "meta_value": "string",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "meta_key"
+    ],
+    "purpose": "Saved inventory purchase coverage days used by the canonical forecast.",
+    "grain": "One specifically allowed scalar inventory setting.",
+    "date_basis": "All stored DATETIME fields are UTC; reporting calendar is Asia/Jakarta.",
+    "source_verified": "Reviewed application DDL and read paths; production existence and coverage remain query-time checks.",
+    "provenance": [
+      "sku-db-bootstrap.php:jg_sku_ensure_schema",
+      "inventory-recap-bootstrap.php:jg_inventory_recap_global_purchase_days",
+      "sku-db-bootstrap.php:jg_sku_now"
+    ],
+    "warnings": [
+      "Only inventory_purchase_days is exposed; arbitrary settings and migration keys are inaccessible. Absence means the application uses its fallback, not zero purchase days."
+    ],
+    "scope_requirements": {
+      "mode": "dashboard_all_configured",
+      "intent": "Business catalog/stock/purchasing projection under the existing dashboard grant; no customer identities or credentials.",
+      "brand_join": "Global inventory forecast setting applies to all configured catalog brands."
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical stored timestamps only; a maximum timestamp is not evidence of complete sync"
+    },
+    "physical_table": "sku_meta",
+    "fixed_filters": [
+      {
+        "column": "meta_key",
+        "operator": "in",
+        "value": [
+          "inventory_purchase_days"
+        ]
+      }
+    ],
+    "datetime_timezones": {
+      "updated_at": "UTC"
+    }
+  }
+}

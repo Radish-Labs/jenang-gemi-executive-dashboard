@@ -283,9 +283,9 @@ function jg_purchase_orders_accounting_category(array $order): array
         ];
 }
 
-function jg_purchase_orders_fetch(PDO $pdo, int $limit = 20, ?int $orderId = null): array
+function jg_purchase_orders_fetch(PDO $pdo, int $limit = 20, ?int $orderId = null, bool $prepareSchema = true, bool $includeProofs = true): array
 {
-    jg_purchase_orders_ensure_schema($pdo);
+    if ($prepareSchema) jg_purchase_orders_ensure_schema($pdo);
     $limit = max(1, min(1000, $limit));
     $ordersStmt = $pdo->prepare(
         'SELECT id, po_number, status, order_type, tag, note, line_count, ordered_qty, received_qty,
@@ -316,7 +316,7 @@ function jg_purchase_orders_fetch(PDO $pdo, int $limit = 20, ?int $orderId = nul
          ORDER BY paid_at ASC, id ASC'
     );
 
-    return array_map(static function (array $order) use ($pdo, $itemsStmt, $paymentsStmt): array {
+    return array_map(static function (array $order) use ($pdo, $itemsStmt, $paymentsStmt, $includeProofs): array {
         $itemsStmt->execute([':purchase_order_id' => (int) $order['id']]);
         $items = array_map(static function (array $item): array {
             $ordered = max(0, (int) ($item['ordered_qty'] ?? 0));
@@ -337,10 +337,10 @@ function jg_purchase_orders_fetch(PDO $pdo, int $limit = 20, ?int $orderId = nul
         $ordered = max(0, (int) ($order['ordered_qty'] ?? 0));
         $received = max(0, min($ordered, (int) ($order['received_qty'] ?? 0)));
         $paymentsStmt->execute([':purchase_order_id' => (int) $order['id']]);
-        $payments = array_map(static function (array $payment) use ($pdo): array {
+        $payments = array_map(static function (array $payment) use ($pdo, $includeProofs): array {
             $itemIds = json_decode((string) ($payment['item_ids_json'] ?? '[]'), true);
             $paymentId = (int) ($payment['id'] ?? 0);
-            $proofs = jg_purchase_orders_payment_proofs($pdo, $payment);
+            $proofs = $includeProofs ? jg_purchase_orders_payment_proofs($pdo, $payment) : [];
             return [
                 'id' => $paymentId,
                 'accounting_transaction_id' => (int) ($payment['accounting_transaction_id'] ?? 0),
@@ -422,9 +422,11 @@ function jg_purchase_orders_mark_historical_paid(PDO $pdo, int $orderId): array
     );
 }
 
-function jg_purchase_orders_incoming_by_sku(PDO $pdo): array
+function jg_purchase_orders_incoming_by_sku(PDO $pdo, bool $ensureSchema = true): array
 {
-    jg_purchase_orders_ensure_schema($pdo);
+    if ($ensureSchema) {
+        jg_purchase_orders_ensure_schema($pdo);
+    }
     $stmt = $pdo->query(
         'SELECT i.sku, SUM(i.ordered_qty - i.received_qty) AS incoming_qty
          FROM purchase_order_items i

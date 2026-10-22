@@ -5,6 +5,9 @@ require_once __DIR__.'/reports.php';
 require_once __DIR__.'/tables.php';
 require_once __DIR__.'/table-tools.php';
 require_once __DIR__.'/connection-tools.php';
+require_once __DIR__.'/ads-history.php';
+require_once __DIR__.'/business-reports.php';
+require_once __DIR__.'/business-report-tools.php';
 function tools(array $c=[]): array {
     $empty=['type'=>'object','additionalProperties'=>false,'properties'=>(object)[]];
     $out=['type'=>'object','properties'=>['data'=>['type'=>'object']],'required'=>['data']];
@@ -20,7 +23,7 @@ function tools(array $c=[]): array {
     }
     // Managed context inspects the authenticated token; optional grants are enforced per tool.
     foreach([1,2] as $index){$old[$index]['securitySchemes']=[['type'=>'oauth2','scopes'=>[SCOPE]]];$old[$index]['_meta']['securitySchemes']=$old[$index]['securitySchemes'];}
-    return [...(in_array(TABLE_SCOPE,allowedScopes($c),true) ? [...$old,...tableTools()] : $old),...connectionTools($c)];
+    return [...(in_array(TABLE_SCOPE,allowedScopes($c),true) ? [...$old,...tableTools(),...businessReportTools()] : $old),...connectionTools($c)];
 }
 function rpc(array $request,array $c,callable $read): ?array {
     $id=$request['id'] ?? null;
@@ -40,7 +43,7 @@ function rpc(array $request,array $c,callable $read): ?array {
     $name=$params['name'] ?? ''; $a=$params['arguments'] ?? [];
     if (!is_string($name) || !is_array($a)) return $error(-32602,'Invalid tool parameters.');
     if (!in_array($name,array_column(tools($c),'name'),true)) return $error(-32602,'Tool unavailable; business writes are not enabled.');
-    if((in_array($name,array_column(tableTools(),'name'),true) || ($name==='jg_get_context' && empty($c['_owner_managed']) && in_array(TABLE_SCOPE,allowedScopes($c),true))) && !hasScope($c['_actor_scope'] ?? '',TABLE_SCOPE)) {
+    if((in_array($name,array_column([...tableTools(),...businessReportTools()],'name'),true) || ($name==='jg_get_context' && empty($c['_owner_managed']) && in_array(TABLE_SCOPE,allowedScopes($c),true))) && !hasScope($c['_actor_scope'] ?? '',TABLE_SCOPE)) {
         return ['jsonrpc'=>'2.0','id'=>$id,'result'=>[
             'content'=>[['type'=>'text','text'=>'Additional read-only dashboard consent is required. Your existing reporting grant has not changed.']],
             'isError'=>true,
@@ -60,6 +63,10 @@ function rpc(array $request,array $c,callable $read): ?array {
             $data['source_coverage']=reportingSourceCoverage();
             // Live metadata for clients retaining an older tool catalog. No source data or secrets.
             $data['current_table_tool_descriptions']=array_column(tableTools(),'description','name');
+            $data['current_business_tool_descriptions']=array_column(businessReportTools(),'description','name');
+            $data['canonical_reports']=array_keys(businessReportRegistry());
+            if($data['table_query_available']){$data['supported_metrics'][]='canonical_business_reports';$data['unsupported_metrics']=array_values(array_diff($data['unsupported_metrics'],['forecast']));$data['unsupported_metrics'][]='net_profit_forecast';}
+            $data['tool_catalog_fingerprint']=hash('sha256',json_encode(tools($c),JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR));
             $output=['data'=>$data];
         } elseif ($name==='jg_resolve_product') {
             if (array_keys($a)!==['product'] || !is_string($a['product'])) throw new \InvalidArgumentException('Provide product only.');
@@ -68,6 +75,12 @@ function rpc(array $request,array $c,callable $read): ?array {
         } elseif ($name==='jg_list_tables') {if($a!==[])throw new \InvalidArgumentException('No arguments expected.');$output=['data'=>listTables($c)];}
         elseif ($name==='jg_describe_table') {tableAccess($c);if(array_keys($a)!==['table']||!is_string($a['table']))throw new \InvalidArgumentException('Provide table only.');$output=['data'=>tableDefinition($a['table'])];}
         elseif ($name==='jg_query_table') $output=queryTable($c,$a);
+        elseif ($name==='jg_ads_history') {
+            adsHistoryArguments($c,$a);
+            if(!ADS_HISTORY_SOURCE_RELEASED)throw new AdsHistoryUnavailable('bridge_release_pending');
+            $output=adsHistory($c,$a);
+        }
+        elseif ($name==='jg_business_report') $output=businessReport($c,$a);
         elseif ($name==='jg_monthly_profit') {require_once __DIR__.'/monthly-profit.php';$output=monthlyProfit($c,$a);}
         elseif ($name==='jg_get_report_note' || $name==='jg_save_report_note') $output=reportNotes($c,$a,$name==='jg_save_report_note');
         elseif ($name==='jg_annualize_sales') $output=annualizeSales($c,$a);
@@ -75,6 +88,7 @@ function rpc(array $request,array $c,callable $read): ?array {
         $result=['content'=>[['type'=>'text','text'=>json_encode($output,JSON_UNESCAPED_SLASHES|JSON_THROW_ON_ERROR)]],'structuredContent'=>$output,'isError'=>$name==='jg_annualize_sales' && ($output['data']['status'] ?? '')==='required_sources_unavailable'];
     } catch (\InvalidArgumentException $e) { $result=['content'=>[['type'=>'text','text'=>$e->getMessage()]],'isError'=>true];
     } catch (ReportingSourceUnavailable $e) { $result=['content'=>[['type'=>'text','text'=>$e->getMessage()]],'isError'=>true,'_meta'=>['jg/source_status'=>$e->diagnostics]];
+    } catch (AdsHistoryUnavailable $e) { $result=['content'=>[['type'=>'text','text'=>$e->getMessage()]],'isError'=>true,'_meta'=>['jg/source_status'=>['source'=>'stored_shopee_product_ads','reason'=>$e->reason]]];
     } catch (\Throwable) { $result=['content'=>[['type'=>'text','text'=>'Reporting source unavailable. No refresh or business mutation was attempted.']],'isError'=>true]; }
     return ['jsonrpc'=>'2.0','id'=>$id,'result'=>$result];
 }

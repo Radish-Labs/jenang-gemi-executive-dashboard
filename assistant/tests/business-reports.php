@@ -1,0 +1,56 @@
+<?php
+declare(strict_types=1);
+if(PHP_SAPI!=='cli'){http_response_code(404);exit;}
+require_once __DIR__.'/../lib/business-reports.php';
+use function JenangMcp\{businessReportRegistry,businessReportArguments,businessReportProjection,businessReport};
+use JenangMcp\BusinessReportReader;
+$n=0;
+function expectBusiness(bool $ok,string $label):void{global $n;if(!$ok)throw new RuntimeException($label);$n++;}
+function denyBusiness(callable $fn,string $label):void{try{$fn();}catch(Throwable){expectBusiness(true,$label);return;}throw new RuntimeException('Expected rejection: '.$label);}
+$now=new DateTimeImmutable('2026-10-21T08:00:00Z');$registry=businessReportRegistry();
+foreach(['sales_snapshot','accounting_pnl_inputs','partner_bill_totals','packing_costs','website_order_metrics','direct_unpaid','cash_balances','accounting_monthly_summary','wallet_summary','accounting_review_queue','product_purchases','purchasing_incoming','stock_position','accounting_overview','cash_flow'] as $id){expectBusiness(($registry[$id]['status']??null)==='implemented',$id.' implemented');expectBusiness($registry[$id]['scope']===JenangMcp\TABLE_SCOPE,'Existing dashboard read scope');}
+foreach([['report'=>'not_sql'],['report'=>'monthly_profit'],['report'=>'recipient_allocation'],['report'=>'sales_snapshot','year'=>'2026'],['report'=>'sales_snapshot','year'=>2027],['report'=>'sales_snapshot','year'=>2024],['report'=>'partner_bill_totals','year'=>2026],['report'=>'sales_snapshot','year'=>2026,'sql'=>'SELECT 1'],['report'=>'website_order_metrics','year'=>2026,'platform'=>'bad'],['report'=>'accounting_review_queue','resolve'=>true],['report'=>'product_purchases','start_date'=>'2026-10-01'],['report'=>'product_purchases','start_date'=>'2026-10-10','end_date'=>'2026-10-01'],['report'=>'product_purchases','sku'=>str_repeat('x',33)],['report'=>'cash_flow','month'=>'2026-13'],['report'=>'accounting_overview','month'=>'2100-01'],['report'=>'accounting_overview','month'=>'2026-10','refresh'=>true]] as $bad)denyBusiness(fn()=>businessReportArguments($bad,$now),'Strict report arguments');
+$fixture=dirname(__DIR__,2).'/tests/fixtures/profit-share/';$sales=json_decode(file_get_contents($fixture.'sales-2026.json'),true);$sales['meta']['snapshot_at']='2026-10-21T07:55:00Z';$sales['months'][0]['customer_phone']='private-marker';$sales['totals']['notes']='private-marker';
+$r=businessReportProjection('sales_snapshot',2026,$sales,$now);expectBusiness($r['freshness']['snapshot_age_seconds']===300,'Snapshot freshness uses stored timestamp');expectBusiness(!str_contains(json_encode($r),'private-marker'),'Projection excludes private fields');expectBusiness(!$r['freshness']['upstream_sync_verified'],'No false sync claim');
+foreach([null,'invalid','2026-10-22T00:00:00Z','2026-10-20T00:00:00Z'] as $stamp){$s=$sales;$s['meta']['snapshot_at']=$stamp;expectBusiness(businessReportProjection('sales_snapshot',2026,$s,$now)['completeness']['status']==='stale_or_unknown_sales_snapshot','Missing/future/stale snapshot explicit');}
+$s=$sales;$s['meta']['summary_complete']=false;denyBusiness(fn()=>businessReportProjection('sales_snapshot',2026,$s,$now),'Incomplete snapshot rejected');
+final class BusinessTestPDO extends PDO {
+ public array $sets=[];public bool $failReadOnly=false;public int $rollbacks=0;
+ public function __construct(){parent::__construct('sqlite::memory:',null,null,[PDO::ATTR_ERRMODE=>PDO::ERRMODE_EXCEPTION,PDO::ATTR_DEFAULT_FETCH_MODE=>PDO::FETCH_ASSOC]);}
+ public function exec(string $statement):int|false{if(str_starts_with($statement,'SET SESSION')){$this->sets[]=$statement;if($this->failReadOnly&&$statement==='SET SESSION TRANSACTION READ ONLY')return false;if($statement==='SET SESSION TRANSACTION READ ONLY')parent::exec('PRAGMA query_only=ON');return 0;}return parent::exec($statement);}
+ public function rollBack():bool{$this->rollbacks++;return parent::rollBack();}
+}
+$c=['table_access_approved'=>true,'table_families'=>JenangMcp\TABLE_FAMILIES,'_actor_scope'=>JenangMcp\TABLE_SCOPE,'app_expected_host'=>'fixture','app_expected_database'=>'fixture'];
+$settings=fn($db)=>['host'=>'fixture','name'=>'fixture','dsn'=>'mysql:host=fixture;dbname=fixture;charset=utf8mb4','user'=>'fixture','password'=>'fixture'];$calls=0;
+$p=new BusinessTestPDO();$p->exec('CREATE TABLE partner_weekly_bills (status TEXT, total_amount INTEGER)');$p->exec("INSERT INTO partner_weekly_bills VALUES ('unpaid',100),('payment_submitted',200),('disputed',300),('accruing',400),('paid',999)");
+$factory=function($d,$o)use($p,&$calls){$calls++;expectBusiness($o[PDO::ATTR_EMULATE_PREPARES]===false,'Native prepares');expectBusiness($o[PDO::MYSQL_ATTR_MULTI_STATEMENTS]===false,'No multi-statements');return $p;};
+$reader=new BusinessReportReader($c,$factory,$settings);$r=businessReport($c,['report'=>'partner_bill_totals'],$reader,$now);expectBusiness($r['data']['data']===['due_amount'=>600,'in_progress_amount'=>400],'Canonical due versus accruing bill totals');expectBusiness(!$p->inTransaction()&&$p->rollbacks===1,'Read transaction rolled back');expectBusiness(in_array('SET SESSION TRANSACTION READ ONLY',$p->sets,true),'Mandatory read-only transaction');expectBusiness(in_array('SET SESSION MAX_EXECUTION_TIME=5000',$p->sets,true),'Query time bound');
+$bad=$c;$bad['_actor_scope']=JenangMcp\SCOPE;$before=$calls;denyBusiness(fn()=>businessReport($bad,['report'=>'partner_bill_totals'],$reader,$now),'Scope denied');expectBusiness($calls===$before,'Scope denied before source');$bad=$c;$bad['table_access_approved']=false;denyBusiness(fn()=>new BusinessReportReader($bad,$factory,$settings),'Config approval mandatory');
+$bad=$c;$bad['app_expected_database']='different';$wrong=new BusinessReportReader($bad,$factory,$settings);denyBusiness(fn()=>$wrong->read('accounting_pnl_inputs',2026),'Pinned analytics mismatch');expectBusiness($calls===$before,'Pinned target rejected before connection');
+$q=new BusinessTestPDO();$q->failReadOnly=true;$badReader=new BusinessReportReader($c,fn()=>$q,$settings);denyBusiness(fn()=>$badReader->read('partner_bill_totals'),'Read-only setup failure');expectBusiness(!$q->inTransaction(),'No transaction on readonlyfailure');
+$q=new BusinessTestPDO();$badReader=new BusinessReportReader($c,fn()=>$q,$settings);denyBusiness(fn()=>$badReader->read('partner_bill_totals'),'Missing table not zero');expectBusiness(!$q->inTransaction()&&$q->rollbacks===1,'Queryfailure rollback');
+$books=new BusinessTestPDO();
+foreach(['accounting_transactions'=>'id INTEGER,business_month TEXT,direction TEXT,type TEXT,amount INTEGER,transfer_fee_amount INTEGER,status TEXT,category_id INTEGER','accounting_categories'=>'id INTEGER,category_key TEXT,name TEXT,type TEXT','accounting_pnl_category_settings'=>'category_id INTEGER,include_in_net_profit INTEGER,pnl_bucket TEXT,updated_at TEXT','accounting_review_queue'=>'status TEXT','accounting_bills'=>'id INTEGER,category_id INTEGER','accounting_bill_payments'=>'transaction_id INTEGER,bill_id INTEGER,amount INTEGER'] as $table=>$fields)$books->exec('CREATE TABLE '.$table.' ('.$fields.')');
+$books->exec("INSERT INTO accounting_categories VALUES (1,'custom-shopee-jg','Iklan Shopee JG','marketing'),(2,'partner-bill-collections','Partner collections','income')");$books->exec("INSERT INTO accounting_pnl_category_settings VALUES (1,1,'ad_cost','2026-10-01')");$books->exec("INSERT INTO accounting_transactions VALUES (1,'2026-10','money_out','expense',100,5,'posted',1),(2,'2026-10','money_out','expense',900,0,'void',1),(3,'2026-10','money_in','manual_income',250,0,'posted',2),(4,'2026-10','money_out','refund',20,0,'posted',NULL),(5,'2026-10','money_out','bill_payment',300,0,'posted',NULL)");$books->exec('INSERT INTO accounting_bills VALUES (7,1)');$books->exec('INSERT INTO accounting_bill_payments VALUES (5,7,300)');
+$bookReader=new BusinessReportReader($c,fn()=>$books,$settings);$raw=$bookReader->read('accounting_pnl_inputs',2026);$r=businessReportProjection('accounting_pnl_inputs',2026,$raw,$now);$oct=$r['data']['months'][9];expectBusiness($oct['ad_cost']===400&&$oct['operating_expenses']===405,'Canonical custom ad category direct expense PLUS paid bill allocation');expectBusiness($oct['manual_refunds']===20&&$oct['partner_payments']===250,'Canonical refunds/collections separate');expectBusiness(!isset($oct['net_profit']),'Accounting inputs not net profit');expectBusiness(!$books->inTransaction(),'Accounting rollback');
+$before=$calls;denyBusiness(fn()=>businessReport($c,['report'=>'partner_bill_totals','sql'=>'SELECT 1'],$reader,$now),'ArbitrarySQL rejected');expectBusiness($calls===$before,'Invalid arguments rejected before read');
+$before=$calls;$limited=$c;$limited['accounts']=['zero_website'];$webReader=new BusinessReportReader($limited,$factory,$settings);
+denyBusiness(fn()=>$webReader->read('website_order_metrics',2026,['year'=>2026,'platform'=>'jenang_gemi_website']),'Website selected platform scope');
+expectBusiness($calls===$before,'Website scope denied before connecting');
+
+foreach(['inventory_forecast','storefront_catalog','blog_status','website_analytics','traffic_analytics','customer_retention','fulfillment_metrics'] as $id){expectBusiness(($registry[$id]['status']??null)==='implemented',$id.' integrated');expectBusiness($registry[$id]['scope']===JenangMcp\TABLE_SCOPE,'Derived existing dashboard scope');}
+foreach([
+ ['report'=>'storefront_catalog','platform'=>'jenang_gemi_website'],
+ ['report'=>'website_analytics','timeframe'=>'7d','site'=>'jenang_gemi'],
+ ['report'=>'traffic_analytics','timeframe'=>'7d','dataset'=>'landing'],
+] as $args){$before=$calls;denyBusiness(fn()=>$webReader->read($args['report'],null,array_diff_key($args,['report'=>true]),$now),'Derived forbidden account denied');expectBusiness($calls===$before,'Derived scope denied before connection');}
+$scoped=JenangMcp\commerceDerivedMetricScopedArguments('website_analytics',['timeframe'=>'7d','site'=>'all'],$limited);expectBusiness($scoped['site']==='zero','All website site narrows to configured site');
+foreach(['category_id','include_in_net_profit','pnl_bucket','updated_at'] as $missing){
+ $q=new BusinessTestPDO();$fields=['category_id'=>'INTEGER','include_in_net_profit'=>'INTEGER','pnl_bucket'=>'TEXT','updated_at'=>'TEXT'];unset($fields[$missing]);
+ $columns=[];foreach($fields as $name=>$type)$columns[]=$name.' '.$type;$q->exec('CREATE TABLE accounting_pnl_category_settings ('.implode(',',$columns).')');
+ $guarded=new BusinessReportReader($c,fn()=>$q,$settings);
+ try{$guarded->read('accounting_pnl_inputs',2026);throw new RuntimeException('Missing P&L setting accepted');}catch(JenangMcp\ReportingSourceUnavailable $e){expectBusiness($e->diagnostics['source']==='analytics','Missing P&L setting retains source');expectBusiness(!str_contains($e->getMessage(),$missing),'Missing setting error sanitized');}
+ expectBusiness(!$q->inTransaction(),'Missing P&L setting rollback');
+}
+foreach([['report'=>'inventory_forecast','today'=>'2026-10-21'],['report'=>'fulfillment_metrics','start_date'=>'2026-10-23','end_date'=>'2026-10-21'],['report'=>'website_analytics','timeframe'=>'all','site'=>'all'],['report'=>'customer_retention','identities'=>true]] as $args)denyBusiness(fn()=>businessReportArguments($args,$now),'Integrated report schema enforced');
+echo "Business reports: $n checks passed\n";

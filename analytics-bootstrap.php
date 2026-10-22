@@ -954,8 +954,19 @@ function analyticsDeleteAffiliateLandingPages(array $affiliate): void
 
 function analyticsLoadEvents(?DateTimeImmutable $rangeStart = null, array $filters = []): array
 {
-    $pdo = analyticsDb();
-    $availableColumns = analyticsListTableColumns($pdo, 'analytics_events');
+    return analyticsLoadEventsRead(analyticsDb(), $rangeStart, $filters);
+}
+
+/** Passive canonical loader; strict reporting mode fails on missing sources or truncation. */
+function analyticsLoadEventsRead(PDO $pdo, ?DateTimeImmutable $rangeStart = null, array $filters = [], ?int $maxRows = null, bool $strict = false): array
+{
+    if ($maxRows !== null && ($maxRows < 1 || $maxRows > 100000)) throw new InvalidArgumentException('Invalid analytics scan limit.');
+    $dataset = strtolower(trim((string) ($filters['dataset'] ?? '')));
+    $metricColumns = ['event_type','session_id','device_id','source','traffic_kind','site_key','site_label','page_path','page_url','page_title','ip_address','country_code','region_name','city_name','elapsed_ms','occurred_at'];
+    if (in_array($dataset, ['landing','affiliate'], true)) $metricColumns = ['event_type','session_id','device_id','source','traffic_kind','affiliate_code','page_path','page_url','page_title','product_code','product_label','order_code','elapsed_ms','occurred_at'];
+    // Strict callers select every required column directly: a missing column or
+    // table is an error, never a synthetic zero or timestamp fallback.
+    $availableColumns = $strict ? array_fill_keys($metricColumns, true) : analyticsListTableColumns($pdo, 'analytics_events');
     if ($availableColumns === []) {
         return [];
     }
@@ -999,6 +1010,7 @@ function analyticsLoadEvents(?DateTimeImmutable $rangeStart = null, array $filte
 
     $selectColumns = [];
     foreach ($expectedColumns as $column => $fallback) {
+        if ($strict && !in_array($column, $metricColumns, true)) continue;
         if (isset($availableColumns[$column])) {
             $selectColumns[] = sprintf('`%s`', str_replace('`', '``', $column));
             continue;
@@ -1066,13 +1078,27 @@ function analyticsLoadEvents(?DateTimeImmutable $rangeStart = null, array $filte
         $sql .= ' WHERE ' . implode(' AND ', $where);
     }
 
+    if ($strict) {
+        if (!in_array($dataset, ['website','landing','affiliate'], true)) throw new InvalidArgumentException('Unsupported strict aggregate event dataset.');
+        $sizeExpression = implode(' + ', array_map(static fn(string $column): string => 'LENGTH(COALESCE(`'.$column.'`,\'\'))', $metricColumns));
+        $preflight = $pdo->prepare('SELECT COUNT(*) AS scan_rows, COALESCE(SUM('.$sizeExpression.'),0) AS scan_bytes FROM ('.$sql.') AS bounded_analytics_source');
+        $preflight->execute($params);$size = $preflight->fetch(PDO::FETCH_ASSOC);
+        if ((int)$size['scan_rows'] > ($maxRows ?? 100000) || (int)$size['scan_bytes'] > 16 * 1024 * 1024) throw new RuntimeException('Analytics source exceeds the bounded reporting budget; no partial metric is returned.');
+    }
     $sql .= ' ORDER BY occurred_at DESC';
+    if ($maxRows !== null) $sql .= ' LIMIT ' . ($maxRows + 1);
     try {
         $stmt = $pdo->prepare($sql);
         $stmt->execute($params);
         $rows = $stmt->fetchAll();
-    } catch (Throwable) {
+    } catch (Throwable $error) {
+        if ($strict) throw $error;
         return [];
+    }
+
+    if ($maxRows !== null && count($rows) > $maxRows) throw new RuntimeException('Analytics scan limit exceeded; no partial metric is returned.');
+    if ($strict) foreach ($rows as $row) {
+        if (trim((string) ($row['occurred_at'] ?? '')) === '') throw new RuntimeException('Analytics event timestamp is unavailable.');
     }
 
     return array_map(static function (array $row): array {
@@ -1241,8 +1267,14 @@ function analyticsFindAffiliateByCode(string $code): ?array
 
 function analyticsLoadIpExclusions(): array
 {
-    $pdo = analyticsDb();
-    if (analyticsListTableColumns($pdo, 'analytics_ip_exclusions') === []) {
+    return analyticsLoadIpExclusionsRead(analyticsDb());
+}
+
+/** Passive exclusion loader, with fail-closed bounded mode for reporting. */
+function analyticsLoadIpExclusionsRead(PDO $pdo, ?int $maxRows = null, bool $strict = false): array
+{
+    if ($maxRows !== null && ($maxRows < 1 || $maxRows > 10000)) throw new InvalidArgumentException('Invalid exclusion scan limit.');
+    if (!$strict && analyticsListTableColumns($pdo, 'analytics_ip_exclusions') === []) {
         return [];
     }
 
@@ -1250,12 +1282,14 @@ function analyticsLoadIpExclusions(): array
         $stmt = $pdo->query(
             'SELECT id, ip_address, label, created_at, updated_at
              FROM analytics_ip_exclusions
-             ORDER BY updated_at DESC, id DESC'
+             ORDER BY updated_at DESC, id DESC' . ($maxRows !== null ? ' LIMIT '.($maxRows+1) : '')
         );
         $rows = $stmt->fetchAll();
-    } catch (Throwable) {
+    } catch (Throwable $error) {
+        if ($strict) throw $error;
         return [];
     }
+    if ($maxRows !== null && count($rows) > $maxRows) throw new RuntimeException('IP exclusion scan limit exceeded.');
 
     return array_map(static function (array $row): array {
         return [
@@ -1287,8 +1321,14 @@ function analyticsLoadExcludedIpLookup(): array
 
 function analyticsLoadDeviceExclusions(): array
 {
-    $pdo = analyticsDb();
-    if (analyticsListTableColumns($pdo, 'analytics_device_exclusions') === []) {
+    return analyticsLoadDeviceExclusionsRead(analyticsDb());
+}
+
+/** Passive exclusion loader, with fail-closed bounded mode for reporting. */
+function analyticsLoadDeviceExclusionsRead(PDO $pdo, ?int $maxRows = null, bool $strict = false): array
+{
+    if ($maxRows !== null && ($maxRows < 1 || $maxRows > 10000)) throw new InvalidArgumentException('Invalid exclusion scan limit.');
+    if (!$strict && analyticsListTableColumns($pdo, 'analytics_device_exclusions') === []) {
         return [];
     }
 
@@ -1296,12 +1336,14 @@ function analyticsLoadDeviceExclusions(): array
         $stmt = $pdo->query(
             'SELECT id, device_id, label, created_at, updated_at
              FROM analytics_device_exclusions
-             ORDER BY updated_at DESC, id DESC'
+             ORDER BY updated_at DESC, id DESC' . ($maxRows !== null ? ' LIMIT '.($maxRows+1) : '')
         );
         $rows = $stmt->fetchAll();
-    } catch (Throwable) {
+    } catch (Throwable $error) {
+        if ($strict) throw $error;
         return [];
     }
+    if ($maxRows !== null && count($rows) > $maxRows) throw new RuntimeException('Device exclusion scan limit exceeded.');
 
     return array_map(static function (array $row): array {
         return [
@@ -1316,8 +1358,13 @@ function analyticsLoadDeviceExclusions(): array
 
 function analyticsLoadExcludedDeviceLookup(): array
 {
+    return analyticsBuildExcludedDeviceLookup(analyticsLoadDeviceExclusions());
+}
+
+function analyticsBuildExcludedDeviceLookup(array $items): array
+{
     $lookup = [];
-    foreach (analyticsLoadDeviceExclusions() as $item) {
+    foreach ($items as $item) {
         $deviceId = analyticsNormalizeDeviceId((string) ($item['device_id'] ?? ''));
         if ($deviceId !== '') {
             $lookup[$deviceId] = true;

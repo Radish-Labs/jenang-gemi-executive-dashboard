@@ -814,84 +814,18 @@ function jg_website_notifications(PDO $pdo): array
 function jg_website_metrics(PDO $pdo, ?string $platform = null, ?int $year = null): array
 {
     jg_website_ensure_schema($pdo);
-    $where = ['paid_at IS NOT NULL'];
-    $params = [];
-    if ($platform !== null && $platform !== '') {
-        $where[] = 'platform = :platform';
-        $params[':platform'] = jg_website_platform($platform);
-    }
-    if ($year !== null) {
-        $where[] = 'YEAR(DATE_ADD(paid_at, INTERVAL 7 HOUR)) = :year';
-        $params[':year'] = $year;
-    }
-    $stmt = $pdo->prepare(
-        'SELECT platform, COUNT(*) AS paid_orders,
-                COALESCE(SUM(gross_revenue), 0) AS gross_revenue,
-                COALESCE(SUM(net_revenue), 0) AS net_revenue,
-                COALESCE(SUM(cogs), 0) AS cogs
-         FROM website_orders WHERE ' . implode(' AND ', $where) . ' GROUP BY platform'
-    );
-    $stmt->execute($params);
-    $metrics = [];
-    foreach ($stmt->fetchAll() as $row) {
-        $key = (string) $row['platform'];
-        $metrics[$key] = [
-            'platform' => $key,
-            'platform_label' => JG_WEBSITE_PLATFORMS[$key] ?? $key,
-            'paid_orders' => (int) $row['paid_orders'],
-            'gross_revenue' => (float) $row['gross_revenue'],
-            'net_revenue' => (float) $row['net_revenue'],
-            'marketplace_fees' => 0.0,
-            'cogs' => (float) $row['cogs'],
-            'gross_profit' => (float) $row['net_revenue'] - (float) $row['cogs'],
-            'paid_quantity' => 0,
-        ];
-    }
-    $quantityWhere = ['o.paid_at IS NOT NULL'];
-    if ($platform !== null && $platform !== '') {
-        $quantityWhere[] = 'o.platform = :platform';
-    }
-    if ($year !== null) {
-        $quantityWhere[] = 'YEAR(DATE_ADD(o.paid_at, INTERVAL 7 HOUR)) = :year';
-    }
-    $quantityStmt = $pdo->prepare(
-        'SELECT o.platform, COALESCE(SUM(i.quantity), 0) AS quantity
-         FROM website_orders o
-         INNER JOIN website_order_items i ON i.website_order_id = o.id
-         WHERE ' . implode(' AND ', $quantityWhere) . '
-         GROUP BY o.platform'
-    );
-    $quantityStmt->execute($params);
-    foreach ($quantityStmt->fetchAll() as $row) {
-        $key = (string) $row['platform'];
-        if (isset($metrics[$key])) {
-            $metrics[$key]['paid_quantity'] = (int) $row['quantity'];
-        }
-    }
-    foreach (JG_WEBSITE_PLATFORMS as $key => $label) {
-        $metrics[$key] ??= [
-            'platform' => $key,
-            'platform_label' => $label,
-            'paid_orders' => 0,
-            'paid_quantity' => 0,
-            'gross_revenue' => 0.0,
-            'net_revenue' => 0.0,
-            'marketplace_fees' => 0.0,
-            'cogs' => 0.0,
-            'gross_profit' => 0.0,
-        ];
-    }
-    return $metrics;
+    return jg_website_metrics_read($pdo, $platform, $year);
 }
 
-function jg_website_paid_order_rows(PDO $pdo, string $startDate, string $endDate): array
+function jg_website_paid_order_rows(PDO $pdo, string $startDate, string $endDate, bool $prepareSchema = true, bool $includeCustomers = true): array
 {
-    jg_website_ensure_schema($pdo);
+    if ($prepareSchema) jg_website_ensure_schema($pdo);
+    $customerSelect = $includeCustomers ? 'o.customer_name, o.customer_address, o.customer_phone' : 'NULL AS customer_name, NULL AS customer_address, NULL AS customer_phone';
     $timezone = new DateTimeZone('Asia/Jakarta');
     $start = (new DateTimeImmutable($startDate . ' 00:00:00', $timezone))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s.u');
     $end = (new DateTimeImmutable($endDate . ' 00:00:00', $timezone))->modify('+1 day')->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s.u');
     $stmt = $pdo->prepare(
-        'SELECT o.platform, o.order_id, o.created_at, o.paid_at, o.customer_name, o.customer_address, o.customer_phone,
+        'SELECT o.platform, o.order_id, o.created_at, o.paid_at, ' . $customerSelect . ',
                 o.gross_revenue, o.net_revenue, o.cogs AS order_cogs,
                 i.id AS item_id, i.item_key, i.sku, i.product_name, i.option_name, i.size_label,
                 i.quantity, i.unit_gross_price, i.unit_net_price, i.unit_cogs
@@ -2075,4 +2009,79 @@ function jg_hard_set_readiness(PDO $analyticsPdo, PDO $skuPdo, bool $ensureSchem
         'sources' => $grouped,
         'automatic_sources' => $marketplaceSources,
     ];
+}
+
+function jg_website_metrics_read(PDO $pdo, ?string $platform = null, ?int $year = null): array
+{
+    $where = ['paid_at IS NOT NULL'];
+    $params = [];
+    if ($platform !== null && $platform !== '') {
+        $where[] = 'platform = :platform';
+        $params[':platform'] = jg_website_platform($platform);
+    }
+    if ($year !== null) {
+        // paid_at is UTC; compare against the same Jakarta calendar-year bounds.
+        $start = new DateTimeImmutable(sprintf('%04d-01-01 00:00:00', $year), new DateTimeZone('Asia/Jakarta'));
+        $where[] = 'paid_at >= :start_at AND paid_at < :end_at';
+        $params[':start_at'] = $start->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+        $params[':end_at'] = $start->modify('+1 year')->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+    }
+    $stmt = $pdo->prepare(
+        'SELECT platform, COUNT(*) AS paid_orders,
+                COALESCE(SUM(gross_revenue), 0) AS gross_revenue,
+                COALESCE(SUM(net_revenue), 0) AS net_revenue,
+                COALESCE(SUM(cogs), 0) AS cogs
+         FROM website_orders WHERE ' . implode(' AND ', $where) . ' GROUP BY platform'
+    );
+    $stmt->execute($params);
+    $metrics = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $key = (string) $row['platform'];
+        $metrics[$key] = [
+            'platform' => $key,
+            'platform_label' => JG_WEBSITE_PLATFORMS[$key] ?? $key,
+            'paid_orders' => (int) $row['paid_orders'],
+            'gross_revenue' => (float) $row['gross_revenue'],
+            'net_revenue' => (float) $row['net_revenue'],
+            'marketplace_fees' => 0.0,
+            'cogs' => (float) $row['cogs'],
+            'gross_profit' => (float) $row['net_revenue'] - (float) $row['cogs'],
+            'paid_quantity' => 0,
+        ];
+    }
+    $quantityWhere = ['o.paid_at IS NOT NULL'];
+    if ($platform !== null && $platform !== '') {
+        $quantityWhere[] = 'o.platform = :platform';
+    }
+    if ($year !== null) {
+        $quantityWhere[] = 'o.paid_at >= :start_at AND o.paid_at < :end_at';
+    }
+    $quantityStmt = $pdo->prepare(
+        'SELECT o.platform, COALESCE(SUM(i.quantity), 0) AS quantity
+         FROM website_orders o
+         INNER JOIN website_order_items i ON i.website_order_id = o.id
+         WHERE ' . implode(' AND ', $quantityWhere) . '
+         GROUP BY o.platform'
+    );
+    $quantityStmt->execute($params);
+    foreach ($quantityStmt->fetchAll() as $row) {
+        $key = (string) $row['platform'];
+        if (isset($metrics[$key])) {
+            $metrics[$key]['paid_quantity'] = (int) $row['quantity'];
+        }
+    }
+    foreach (JG_WEBSITE_PLATFORMS as $key => $label) {
+        $metrics[$key] ??= [
+            'platform' => $key,
+            'platform_label' => $label,
+            'paid_orders' => 0,
+            'paid_quantity' => 0,
+            'gross_revenue' => 0.0,
+            'net_revenue' => 0.0,
+            'marketplace_fees' => 0.0,
+            'cogs' => 0.0,
+            'gross_profit' => 0.0,
+        ];
+    }
+    return $metrics;
 }

@@ -1194,16 +1194,7 @@ function jg_whatsapp_archive_order(PDO $pdo, ?PDO $skuPdo, string $orderId, arra
 function jg_whatsapp_unpaid_summary(PDO $pdo): array
 {
     jg_whatsapp_ensure_schema($pdo);
-    $row = $pdo->query(
-        'SELECT COUNT(*) AS unpaid_count,
-                COALESCE(SUM(merchandise_total + shipping_cost), 0) AS unpaid_amount
-         FROM whatsapp_orders
-         WHERE payment_status = "unpaid" AND status <> "CANCELLED" AND archive_hide_financials = 0'
-    )->fetch() ?: [];
-    return [
-        'count' => (int) ($row['unpaid_count'] ?? 0),
-        'amount' => (float) ($row['unpaid_amount'] ?? 0),
-    ];
+    return jg_whatsapp_unpaid_summary_read($pdo);
 }
 
 /** @return array<string,mixed> */
@@ -1764,4 +1755,18 @@ function jg_whatsapp_update_status(PDO $pdo, string $orderId, string $status): a
         throw $error;
     }
     return jg_whatsapp_format_order($pdo, jg_whatsapp_internal_order($pdo, $orderId));
+}
+
+function jg_whatsapp_unpaid_summary_read(PDO $pdo): array
+{
+    $row = $pdo->query(
+        'SELECT COUNT(*) AS unpaid_count,
+                COALESCE(SUM(merchandise_total + shipping_cost), 0) AS unpaid_amount
+         FROM whatsapp_orders
+         WHERE payment_status = "unpaid" AND status <> "CANCELLED" AND archive_hide_financials = 0'
+    )->fetch() ?: [];
+    return [
+        'count' => (int) ($row['unpaid_count'] ?? 0),
+        'amount' => (float) ($row['unpaid_amount'] ?? 0),
+    ];
 }

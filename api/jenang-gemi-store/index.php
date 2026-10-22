@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once dirname(__DIR__, 2) . '/storefront-catalog-read.php';
 
 require_once dirname(__DIR__, 2) . '/auth.php';
 require_once dirname(__DIR__, 2) . '/sku-db-bootstrap.php';
@@ -162,99 +163,6 @@ function jg_store_seed(PDO $pdo): void
             ':updated_at' => $now,
         ]);
     }
-}
-
-function jg_store_discounts(PDO $pdo): array
-{
-    $rows = $pdo->query(
-        'SELECT d.id, d.name, d.discount_type, d.amount, d.starts_on, d.ends_on, d.is_active,
-                GROUP_CONCAT(di.item_key ORDER BY di.item_key SEPARATOR ",") AS item_list
-         FROM jenang_gemi_store_discounts d
-         LEFT JOIN jenang_gemi_store_discount_items di ON di.discount_id = d.id
-         GROUP BY d.id ORDER BY d.starts_on DESC, d.id DESC'
-    )->fetchAll();
-    return array_map(static function (array $row): array {
-        $row['id'] = (int) $row['id'];
-        $row['amount'] = (float) $row['amount'];
-        $row['is_active'] = (int) $row['is_active'];
-        $row['item_keys'] = trim((string) $row['item_list']) !== '' ? explode(',', (string) $row['item_list']) : [];
-        unset($row['item_list']);
-        return $row;
-    }, $rows);
-}
-
-function jg_store_load(PDO $pdo): array
-{
-    jg_store_ensure_schema($pdo);
-    jg_store_seed($pdo);
-    jg_astra_stock_sync($pdo);
-    $rows = $pdo->query(
-        'SELECT i.item_key, i.product_slug, i.product_name, i.option_id, i.option_name,
-                i.size_id, i.size_label, i.sku, i.site_price, i.is_active, i.updated_at,
-                s.current_stock, s.cogs, s.astra, s.volume, s.skip_scan, s.tag
-         FROM jenang_gemi_store_items i
-         LEFT JOIN sku_skus s ON s.sku = i.sku
-         ORDER BY i.product_name, i.option_name, i.size_label'
-    )->fetchAll();
-    $items = array_map(static fn (array $row): array => [
-        'item_key' => (string) $row['item_key'],
-        'product_slug' => (string) $row['product_slug'],
-        'product_name' => (string) $row['product_name'],
-        'option_id' => (string) $row['option_id'],
-        'option_name' => (string) $row['option_name'],
-        'size_id' => (string) $row['size_id'],
-        'size_label' => (string) $row['size_label'],
-        'sku' => (string) ($row['sku'] ?? ''),
-        'sku_code' => (string) ($row['sku'] ?? ''),
-        'sku_linked' => trim((string) ($row['sku'] ?? '')) !== '' && $row['current_stock'] !== null,
-        'tag' => (string) ($row['tag'] ?? ''),
-        'stock' => $row['current_stock'] === null ? null : (int) $row['current_stock'],
-        'cogs' => $row['cogs'] === null ? null : (float) $row['cogs'],
-        'volume' => $row['volume'] === null ? null : (float) $row['volume'],
-        'astra' => $row['astra'] === null ? null : (float) $row['astra'],
-        'skip_scan' => (int) ($row['skip_scan'] ?? 0) === 1,
-        'price' => (float) $row['site_price'],
-        'site_price' => (float) $row['site_price'],
-        'is_active' => (int) $row['is_active'],
-        'updated_at' => (string) $row['updated_at'],
-    ], $rows);
-    return ['ok' => true, 'items' => $items, 'discounts' => jg_store_discounts($pdo)];
-}
-
-function jg_store_catalog(PDO $pdo): array
-{
-    $data = jg_store_load($pdo);
-    $today = (new DateTimeImmutable('now', new DateTimeZone('Asia/Jakarta')))->format('Y-m-d');
-    $activeDiscounts = [];
-    foreach ($data['discounts'] as $discount) {
-        if ((int) $discount['is_active'] !== 1 || $discount['starts_on'] > $today || $discount['ends_on'] < $today) {
-            continue;
-        }
-        foreach ($discount['item_keys'] as $itemKey) {
-            $activeDiscounts[$itemKey] = $discount;
-        }
-    }
-    $rows = [];
-    foreach ($data['items'] as $item) {
-        $gross = (float) $item['price'];
-        $discount = $activeDiscounts[$item['item_key']] ?? null;
-        $net = $gross;
-        if (is_array($discount)) {
-            $net = $discount['discount_type'] === 'percent'
-                ? $gross - ($gross * min(100, (float) $discount['amount']) / 100)
-                : $gross - (float) $discount['amount'];
-        }
-        $rows[] = array_merge($item, [
-            'sale_price' => max(0, (int) round($net)),
-            'status' => (int) $item['is_active'] === 1 ? 'active' : 'inactive',
-            'available' => (int) $item['is_active'] === 1
-                && !empty($item['sku_linked'])
-                && (int) ($item['stock'] ?? 0) > 0
-                && $gross > 0,
-            'discount' => $discount,
-        ]);
-    }
-    return ['data' => $rows, 'meta' => ['generated_at' => gmdate(DATE_ATOM)]];
 }
 
 try {

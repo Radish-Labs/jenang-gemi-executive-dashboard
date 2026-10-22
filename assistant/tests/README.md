@@ -1,4 +1,8 @@
-Run `php assistant/tests/check.php` from the repository root. All695 checks use disposable fixtures and private temporary token state; no live DB, account credentials or business records. Native production table/source availability and actual cloud queries remain activation checks.
+Run `php assistant/tests/check.php` from the repository root. The tests use disposable fixtures and private temporary token state; no live DB, account credentials or business records. Native production table/source availability and actual client calls remain release acceptance checks.
+
+The 0.4.0 read release adds domain catalog, generic scope, canonical report and ads-contract suites in this directory and `read-services/`. Run every PHP file here in a separate process. Pass `--ingest-root=/path/to/the/verified/ingest/checkout` to `source-inventory.php` to rescan the actual upstream source inventory. The static drift test never executes upstream code or loads its credentials. Ads tests inject synthetic settings and transport; they never contact the live service.
+
+See `../RELEASE-0.4.0.md` for the recorded combined validation and remaining production/client acceptance boundary.
 
 Owner-managed connection and computed reporting:
 

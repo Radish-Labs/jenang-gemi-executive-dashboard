@@ -3,6 +3,7 @@ declare(strict_types=1);
 namespace JenangMcp;
 require_once __DIR__.'/grants.php';
 require_once __DIR__.'/app-reader.php';
+require_once __DIR__.'/pnl-read-guards.php';
 require_once dirname(__DIR__,2).'/profit-share-bootstrap.php';
 require_once dirname(__DIR__,2).'/accounting-bootstrap.php';
 require_once dirname(__DIR__,2).'/profit-loss-bootstrap.php';
@@ -66,7 +67,7 @@ function monthlyProfit(array $c,array $a): array {
     if($pdo->exec('SET SESSION TRANSACTION ISOLATION LEVEL REPEATABLE READ')===false||$pdo->exec('SET SESSION TRANSACTION READ ONLY')===false||!$pdo->beginTransaction()||!$pdo->inTransaction())throw new \RuntimeException('Read-only accounting unavailable.');
     try {
         // Do not let the legacy calculator silently mask a missing settings table.
-        $pdo->query('SELECT category_id FROM accounting_pnl_category_settings LIMIT 1');
+        assertPnlSettingsReadable($pdo);
         $books=\jg_accounting_pnl_summary($pdo,$year);
         $settings=\jg_profit_loss_settings($pdo,$year,$month);
         return monthlyProfitProjection($a['month'],$a['recipient'],$sales,$books,$settings,$now);

@@ -514,9 +514,9 @@ function jg_inventory_recap_table_has_column(PDO $pdo, string $table, string $co
     }
 }
 
-function jg_inventory_recap_sku_rows(PDO $pdo): array
+function jg_inventory_recap_sku_rows(PDO $pdo, bool $strict = false): array
 {
-    $createdAtSelect = jg_inventory_recap_table_has_column($pdo, 'sku_skus', 'created_at')
+    $createdAtSelect = $strict || jg_inventory_recap_table_has_column($pdo, 'sku_skus', 'created_at')
         ? 's.created_at'
         : 'NULL AS created_at';
     $stmt = $pdo->query(
@@ -588,7 +588,7 @@ function jg_inventory_recap_sku_rows(PDO $pdo): array
     return $rows;
 }
 
-function jg_inventory_recap_stock_history(PDO $pdo, array $skus, DateTimeImmutable $today): array
+function jg_inventory_recap_stock_history(PDO $pdo, array $skus, DateTimeImmutable $today, bool $strict = false): array
 {
     $history = [];
     foreach ($skus as $index => $sku) {
@@ -623,6 +623,7 @@ function jg_inventory_recap_stock_history(PDO $pdo, array $skus, DateTimeImmutab
             }
         }
     } catch (Throwable) {
+        if ($strict) throw new RuntimeException('Inventory stock-lot history unavailable.');
         // Older installations and unit fixtures may not have the stock-lot ledger.
     }
 
@@ -643,6 +644,7 @@ function jg_inventory_recap_stock_history(PDO $pdo, array $skus, DateTimeImmutab
             }
         }
     } catch (Throwable) {
+        if ($strict) throw new RuntimeException('Inventory receipt history unavailable.');
         // Purchase-order history predates some installations.
     }
 
@@ -761,7 +763,7 @@ function jg_inventory_recap_sku_lookup(array $skus): array
     return $lookup;
 }
 
-function jg_inventory_recap_mirror_order_rows(PDO $pdo, array $options): array
+function jg_inventory_recap_mirror_order_rows(PDO $pdo, array $options, bool $strict = false): array
 {
     try {
         $startAt = (string) ($options['history_start_at_utc'] ?? $options['start_at_utc']);
@@ -783,6 +785,7 @@ function jg_inventory_recap_mirror_order_rows(PDO $pdo, array $options): array
         ]);
         $rows = $stmt->fetchAll();
     } catch (Throwable) {
+        if ($strict) throw new RuntimeException('Inventory marketplace demand unavailable.');
         return [];
     }
 
@@ -1112,6 +1115,53 @@ function jg_inventory_recap_payload(PDO $skuPdo, PDO $analyticsPdo, array $cashC
     }
     $incomingBySku = jg_purchase_orders_incoming_by_sku($skuPdo);
     $storeOpsCommitments = jg_inventory_recap_store_ops_commitments($input);
+    $today = jg_inventory_recap_date_from_string((string) $options['today']) ?? jg_inventory_recap_today($input);
+    return jg_inventory_recap_from_sources($options, $skus, $purchaseOrders, $incomingBySku, $storeOpsCommitments,
+        jg_inventory_recap_order_rows($analyticsPdo, $options),
+        jg_inventory_recap_stock_history($skuPdo, $skus, $today), $cashContext);
+}
+
+function jg_inventory_recap_accounting_cash_context(PDO $pdo, string $month = ''): array
+{
+    try {
+        if (function_exists('jg_accounting_ensure_schema')) {
+            jg_accounting_ensure_schema($pdo);
+        }
+        $month = $month !== '' ? $month : (function_exists('jg_accounting_month') ? jg_accounting_month(null) : gmdate('Y-m'));
+        if (function_exists('jg_accounting_summary')) {
+            $summary = jg_accounting_summary($pdo, $month);
+            return [
+                'amount' => (int) ($summary['kpis']['real_cash_available'] ?? 0),
+                'source' => 'accounting_summary.real_cash_available',
+                'label' => 'Accounting Cash Available',
+                'month' => $month,
+                'kpis' => $summary['kpis'] ?? [],
+            ];
+        }
+    } catch (Throwable $error) {
+        return [
+            'amount' => 0,
+            'source' => 'accounting_unavailable',
+            'label' => 'Accounting Cash Available',
+            'month' => $month,
+            'warning' => $error->getMessage(),
+        ];
+    }
+
+    return [
+        'amount' => 0,
+        'source' => 'accounting_unavailable',
+        'label' => 'Accounting Cash Available',
+        'month' => $month,
+        'warning' => 'Accounting summary is unavailable.',
+    ];
+}
+
+function jg_inventory_recap_from_sources(array $options, array $skus, array $purchaseOrders, array $incomingBySku,
+    array $storeOpsCommitments, array $orderRows, array $stockHistory, array $cashContext = []): array
+{
+    $lookup = jg_inventory_recap_sku_lookup($skus);
+    $stockIndexBySkuIndex = jg_inventory_recap_stock_index_map($skus);
     $commitmentsByStockIndex = array_fill(0, count($skus), ['quantity' => 0.0, 'order_count' => 0, 'orders' => []]);
     $unmatchedCommitments = 0;
     foreach ((array) ($storeOpsCommitments['commitments'] ?? []) as $commitment) {
@@ -1153,7 +1203,7 @@ function jg_inventory_recap_payload(PDO $skuPdo, PDO $analyticsPdo, array $cashC
     $matchedOrders = 0;
     $unmatchedOrders = 0;
 
-    foreach (jg_inventory_recap_order_rows($analyticsPdo, $options) as $orderRow) {
+    foreach ($orderRows as $orderRow) {
         $orderDate = jg_inventory_recap_order_date($orderRow);
         $isRecentOrder = jg_inventory_recap_date_in_range($orderDate, (string) $options['start_date'], (string) $options['end_date']);
         $skuIndex = jg_inventory_recap_match_sku_index($orderRow, $lookup);
@@ -1196,8 +1246,7 @@ function jg_inventory_recap_payload(PDO $skuPdo, PDO $analyticsPdo, array $cashC
         }
     }
 
-    $today = jg_inventory_recap_date_from_string((string) $options['today']) ?? jg_inventory_recap_today($input);
-    $stockHistory = jg_inventory_recap_stock_history($skuPdo, $skus, $today);
+    $today = jg_inventory_recap_date_from_string((string) $options['today']);
     foreach ($stockHistory as $historyIndex => $historyRow) {
         $dailyHistory = (array) ($demand[$historyIndex]['daily_history'] ?? []);
         if (array_sum($dailyHistory) > 0) {
@@ -1499,41 +1548,5 @@ function jg_inventory_recap_payload(PDO $skuPdo, PDO $analyticsPdo, array $cashC
         'purchase_catalog' => array_values($skus),
         'purchase_orders' => $purchaseOrders,
         'production_order_draft' => jg_inventory_recap_order_draft($suggestions, $summary, $options),
-    ];
-}
-
-function jg_inventory_recap_accounting_cash_context(PDO $pdo, string $month = ''): array
-{
-    try {
-        if (function_exists('jg_accounting_ensure_schema')) {
-            jg_accounting_ensure_schema($pdo);
-        }
-        $month = $month !== '' ? $month : (function_exists('jg_accounting_month') ? jg_accounting_month(null) : gmdate('Y-m'));
-        if (function_exists('jg_accounting_summary')) {
-            $summary = jg_accounting_summary($pdo, $month);
-            return [
-                'amount' => (int) ($summary['kpis']['real_cash_available'] ?? 0),
-                'source' => 'accounting_summary.real_cash_available',
-                'label' => 'Accounting Cash Available',
-                'month' => $month,
-                'kpis' => $summary['kpis'] ?? [],
-            ];
-        }
-    } catch (Throwable $error) {
-        return [
-            'amount' => 0,
-            'source' => 'accounting_unavailable',
-            'label' => 'Accounting Cash Available',
-            'month' => $month,
-            'warning' => $error->getMessage(),
-        ];
-    }
-
-    return [
-        'amount' => 0,
-        'source' => 'accounting_unavailable',
-        'label' => 'Accounting Cash Available',
-        'month' => $month,
-        'warning' => 'Accounting summary is unavailable.',
     ];
 }

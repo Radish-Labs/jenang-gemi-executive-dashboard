@@ -30,9 +30,9 @@ function jg_exec_store_ops_date_bounds(): array
     ];
 }
 
-function jg_exec_store_ops_csv_filter(string $key): array
+function jg_exec_store_ops_csv_filter(string $key, ?array $input = null): array
 {
-    $raw = trim((string) ($_GET[$key] ?? ''));
+    $raw = trim((string) (($input ?? $_GET)[$key] ?? ''));
     if ($raw === '') {
         return [];
     }
@@ -71,12 +71,12 @@ function jg_exec_store_ops_employees(PDO $pdo): array
 }
 
 /** Bound filters shared by the headline metrics and fulfillment log. */
-function jg_exec_store_ops_report_filters(string $alias = 'f', bool $events = false): array
+function jg_exec_store_ops_report_filters(string $alias = 'f', bool $events = false, ?array $input = null, ?array $accounts = null): array
 {
     $where = [];
     $params = [];
     foreach (['employees' => $events ? 'employee_id' : 'claimed_by', 'status' => 'status'] as $key => $column) {
-        $values = jg_exec_store_ops_csv_filter($key);
+        $values = jg_exec_store_ops_csv_filter($key, $input);
         if (!$values) continue;
         $holders = [];
         foreach ($values as $i => $value) {
@@ -89,7 +89,7 @@ function jg_exec_store_ops_report_filters(string $alias = 'f', bool $events = fa
             ? 'EXISTS (SELECT 1 FROM store_ops_order_fulfillment_v2 f WHERE f.source_platform = e.source_platform AND f.source_account = e.source_account AND f.order_id = e.order_id AND ' . $clause . ')'
             : $clause;
     }
-    $sources = jg_exec_store_ops_csv_filter('source');
+    $sources = jg_exec_store_ops_csv_filter('source', $input);
     if ($sources) {
         $matches = [];
         foreach ($sources as $i => $source) {
@@ -99,17 +99,32 @@ function jg_exec_store_ops_report_filters(string $alias = 'f', bool $events = fa
         }
         $where[] = '(' . implode(' OR ', $matches) . ')';
     }
-    $query = trim((string) ($_GET['q'] ?? $_GET['order_id'] ?? ''));
+    $queryInput = $input ?? $_GET;
+    $query = trim((string) ($queryInput['q'] ?? $queryInput['order_id'] ?? ''));
     if ($query !== '') {
         $where[] = $alias . '.order_id LIKE :filter_query';
         $params[':filter_query'] = '%' . $query . '%';
     }
+    // Optional reporting scope uses exact account keys, never UI substring search.
+    // Interactive dashboard callers preserve their existing filters when omitted.
+    if ($accounts !== null) {
+        if ($accounts === [] || count($accounts) > 200) throw new InvalidArgumentException('A bounded authorized Store Ops account set is required.');
+        $holders = [];
+        foreach (array_values(array_unique($accounts)) as $i => $account) {
+            if (!is_string($account) || $account === '' || strlen($account) > 120) throw new InvalidArgumentException('Invalid Store Ops account scope.');
+            $holder = ':authorized_account_' . $i;
+            $holders[] = $holder;
+            $params[$holder] = $account;
+        }
+        $where[] = $alias . '.source_account IN (' . implode(',', $holders) . ')';
+    }
     return ['sql' => $where ? ' AND ' . implode(' AND ', $where) : '', 'params' => $params];
 }
 
-function jg_exec_store_ops_metrics(PDO $pdo, array $bounds): array
+function jg_exec_store_ops_metrics(PDO $pdo, array $bounds, ?array $input = null, ?array $accounts = null, bool $includeEmployees = true, ?array $sourceScopes = null): array
 {
-    $filter = jg_exec_store_ops_report_filters();
+    // Source predicates are supplied only by trusted passive reporting adapters.
+    $filter = $sourceScopes['fulfillment'] ?? jg_exec_store_ops_report_filters('f', false, $input, $accounts);
     $period = 'f.fulfilled_at >= :start_at AND f.fulfilled_at < :end_at';
     $params = [':start_at' => $bounds['start_utc'], ':end_at' => $bounds['end_utc']] + $filter['params'];
     $stmt = $pdo->prepare('SELECT COUNT(*) AS fulfilled_count, AVG(CASE WHEN f.fulfilled_at >= f.claimed_at THEN TIMESTAMPDIFF(SECOND, f.claimed_at, f.fulfilled_at) END) AS duration FROM store_ops_order_fulfillment_v2 f WHERE ' . $period . $filter['sql']);
@@ -121,22 +136,26 @@ function jg_exec_store_ops_metrics(PDO $pdo, array $bounds): array
     $stmt->execute($filter['params']);
     $activeClaims = (int) $stmt->fetchColumn();
 
-    $errors = jg_exec_store_ops_report_filters('e', true);
+    $errors = $sourceScopes['events'] ?? jg_exec_store_ops_report_filters('e', true, $input, $accounts);
     $stmt = $pdo->prepare('SELECT COUNT(*) FROM store_ops_order_events_v2 e WHERE e.event_type IN ("scan_error", "error") AND e.created_at >= :start_at AND e.created_at < :end_at' . $errors['sql']);
     $stmt->execute([':start_at' => $bounds['start_utc'], ':end_at' => $bounds['end_utc']] + $errors['params']);
     $scanErrors = (int) $stmt->fetchColumn();
 
-    $stmt = $pdo->prepare('SELECT COALESCE(e.display_name, NULLIF(f.claimed_by, ""), "Unassigned") AS employee_name, COUNT(*) AS fulfilled_count
+    $employeeRows = [];
+    if ($includeEmployees) {
+        $stmt = $pdo->prepare('SELECT COALESCE(e.display_name, NULLIF(f.claimed_by, ""), "Unassigned") AS employee_name, COUNT(*) AS fulfilled_count
         FROM store_ops_order_fulfillment_v2 f LEFT JOIN store_ops_employees_v2 e ON e.id = f.claimed_by
         WHERE ' . $period . $filter['sql'] . ' GROUP BY f.claimed_by, e.display_name ORDER BY fulfilled_count DESC, employee_name ASC');
-    $stmt->execute($params);
+        $stmt->execute($params);
+        $employeeRows = $stmt->fetchAll();
+    }
     return [
         'fulfilled_today' => (int) ($fulfilled['fulfilled_count'] ?? 0),
         'active_claims' => $activeClaims,
         'average_fulfillment_seconds' => $seconds,
         'average_fulfillment_label' => jg_exec_store_ops_format_duration($seconds),
         'scan_errors' => $scanErrors,
-        'employee_throughput' => array_map(static fn (array $row): array => ['employee_name' => (string) $row['employee_name'], 'fulfilled_count' => (int) $row['fulfilled_count']], $stmt->fetchAll()),
+        'employee_throughput' => array_map(static fn (array $row): array => ['employee_name' => (string) $row['employee_name'], 'fulfilled_count' => (int) $row['fulfilled_count']], $employeeRows),
     ];
 }
 

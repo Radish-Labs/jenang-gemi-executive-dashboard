@@ -3,11 +3,13 @@ declare(strict_types=1);
 namespace JenangMcp;
 require_once __DIR__.'/reports.php';
 require_once __DIR__.'/reporting-guidance.php';
-const SOURCE_FAILURE_REASONS=['unavailable','host_resolution_failed','connection_failed','access_denied','database_missing','table_missing','column_missing','read_only_unavailable','settings_unavailable','scan_limit','query_failed'];
+require_once __DIR__.'/source-catalog.php';
+require_once __DIR__.'/file-sources.php';
+const SOURCE_FAILURE_REASONS=['unavailable','host_resolution_failed','connection_failed','access_denied','database_missing','table_missing','column_missing','file_missing','schema_mismatch','read_only_unavailable','settings_unavailable','scan_limit','query_failed'];
 final class ReportingSourceUnavailable extends \RuntimeException {
     public readonly array $diagnostics;
     public function __construct(string $source,array $diagnostics=[]) {
-        if(!in_array($source,['analytics','sku','partner','marketplace','website','direct','all_sales'],true))$source='analytics';
+        if(!in_array($source,['analytics','sku','partner','marketplace','website','direct','all_sales','catalog_names'],true))$source='analytics';
         $reason=in_array($diagnostics['reason'] ?? '',SOURCE_FAILURE_REASONS,true)?$diagnostics['reason']:'unavailable';
         $clean=['source'=>$source,'reason'=>$reason];
         if(is_string($diagnostics['sqlstate'] ?? null)&&preg_match('/^[A-Z0-9]{5}$/D',$diagnostics['sqlstate']))$clean['sqlstate']=$diagnostics['sqlstate'];
@@ -34,7 +36,7 @@ function tableAccess(array $c): void {
     if (empty($c['table_access_approved']) || !hasScope($c['_actor_scope'] ?? '',TABLE_SCOPE) || ($c['table_families'] ?? [])!==TABLE_FAMILIES) throw new \InvalidArgumentException('Dashboard table access requires the approved dashboard read grant and fresh OAuth consent.');
 }
 function tableRegistry(): array {
-    static $r;return $r ??= json_decode((string)file_get_contents(__DIR__.'/table-registry.json'),true,64,JSON_THROW_ON_ERROR);
+    static $r;return $r ??= reviewedSourceCatalog();
 }
 function tableDefinition(string $name): array {
     $semantic=[
@@ -42,9 +44,10 @@ function tableDefinition(string $name): array {
         'sales_lines'=>['family'=>'sales','database'=>'semantic_sales','columns'=>['sale_date'=>'date','source'=>'string','channel'=>'string','account'=>'string','sku'=>'string','brand'=>'string','product'=>'string','flavor'=>'string','volume'=>'decimal','unit'=>'string','units'=>'integer','line_revenue'=>'money','order_key'=>'string'],'default_order'=>['sale_date','order_key','sku'],'grain'=>'one active recorded sale line; line_revenue is recorded line seller revenue, not an order total','date_basis'=>'marketplace order_create_time UTC, website paid_at UTC, direct listed_at/created_at UTC; partner_date_basis order_time(default, historical timezone unverified) or recorded_at(created_at UTC); displayed Asia/Jakarta','partner_date_bases'=>['order_time','recorded_at'],'default_partner_date_basis'=>'order_time'],
         'sales_orders'=>['family'=>'sales','database'=>'semantic_sales','columns'=>['sale_date'=>'date','source'=>'string','channel'=>'string','account'=>'string','units'=>'integer','seller_revenue'=>'money','order_key'=>'string'],'default_order'=>['sale_date','order_key'],'grain'=>'one active order; seller revenue once per order, excludes direct shipping, includes unpaid direct/partner receivables; never cash/profit','date_basis'=>'marketplace order_create_time UTC, website paid_at UTC, direct listed_at/created_at UTC; partner_date_basis order_time(default, historical timezone unverified) or recorded_at(created_at UTC); displayed Asia/Jakarta','partner_date_bases'=>['order_time','recorded_at'],'default_partner_date_basis'=>'order_time'],
     ];
-    $d=$semantic[$name] ?? tableRegistry()[$name] ?? null;
+    $d=$semantic[$name] ?? fileSourceDefinitions()[$name] ?? tableRegistry()[$name] ?? null;
     if (!$d) throw new \InvalidArgumentException('Unknown or protected table. Use jg_list_tables.');
     $d['name']=$name;
+    foreach($d['columns'] as $column=>$type)if($type==='datetime')$d['datetime_timezones'][$column]??='unknown';
     $guidance=tableReportingGuidance($name);
     $d['warnings']=array_merge($d['warnings'] ?? [],$name==='dashboard_order_mirror' ? ['order_net_revenue repeats on each item: summing it is forbidden; use sales_orders for order revenue. Physical rows include statuses/deleted records unless explicitly filtered.'] : ['Stored observations do not prove upstream synchronization. Physical tables require explicit status/void filters.'],$guidance['warnings'] ?? []);
     unset($guidance['warnings']);$d+=$guidance;
@@ -52,16 +55,20 @@ function tableDefinition(string $name): array {
 }
 function listTables(array $c): array {
     tableAccess($c);$tables=[];
-    foreach (['catalog','sales_lines','sales_orders',...array_keys(tableRegistry())] as $name) {
-        $d=tableDefinition($name);$tables[]=['name'=>$name,'family'=>$d['family'],'source'=>$d['database'],'aggregate_only'=>$d['aggregate_only'] ?? false,'availability'=>'query_checks_live_source']+array_intersect_key($d,array_flip(['purpose','source_coverage']));
+    foreach (['catalog','sales_lines','sales_orders',...array_keys(fileSourceDefinitions()),...array_keys(tableRegistry())] as $name) {
+        $d=tableDefinition($name);$tables[]=['name'=>$name,'family'=>$d['family'],'source'=>$d['database'],'aggregate_only'=>$d['aggregate_only'] ?? false,'availability'=>'query_checks_live_source']+array_intersect_key($d,array_flip(['purpose','source_coverage','scope_requirements','date_basis']));
     }
-    return ['tables'=>$tables,'source_coverage'=>reportingSourceCoverage(),'accounting_guidance'=>adsAccountingGuidance(),'excluded'=>'Customer/contact identities, credential/auth tables, free-text notes, receipts/proofs, raw JSON/outboxes, operational migrations and writes. No arbitrary SQL.','scope'=>TABLE_SCOPE];
+    return ['tables'=>$tables,'business_reports'=>function_exists(__NAMESPACE__.'\\businessReportRegistry')?businessReportRegistry():[],
+        'source_inventory'=>sourceCatalogInventory(),
+        'source_coverage'=>reportingSourceCoverage(),'accounting_guidance'=>adsAccountingGuidance(),
+        'excluded'=>'Customer/contact identities, credential/auth tables, free-text notes, receipt/proof content, raw JSON/outboxes, operational migrations and writes. Safe receipt existence/size metadata is separately projected. No arbitrary SQL.',
+        'scope'=>TABLE_SCOPE];
 }
 function fieldDefinition(array $d,string $field): array {
     if(isset($d['columns'][$field]))return ['type'=>$d['columns'][$field],'sql'=>'`'.$field.'`'];
     foreach(['_jakarta_day'=>'%Y-%m-%d','_jakarta_month'=>'%Y-%m'] as $suffix=>$fmt) if(str_ends_with($field,$suffix)){
         $base=substr($field,0,-strlen($suffix));
-        if(($d['columns'][$base] ?? '')==='datetime') return ['type'=>'date','sql'=>"DATE_FORMAT(DATE_ADD(`$base`,INTERVAL 7 HOUR),'$fmt')"];
+        if(($d['columns'][$base] ?? '')==='datetime') return ['type'=>'date','sql'=>sourceDateExpression($d,$base,$fmt)];
     }
     throw new \InvalidArgumentException('Unknown or protected column: '.$field);
 }
@@ -71,7 +78,7 @@ function typedValue(string $type,mixed $v): mixed {
     if(in_array($type,['decimal','money'],true)) {if(!is_int($v)&&!is_float($v)&&!is_string($v) || !preg_match('/^-?[0-9]{1,16}(\.[0-9]{1,6})?$/D',(string)$v))throw new \InvalidArgumentException('Decimal filter required.');return (string)$v;}
     if(!is_string($v)||strlen($v)>500)throw new \InvalidArgumentException('Bounded string filter required.');
     if($type==='date' && !preg_match('/^[0-9]{4}-[0-9]{2}(-[0-9]{2})?$/D',$v))throw new \InvalidArgumentException('ISO date/month required.');
-    if($type==='datetime' && !preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,6})?$/D',$v))throw new \InvalidArgumentException('UTC datetime YYYY-MM-DD HH:MM:SS required.');
+    if($type==='datetime' && !preg_match('/^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,6})?$/D',$v))throw new \InvalidArgumentException('Native stored datetime YYYY-MM-DD HH:MM:SS required; consult source timezone metadata.');
     if(in_array($type,['date','datetime'],true)){
         $fmt=$type==='datetime'?(str_contains($v,'.')?'!Y-m-d H:i:s.u':'!Y-m-d H:i:s'):(strlen($v)===7?'!Y-m':'!Y-m-d');
         $parsed=\DateTimeImmutable::createFromFormat($fmt,$v,new \DateTimeZone('UTC'));$err=\DateTimeImmutable::getLastErrors();
@@ -85,7 +92,7 @@ function tableQuerySpec(array $a): array {
     if(array_key_exists('partner_date_basis',$a)){partnerDateBasis($a);if($d['database']!=='semantic_sales')throw new \InvalidArgumentException('partner_date_basis applies only to semantic sales_lines or sales_orders. Physical timestamps remain unchanged.');}
     $limit=$a['limit'] ?? 100;$offset=$a['offset'] ?? 0;
     if(!is_int($limit)||$limit<1||$limit>200||!is_int($offset)||$offset<0||$offset>100000)throw new \InvalidArgumentException('Limit1–200 and offset0–100000 required.');
-    $metrics=$a['metrics'] ?? [];$groups=$a['group_by'] ?? [];$columns=$a['columns'] ?? ($metrics===[]?array_keys($d['columns']):[]);
+    $metrics=$a['metrics'] ?? [];$groups=$a['group_by'] ?? [];$columns=$a['columns'] ?? ($metrics===[]?array_slice(array_keys($d['columns']),0,20):[]);
     foreach([$metrics,$groups,$columns] as $v)if(!is_array($v)||!array_is_list($v)||count($v)>20)throw new \InvalidArgumentException('Columns/group_by/metrics must be bounded arrays.');
     if($metrics!==[] && $columns!==[])throw new \InvalidArgumentException('Choose row columns or grouped metrics.');
     if($metrics===[]&&$columns===[])throw new \InvalidArgumentException('At least one output column required.');
@@ -125,9 +132,9 @@ function tableQuerySpec(array $a): array {
     foreach($order as $o)if(!is_array($o)||array_diff(array_keys($o),['column','direction'])||!in_array($o['column'] ?? null,$output,true)||!in_array($o['direction'] ?? 'asc',['asc','desc'],true))throw new \InvalidArgumentException('Order must reference returned columns/metric aliases.');
     return ['definition'=>$d,'columns'=>$columns,'filters'=>$validated,'group_by'=>$groups,'metrics'=>$m,'order_by'=>$order,'limit'=>$limit,'offset'=>$offset];
 }
-function compileTableQuery(array $s): array {
+function compileTableQuery(array $s,?array $config=null): array {
     $d=$s['definition'];if(!isset(tableRegistry()[$d['name']]))throw new \LogicException('Not a physical view.');
-    $select=[];$args=[];$where=[];
+    $select=[];[$where,$args]=sourcePredicates($d,$config);
     foreach($s['metrics']===[]?$s['columns']:$s['group_by'] as $col)$select[]=fieldDefinition($d,$col)['sql'].' AS `'.$col.'`';
     foreach($s['metrics'] as $m){$expr=$m['column']===null?'*':fieldDefinition($d,$m['column'])['sql'];$fn=$m['function'];$select[]=($fn==='count_distinct'?'COUNT(DISTINCT '.$expr.')':strtoupper($fn).'('.$expr.')').' AS `'.$m['as'].'`';}
     foreach($s['filters'] as $f){$expr=fieldDefinition($d,$f['column'])['sql'];$op=$f['operator'];$v=$f['value'];
@@ -138,7 +145,14 @@ function compileTableQuery(array $s): array {
     $sql='SELECT '.implode(',',$select).' FROM `'.($d['physical_table'] ?? $d['name']).'`';
     if($where)$sql.=' WHERE '.implode(' AND ',$where);
     if($s['group_by'])$sql.=' GROUP BY '.implode(',',array_map(fn($c)=>fieldDefinition($d,$c)['sql'],$s['group_by']));
-    if($s['order_by'])$sql.=' ORDER BY '.implode(',',array_map(fn($o)=>'`'.$o['column'].'` '.strtoupper($o['direction'] ?? 'asc'),$s['order_by']));
+    $ordering=array_map(fn($o)=>'`'.$o['column'].'` '.strtoupper($o['direction'] ?? 'asc'),$s['order_by']);
+    $ordered=array_column($s['order_by'],'column');
+    // Stable tie-breaks need not be returned in a row projection. Aggregates use
+    // their complete grouping key; physical rows use the reviewed source key.
+    foreach($s['metrics']===[]?($d['default_order'] ?? []):$s['group_by'] as $key){
+        if(!in_array($key,$ordered,true)){$ordering[]=fieldDefinition($d,$key)['sql'].' ASC';$ordered[]=$key;}
+    }
+    if($ordering)$sql.=' ORDER BY '.implode(',',$ordering);
     $sql.=' LIMIT '.($s['limit']+1).' OFFSET '.$s['offset'];
     return ['database'=>$d['database'],'sql'=>$sql,'args'=>$args];
 }
@@ -172,7 +186,7 @@ final class TableReader {
         $pdo=$this->connection($db);if(!$pdo->inTransaction())throw new \RuntimeException('Transaction ended.');
         $stmt=$pdo->prepare(substr_replace($sql,'SELECT /*+ MAX_EXECUTION_TIME(5000) */',0,6));$stmt->execute($args);return $stmt->fetchAll();
     }
-    public function query(array $spec): array { $q=compileTableQuery($spec);try{return $this->select($q['database'],$q['sql'],$q['args']);}catch(\Throwable $e){throw new ReportingSourceUnavailable($q['database'],sourceFailure($e));} }
+    public function query(array $spec): array { $q=compileTableQuery($spec,$this->c);try{return $this->select($q['database'],$q['sql'],$q['args']);}catch(\Throwable $e){throw new ReportingSourceUnavailable($q['database'],sourceFailure($e));} }
     public function sales(string $source,array $p): array {return $this->select($source==='partner'?'partner':'analytics',financialSelect($source,partnerDateBasis($p)),[$p['from_utc'],$p['to_utc']]);}
     public function __destruct(){foreach($this->connections as $p)try{if($p->inTransaction())$p->rollBack();}catch(\Throwable){}}
 }
@@ -223,9 +237,11 @@ function queryTable(array $c,array $a,?TableReader $reader=null,?\Closure $sales
     }elseif($d['database']==='semantic_sales'){
         $p=period($a);if(!$salesFixture)$reader??=new TableReader($c);$data=financialRows($c,$salesFixture ?? fn($src,$p)=>$reader->sales($src,$p),$p);
         $rows=queryMemoryRows($d['name']==='sales_orders'?$data['orders']:$data['lines'],$s);$provenance+=$data['provenance'];$provenance['period']=$p;$warnings=array_merge($warnings,$data['warnings']);
-    }else{$reader??=new TableReader($c);$rows=$reader->query($s);}
+    }elseif(isset(fileSourceDefinitions()[$d['name']])){
+        $file=readFileSource($d['name']);$rows=queryMemoryRows($file['rows'],$s);$provenance+=$file['provenance'];
+    }else{$reader??=new TableReader($c);$rows=$reader->query($s);$provenance+=sourceMetadata($d);}
     $more=count($rows)>$s['limit'];if($more)array_pop($rows);
-    return ['generated_at'=>$observed,'business_timezone'=>'Asia/Jakarta','data'=>['table'=>$d['name'],'rows'=>$rows,'metrics'=>$s['metrics'],'group_by'=>$s['group_by'],'filters'=>$s['filters'],'total_status'=>isset($data)?($data['provenance']['sources_complete']?'complete_for_stored_sources':'observed_partial_subtotal'):'not_a_consolidated_sales_total','currency'=>in_array($d['name'],['sales_orders','sales_lines'],true)?'IDR':null],'pagination'=>['limit'=>$s['limit'],'offset'=>$s['offset'],'has_more'=>$more,'next_offset'=>$more?$s['offset']+$s['limit']:null,'stable_snapshot_across_pages'=>false],'provenance'=>$provenance,'warnings'=>$warnings];
+    return ['generated_at'=>$observed,'business_timezone'=>'Asia/Jakarta','data'=>['table'=>$d['name'],'rows'=>$rows,'columns'=>$s['columns'],'default_column_subset'=>!isset($a['columns'])&&$s['metrics']===[]&&count($d['columns'])>20,'metrics'=>$s['metrics'],'group_by'=>$s['group_by'],'filters'=>$s['filters'],'total_status'=>isset($data)?($data['provenance']['sources_complete']?'complete_for_stored_sources':'observed_partial_subtotal'):'not_a_consolidated_sales_total','currency'=>in_array($d['name'],['sales_orders','sales_lines'],true)?'IDR':null],'pagination'=>['limit'=>$s['limit'],'offset'=>$s['offset'],'has_more'=>$more,'next_offset'=>$more?$s['offset']+$s['limit']:null,'stable_snapshot_across_pages'=>false],'provenance'=>$provenance,'warnings'=>$warnings];
 }
 function annualizeSales(array $c,array $a,?TableReader $reader=null,?\Closure $fixture=null,?\DateTimeImmutable $now=null): array {
     tableAccess($c);if(array_diff(array_keys($a),['month','basis','partner_date_basis']))throw new \InvalidArgumentException('Provide month, basis and optional partner_date_basis only.');

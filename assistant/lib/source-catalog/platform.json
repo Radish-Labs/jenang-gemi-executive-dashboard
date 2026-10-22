@@ -1,0 +1,545 @@
+{
+  "dashboard_order_mirror": {
+    "family": "sales",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "platform": "string",
+      "account_key": "string",
+      "order_id": "string",
+      "sku": "string",
+      "status": "string",
+      "order_create_time": "datetime",
+      "order_create_date": "date",
+      "brand_name": "string",
+      "base_product_name": "string",
+      "flavor_name": "string",
+      "quantity": "integer",
+      "is_free_gift": "integer",
+      "revenue": "decimal",
+      "order_net_revenue": "decimal",
+      "gross_revenue": "decimal",
+      "marketplace_fees": "decimal",
+      "funds_released": "integer",
+      "funds_released_at": "datetime",
+      "funds_released_amount": "decimal",
+      "funds_release_status": "string",
+      "cogs": "decimal",
+      "gross_profit": "decimal",
+      "source_updated_at": "datetime",
+      "mirrored_at": "datetime",
+      "deleted_at": "datetime",
+      "item_key": "string",
+      "timestamp_utc": "datetime",
+      "company": "string",
+      "product_name": "string",
+      "marketplace_product_name": "string",
+      "product_type": "string",
+      "flavor": "string",
+      "cogs_quantity": "integer",
+      "funds_release_source": "string",
+      "source_event": "string"
+    },
+    "grain": "One mirrored marketplace order item. One order can have multiple rows; order_net_revenue and release amounts may repeat across rows.",
+    "date_basis": "order_create_time and timestamp_utc are UTC order timestamps; order_create_date is the stored business day. mirrored_at is a dashboard write time and source_updated_at is source-record update time, neither proves successful complete ingestion.",
+    "source_verified": "Reviewed application DDL and readers; live source availability and field coverage checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "datetime_timezones": {
+      "order_create_time": "UTC",
+      "funds_released_at": "UTC",
+      "source_updated_at": "UTC",
+      "mirrored_at": "UTC",
+      "deleted_at": "UTC",
+      "timestamp_utc": "UTC"
+    },
+    "scope_requirements": {
+      "kind": "account_column",
+      "column": "account_key",
+      "config": "accounts"
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "physical_stored_timestamp_only",
+      "completeness": "unknown",
+      "timestamp_fields": [
+        "source_updated_at",
+        "mirrored_at"
+      ]
+    },
+    "row_scope": {
+      "column": "account_key",
+      "config": "accounts"
+    },
+    "provenance": [
+      {
+        "file": "api/orders/index.php",
+        "reader": "jg_orders_ensure_mirror_schema"
+      }
+    ],
+    "purpose": "Stored marketplace order-item mirror with safe product, quantity, financial, release and source metadata. Use canonical sales_orders or sales_lines for status-filtered sales reporting.",
+    "warnings": [
+      "Physical rows include canceled, deleted and unmapped lines unless explicitly filtered.",
+      "Do not sum repeated order_net_revenue, funds_released_amount or other order-level amounts across item rows; use canonical order aggregation.",
+      "Seller revenue, gross profit, money released and cash availability are different measures.",
+      "Match records by platform, account_key and order_id; SKU text alone is not a unique order or cross-channel deduplication key.",
+      "Product labels and cogs_quantity supplement SKU reconciliation; raw marketplace payloads and customer identifiers remain excluded.",
+      "A recent mirrored_at or source_updated_at cannot establish that every account, date or upstream order was synchronized."
+    ]
+  },
+  "ad_view_campaigns": {
+    "family": "ads",
+    "database": "analytics",
+    "columns": {
+      "account_key": "string",
+      "campaign_id": "integer",
+      "alias_name": "string",
+      "is_tracked": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "unit_cogs_override": "money"
+    },
+    "grain": "One optional local override per account_key and campaign_id.",
+    "date_basis": "Legacy created/inserted timestamps use database CURRENT_TIMESTAMP; later explicit updates use UTC_TIMESTAMP. Because the database session timezone for initial values is unverified, automatic day conversion is disabled.",
+    "source_verified": "Reviewed application DDL and readers; live source availability and field coverage checked on query.",
+    "default_order": [
+      "account_key",
+      "campaign_id"
+    ],
+    "datetime_timezones": {
+      "created_at": "unknown",
+      "updated_at": "unknown"
+    },
+    "scope_requirements": {
+      "kind": "account_column",
+      "column": "account_key",
+      "config": "accounts"
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "local_configuration_write_time",
+      "completeness": "not_a_performance_source",
+      "timestamp_fields": [
+        "updated_at"
+      ]
+    },
+    "row_scope": {
+      "column": "account_key",
+      "config": "accounts"
+    },
+    "provenance": [
+      {
+        "file": "ads-bootstrap.php",
+        "reader": "jgAdViewEnsureSchema"
+      }
+    ],
+    "purpose": "Local campaign aliases, tracked flags and unit COGS overrides; this is not the upstream campaign inventory or daily performance dataset.",
+    "warnings": [
+      "Zero local settings rows do not mean there were no campaigns, spend, impressions, clicks or attributed sales.",
+      "unit_cogs_override is a configured cost per attributed item for ad-view economics, not incurred ad spend.",
+      "Saved tracking state does not establish upstream campaign live/paused/ended status."
+    ]
+  },
+  "ad_view_budgets": {
+    "family": "ads",
+    "database": "analytics",
+    "columns": {
+      "account_key": "string",
+      "budget_month": "string",
+      "monthly_budget": "decimal",
+      "updated_at": "datetime"
+    },
+    "grain": "One optional saved budget per account and budget_month.",
+    "date_basis": "Legacy created/inserted timestamps use database CURRENT_TIMESTAMP; later explicit updates use UTC_TIMESTAMP. Because the database session timezone for initial values is unverified, automatic day conversion is disabled.",
+    "source_verified": "Reviewed application DDL and readers; live source availability and field coverage checked on query.",
+    "default_order": [
+      "account_key",
+      "budget_month"
+    ],
+    "datetime_timezones": {
+      "updated_at": "unknown"
+    },
+    "scope_requirements": {
+      "kind": "account_column",
+      "column": "account_key",
+      "config": "accounts"
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "local_configuration_write_time",
+      "completeness": "not_a_performance_source",
+      "timestamp_fields": [
+        "updated_at"
+      ]
+    },
+    "row_scope": {
+      "column": "account_key",
+      "config": "accounts"
+    },
+    "provenance": [
+      {
+        "file": "ads-bootstrap.php",
+        "reader": "jgAdViewEnsureSchema"
+      }
+    ],
+    "purpose": "Local planned monthly ad budgets, not consumed ad spend or wallet funding.",
+    "warnings": [
+      "Empty local configuration or annotations do not mean there were no ads, ad spend or upstream activity.",
+      "Read stored all-status campaign performance through jg_ads_history and keep daily and hourly overlapping totals separate."
+    ]
+  },
+  "ad_view_credit_alerts": {
+    "family": "ads",
+    "database": "analytics",
+    "columns": {
+      "account_key": "string",
+      "alert_threshold": "decimal",
+      "updated_at": "datetime"
+    },
+    "grain": "One optional threshold per account.",
+    "date_basis": "Legacy created/inserted timestamps use database CURRENT_TIMESTAMP; later explicit updates use UTC_TIMESTAMP. Because the database session timezone for initial values is unverified, automatic day conversion is disabled.",
+    "source_verified": "Reviewed application DDL and readers; live source availability and field coverage checked on query.",
+    "default_order": [
+      "account_key"
+    ],
+    "datetime_timezones": {
+      "updated_at": "unknown"
+    },
+    "scope_requirements": {
+      "kind": "account_column",
+      "column": "account_key",
+      "config": "accounts"
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "local_configuration_write_time",
+      "completeness": "not_a_performance_source",
+      "timestamp_fields": [
+        "updated_at"
+      ]
+    },
+    "row_scope": {
+      "column": "account_key",
+      "config": "accounts"
+    },
+    "provenance": [
+      {
+        "file": "ads-bootstrap.php",
+        "reader": "jgAdViewEnsureSchema"
+      }
+    ],
+    "purpose": "Local credit-alert thresholds, not actual current credit balances.",
+    "warnings": [
+      "Empty local configuration or annotations do not mean there were no ads, ad spend or upstream activity.",
+      "Read stored all-status campaign performance through jg_ads_history and keep daily and hourly overlapping totals separate."
+    ]
+  },
+  "ad_view_events": {
+    "family": "ads",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "account_key": "string",
+      "campaign_id": "integer",
+      "event_at": "datetime",
+      "event_type": "string",
+      "before_value": "string",
+      "after_value": "string",
+      "created_at": "datetime"
+    },
+    "grain": "One local event annotation; event_at is a user-entered operational event time.",
+    "date_basis": "event_at is entered and stored as Asia/Jakarta wall time without UTC conversion. created_at uses database CURRENT_TIMESTAMP with unverified session timezone. Do not add seven hours to event_at.",
+    "source_verified": "Reviewed application DDL and readers; live source availability and field coverage checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "datetime_timezones": {
+      "event_at": "Asia/Jakarta",
+      "created_at": "unknown"
+    },
+    "scope_requirements": {
+      "kind": "account_column",
+      "column": "account_key",
+      "config": "accounts"
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "local_configuration_write_time",
+      "completeness": "not_a_performance_source",
+      "timestamp_fields": [
+        "created_at"
+      ]
+    },
+    "row_scope": {
+      "column": "account_key",
+      "config": "accounts"
+    },
+    "provenance": [
+      {
+        "file": "ads-bootstrap.php",
+        "reader": "jgAdViewEnsureSchema"
+      }
+    ],
+    "purpose": "Local ad-change annotations with before/after values, not daily campaign performance.",
+    "warnings": [
+      "Empty local configuration or annotations do not mean there were no ads, ad spend or upstream activity.",
+      "Read stored all-status campaign performance through jg_ads_history and keep daily and hourly overlapping totals separate."
+    ]
+  },
+  "executive_chart_context": {
+    "family": "sales",
+    "database": "analytics",
+    "columns": {
+      "period_key": "string",
+      "granularity": "string",
+      "revenue": "integer",
+      "gross_profit": "integer",
+      "orders_qty": "integer",
+      "items_qty": "integer",
+      "updated_at": "datetime"
+    },
+    "grain": "One historical day or month identified by period_key. Only configured supported historical periods can be edited by the app.",
+    "date_basis": "period_key is the historical reporting period; updated_at UTC is when the manual context was last edited or seeded, not the sales coverage cutoff.",
+    "source_verified": "Reviewed application DDL and readers; live source availability and field coverage checked on query.",
+    "default_order": [
+      "period_key"
+    ],
+    "datetime_timezones": {
+      "updated_at": "UTC"
+    },
+    "scope_requirements": {
+      "kind": "dashboard_all_configured"
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "historical_manual_adjustment",
+      "completeness": "not_a_sync_checkpoint",
+      "timestamp_fields": [
+        "updated_at"
+      ]
+    },
+    "provenance": [
+      {
+        "file": "executive-context.php",
+        "reader": "jg_executive_context_group_by_month; jg_executive_context_apply_summary; jg_executive_context_allowed_period"
+      },
+      {
+        "file": "api/context/index.php",
+        "reader": "jg_context_rows"
+      },
+      {
+        "file": "data/executive-context-may-2026.json",
+        "reader": "jg_executive_context_live_overlap; configured historical overlap corrections"
+      }
+    ],
+    "purpose": "Saved historical Executive chart context and corrections. These records supplement or replace historical sales summary values through the canonical context implementation; they are not current monthly P&L or sync checkpoints.",
+    "warnings": [
+      "An old updated_at is expected for unchanged historical context; do not label marketplace sync stale from this timestamp alone.",
+      "The app permits monthly periods in 2025 and January-April 2026, and daily periods May 1-19 2026. This is not a complete monthly sales table.",
+      "Canonical jg_executive_context_apply_summary replaces monthly context and adds daily context after configured live-overlap corrections; summing context with raw sales can double count.",
+      "gross_profit in this historical context is not current computed monthly net profit or a named-recipient allocation."
+    ]
+  },
+  "dashboard_order_location_cache": {
+    "family": "sales",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "range_key": "string",
+      "geocoder_version": "integer",
+      "start_date": "date",
+      "end_date": "date",
+      "mirror_rows": "integer",
+      "mirror_distinct_orders": "integer",
+      "mirror_last_mirrored_at": "datetime",
+      "generated_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One cached aggregate metadata record per requested range and geocoder version; ranges may overlap.",
+    "purpose": "Read-only cache coverage and generation metadata for the dashboard order-location report. Excludes all raw addresses and aggregate payloads.",
+    "date_basis": "start_date/end_date are requested reporting dates; mirror_last_mirrored_at and generated_at are UTC timestamps.",
+    "datetime_timezones": {
+      "mirror_last_mirrored_at": "UTC",
+      "generated_at": "UTC"
+    },
+    "source_verified": "Reviewed jg_orders_ensure_location_cache_schema and cache validity checks in api/orders/index.php; live availability checked on query.",
+    "scope_requirements": {
+      "kind": "dashboard_all_configured"
+    },
+    "provenance": [
+      {
+        "file": "api/orders/index.php",
+        "reader": "jg_orders_ensure_location_cache_schema; jg_orders_read_location_cache; jg_orders_write_location_cache"
+      }
+    ],
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "cached_report_generation_time",
+      "completeness": "unknown",
+      "timestamp_fields": [
+        "mirror_last_mirrored_at",
+        "generated_at"
+      ]
+    },
+    "warnings": [
+      "Cached range counts overlap and must not be summed across cached requests.",
+      "Cache records do not have an account dimension; they represent the configured dashboard aggregate, not a per-account slice.",
+      "Current cache validity requires matching mirror row count, distinct order count and latest mirrored timestamp for the range; generated_at alone is insufficient.",
+      "No refresh, geocoder call or cache write is triggered by this reader. Missing cache is unavailable evidence, not proof of zero orders."
+    ]
+  },
+  "store_ops_walkin_invoices": {
+    "source_verified": "Reviewed pinned Store Ops source DDL and dashboard consumer; live table and column availability must be checked on query.",
+    "family": "sales",
+    "database": "sku",
+    "scope_requirements": {
+      "kind": "dashboard_all_configured"
+    },
+    "date_basis": "created_at is stored UTC by jg_store_ops_walkins_now; displayed business date is Asia/Jakarta.",
+    "datetime_timezones": {
+      "created_at": "UTC"
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "stored_invoice_creation_time",
+      "completeness": "unknown"
+    },
+    "provenance": [
+      {
+        "file": "jenang-gemi-store-ops@05fe7d0ce6a80ffb64acd75ca5f3333d8a385fcf:walk-ins-bootstrap.php",
+        "reader": "jg_store_ops_walkins_ensure_schema; jg_store_ops_walkins_now"
+      },
+      {
+        "file": "direct-order-history.php",
+        "reader": "jg_direct_order_history; jg_direct_order_invoice_detail"
+      }
+    ],
+    "columns": {
+      "invoice_number": "string",
+      "invoice_type": "string",
+      "sale_type": "string",
+      "payment_method": "string",
+      "subtotal": "money",
+      "discount_total": "money",
+      "discount_type": "string",
+      "discount_value": "money",
+      "tax": "money",
+      "shipping_cost": "money",
+      "total": "money",
+      "item_count": "integer",
+      "analytics_visible": "integer",
+      "created_at": "datetime"
+    },
+    "default_order": [
+      "invoice_number"
+    ],
+    "grain": "One stored Store Ops invoice, including walk_in and whatsapp print records.",
+    "purpose": "Safe counter invoice financial and type facts without buyer, operator, receipt or payment-reference details.",
+    "warnings": [
+      "Filter invoice_type=walk_in to match canonical independent counter sales. WhatsApp printed copies may duplicate dashboard direct orders; do not add them as another sale.",
+      "subtotal minus discount_total is merchandise consideration; total also includes tax/shipping. Neither is net profit.",
+      "analytics_visible is a stored visibility flag. Canonical downstream reports apply their own recognition filters; physical invoice rows are not an audited cash or revenue total."
+    ]
+  },
+  "store_ops_walkin_invoice_items": {
+    "source_verified": "Reviewed pinned Store Ops source DDL and dashboard consumer; live table and column availability must be checked on query.",
+    "family": "sales",
+    "database": "sku",
+    "scope_requirements": {
+      "kind": "dashboard_all_configured"
+    },
+    "date_basis": "created_at is stored UTC by jg_store_ops_walkins_now; displayed business date is Asia/Jakarta.",
+    "datetime_timezones": {
+      "created_at": "UTC"
+    },
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "stored_invoice_creation_time",
+      "completeness": "unknown"
+    },
+    "provenance": [
+      {
+        "file": "jenang-gemi-store-ops@05fe7d0ce6a80ffb64acd75ca5f3333d8a385fcf:walk-ins-bootstrap.php",
+        "reader": "jg_store_ops_walkins_ensure_schema; jg_store_ops_walkins_now"
+      },
+      {
+        "file": "direct-order-history.php",
+        "reader": "jg_direct_order_history; jg_direct_order_invoice_detail"
+      }
+    ],
+    "columns": {
+      "id": "integer",
+      "invoice_number": "string",
+      "sku": "string",
+      "tag": "string",
+      "product_name": "string",
+      "unit_price": "money",
+      "quantity": "integer",
+      "discount_rate": "decimal",
+      "discount_total": "money",
+      "line_total": "money",
+      "scanned": "integer",
+      "skip_scan": "integer",
+      "created_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One stored invoice item; invoice_number joins to store_ops_walkin_invoices.invoice_number.",
+    "purpose": "Counter and printed direct-order item quantities, prices and discounts with safe SKU/product identity.",
+    "warnings": [
+      "Parent invoice_type must be checked before counting independent walk-in sales; WhatsApp print rows may duplicate dashboard direct sales.",
+      "Line totals and parent invoice totals are different grains; never sum both. Quantity/price/discount records are not sold-product COGS or net profit.",
+      "Stored scan flags are operational observations, not proof of present stock availability."
+    ]
+  },
+  "zero_store_voucher": {
+    "family": "website",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "discount_percent": "decimal",
+      "starts_at_utc": "datetime",
+      "ends_at_utc": "datetime",
+      "stacking_mode": "string",
+      "is_enabled": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "default_order": [
+      "id"
+    ],
+    "grain": "One saved ZERO storefront voucher-rule record. Voucher identity/secret/hint is excluded.",
+    "purpose": "Safe configured discount percentage, validity window, stacking behavior and enabled state.",
+    "source_verified": "Reviewed zero-voucher-bootstrap.php DDL and save normalization; live availability checked on query.",
+    "date_basis": "All datetime fields are UTC; the app converts entered Asia/Jakarta validity dates before storage.",
+    "datetime_timezones": {
+      "starts_at_utc": "UTC",
+      "ends_at_utc": "UTC",
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    },
+    "scope_requirements": {
+      "kind": "dashboard_all_configured"
+    },
+    "provenance": [
+      {
+        "file": "zero-voucher-bootstrap.php",
+        "reader": "zero_voucher_ensure_schema; zero_voucher_save; zero_voucher_unit_price"
+      }
+    ],
+    "freshness": {
+      "upstream_sync_verified": false,
+      "basis": "local_configuration_write_time",
+      "completeness": "not_usage_history"
+    },
+    "warnings": [
+      "Configured rules are not voucher redemptions, actual discounts granted or lost revenue.",
+      "is_enabled alone does not establish current applicability; the validity window and pricing/stacking rules also apply.",
+      "Voucher code, code_hash and code_hint are deliberately excluded. No code validation or redemption is performed."
+    ]
+  }
+}

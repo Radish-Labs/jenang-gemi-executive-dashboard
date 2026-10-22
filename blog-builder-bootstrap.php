@@ -565,9 +565,9 @@ function jg_blog_validate_payload(array $payload, bool $forRestore = false): arr
     ];
 }
 
-function jg_blog_effective_state(array $row): string
+function jg_blog_effective_state(array $row, ?DateTimeImmutable $now = null): string
 {
-    if (($row['status'] ?? '') === 'scheduled' && !empty($row['scheduled_at']) && strtotime((string) $row['scheduled_at'] . ' UTC') <= time()) {
+    if (($row['status'] ?? '') === 'scheduled' && !empty($row['scheduled_at']) && strtotime((string) $row['scheduled_at'] . ' UTC') <= ($now?->getTimestamp() ?? time())) {
         return 'ready';
     }
     return (string) ($row['status'] ?? 'draft');

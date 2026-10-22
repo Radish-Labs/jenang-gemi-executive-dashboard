@@ -284,6 +284,8 @@ $freeGiftRows = jg_orders_webhook_rows([
         'platform' => 'shopee',
         'account_key' => 'main',
         'order_id' => 'ORDER-FREE-GIFT',
+        // Match the saved monthly packing fixture; never depend on the machine's current month.
+        'order_create_time' => '2026-08-04T10:00:00Z',
         'item_key' => 'GIFT-ITEM-1',
         'sku' => 'JG0101',
         'product_name' => 'Free Gift Classic Jenang',
@@ -604,7 +606,7 @@ $analytics = jg_orders_aggregate_product_analytics_rows([
     'dimension' => 'flavor',
     'flavor' => 'original',
     'volume' => '',
-]);
+], new DateTimeImmutable('2026-08-19 12:00:00', new DateTimeZone('Asia/Jakarta')));
 expect_same(30, $analytics['totals']['quantity'], 'Flavor analytics must include every volume but exclude other flavors.');
 expect_same(2, count($analytics['history']), 'Product analytics must return zero-fillable chronological monthly history.');
 expect_same(100, $analytics['history'][1]['quantity_change_percent'], 'Product analytics must calculate month-over-month change.');

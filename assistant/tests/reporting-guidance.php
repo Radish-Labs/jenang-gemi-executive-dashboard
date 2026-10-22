@@ -17,8 +17,8 @@ $intro=substr($init['instructions'],0,512);
 foreach(['Empty settings are not zero ads','category names AND IDs','bill-payment','VAT','double count']as $text)checkGuidance(str_contains($intro,$text),'Critical warning stays in first 512 characters: '.$text);
 foreach(['paused/ended/deleted','latest metric update','manual exports','transaction business_month','unusual classifications','never request all owner-approved']as $text)checkGuidance(str_contains($init['instructions'],$text),'Required reporting behavior: '.$text);
 $listed=$call('jg_list_tables')['structuredContent']['data'];
-checkGuidance(count($listed['tables'])===61,'No new data projections or permissions');
-checkGuidance($listed['source_coverage']['ads_performance']['status']==='not_connected_in_this_mcp_release','Missing bridge is explicit');
+checkGuidance(count($listed['tables'])===count(JenangMcp\tableRegistry())+4,'Every reviewed source is discoverable under the existing scope');
+checkGuidance($listed['source_coverage']['ads_performance']['status']==='read_bridge_available_source_checked_on_call','Released bridge checks source contract on every call');
 checkGuidance($listed['source_coverage']['ads_performance']['queryable_with_jg_query_table']===false,'Source storage is not advertised as callable');
 foreach(['ad_view_campaigns','ad_view_budgets','ad_view_credit_alerts','ad_view_events']as $name){
     $d=$call('jg_describe_table',['table'=>$name])['structuredContent']['data'];

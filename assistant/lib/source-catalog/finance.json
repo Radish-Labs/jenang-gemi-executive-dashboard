@@ -1,0 +1,1463 @@
+{
+  "accounting_accounts": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "account_key": "string",
+      "name": "string",
+      "type": "string",
+      "platform": "string",
+      "brand": "string",
+      "currency": "string",
+      "opening_balance": "integer",
+      "current_balance_manual": "integer",
+      "is_spendable": "integer",
+      "balance_class": "string",
+      "can_pay": "integer",
+      "can_receive": "integer",
+      "is_active": "integer",
+      "updated_at": "datetime",
+      "receives_automatic": "integer",
+      "sort_order": "integer",
+      "created_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "updated_at": "unknown",
+      "created_at": "unknown"
+    }
+  },
+  "accounting_categories": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "category_key": "string",
+      "parent_id": "integer",
+      "name": "string",
+      "type": "string",
+      "flow": "string",
+      "requires_receipt": "integer",
+      "is_billable": "integer",
+      "is_active": "integer",
+      "sort_order": "integer"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Discover actual category IDs, current names, category keys, parent hierarchy and active state before querying expenses; custom brand-specific categories are valid.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {}
+  },
+  "accounting_pnl_category_settings": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "category_id": "integer",
+      "include_in_net_profit": "integer",
+      "pnl_bucket": "string",
+      "updated_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "category_id"
+    ],
+    "purpose": "Saved inclusion and bucket rules consumed by jg_accounting_pnl_summary; category expense alone does not imply inclusion in net profit.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "updated_at": "unknown"
+    }
+  },
+  "accounting_bills": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "bill_key": "string",
+      "bill_no": "string",
+      "vendor_id": "integer",
+      "issue_date": "date",
+      "due_date": "date",
+      "business_month": "string",
+      "category_id": "integer",
+      "brand": "string",
+      "channel": "string",
+      "total_amount": "integer",
+      "paid_amount": "integer",
+      "outstanding_amount": "integer",
+      "status": "string",
+      "expected_account_id": "integer",
+      "receipt_status": "string",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "voided_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance.",
+      "Canonical expense recognition combines posted money_out expense/adjustment transactions with accounting_bill_payments.amount joined through transaction_id to posted transactions and bill_id to bills; category comes from the bill and period from transaction.business_month. Bill face value, payment allocation, transaction amount and wallet debit can overlap; never add them as independent expenses."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown",
+      "updated_at": "unknown",
+      "voided_at": "unknown"
+    }
+  },
+  "accounting_transactions": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "transaction_key": "string",
+      "transaction_date": "date",
+      "business_month": "string",
+      "type": "string",
+      "direction": "string",
+      "status": "string",
+      "account_id": "integer",
+      "to_account_id": "integer",
+      "counterparty_id": "integer",
+      "category_id": "integer",
+      "bill_id": "integer",
+      "brand": "string",
+      "channel": "string",
+      "amount": "integer",
+      "transfer_fee_amount": "integer",
+      "currency": "string",
+      "payment_method": "string",
+      "receipt_status": "string",
+      "review_status": "string",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "voided_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance.",
+      "Canonical expense recognition combines posted money_out expense/adjustment transactions with accounting_bill_payments.amount joined through transaction_id to posted transactions and bill_id to bills; category comes from the bill and period from transaction.business_month. Bill face value, payment allocation, transaction amount and wallet debit can overlap; never add them as independent expenses."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown",
+      "updated_at": "unknown",
+      "voided_at": "unknown"
+    }
+  },
+  "accounting_bill_payments": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "bill_id": "integer",
+      "transaction_id": "integer",
+      "payment_date": "date",
+      "amount": "integer",
+      "account_id": "integer",
+      "payment_method": "string",
+      "created_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance.",
+      "Canonical expense recognition combines posted money_out expense/adjustment transactions with accounting_bill_payments.amount joined through transaction_id to posted transactions and bill_id to bills; category comes from the bill and period from transaction.business_month. Bill face value, payment allocation, transaction amount and wallet debit can overlap; never add them as independent expenses."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown"
+    }
+  },
+  "accounting_partner_bill_receipts": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "partner_bill_id": "string",
+      "partner_code": "string",
+      "amount": "integer",
+      "transaction_id": "integer",
+      "confirmed_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "confirmed_at": "unknown"
+    }
+  },
+  "accounting_cash_reconciliations": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "reconciliation_key": "string",
+      "account_id": "integer",
+      "available_cash_amount": "integer",
+      "cutoff_transaction_id": "integer",
+      "reconciled_at": "datetime",
+      "created_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "reconciled_at": "unknown",
+      "created_at": "unknown"
+    }
+  },
+  "accounting_automatic_deposit_routes": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "account_id": "integer",
+      "effective_at": "datetime",
+      "created_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "effective_at": "unknown",
+      "created_at": "unknown"
+    }
+  },
+  "dashboard_wallet_releases": {
+    "family": "wallets",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "platform": "string",
+      "account_key": "string",
+      "amount": "decimal",
+      "withdrawn_at": "datetime",
+      "created_at": "datetime",
+      "undone_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "api/wallet/index.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance.",
+      "Filter undone_at IS NULL for active manual releases. They may overlap provider withdrawal transactions; use canonical wallet/cash reconciliation. A release is not revenue."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "withdrawn_at": "unknown",
+      "created_at": "UTC",
+      "undone_at": "UTC"
+    },
+    "row_scope": {
+      "column": "account_key",
+      "config": "accounts"
+    }
+  },
+  "dashboard_wallet_balance_anchors": {
+    "family": "wallets",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "platform": "string",
+      "account_key": "string",
+      "balance_amount": "decimal",
+      "observed_at": "datetime",
+      "created_at": "datetime",
+      "undone_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "api/wallet/index.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance.",
+      "Saved observation/anchor; current balance requires canonical wallet calculation using subsequent events, undone state and provider source selection."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "observed_at": "unknown",
+      "created_at": "UTC",
+      "undone_at": "UTC"
+    },
+    "row_scope": {
+      "column": "account_key",
+      "config": "accounts"
+    }
+  },
+  "dashboard_wallet_platform_transactions": {
+    "family": "wallets",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "platform": "string",
+      "account_key": "string",
+      "transaction_type": "string",
+      "money_flow": "string",
+      "amount": "decimal",
+      "current_balance": "decimal",
+      "transaction_at": "datetime",
+      "synced_at": "datetime",
+      "transaction_id": "string",
+      "order_id": "string"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored marketplace wallet transaction facts used by canonical wallet and accounting cash readers.",
+    "provenance": [
+      "api/wallet/index.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance.",
+      "Wallet ads debits may match accounting expenses or funding. Reconcile transaction identity and event semantics before combining; wallet movement is not campaign consumption or profit. current_balance is a snapshot, not additive. Raw provider payloads are excluded."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "transaction_at": "unknown",
+      "synced_at": "UTC"
+    },
+    "row_scope": {
+      "column": "account_key",
+      "config": "accounts"
+    }
+  },
+  "partner_profiles": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "code": "string",
+      "partner_class": "string",
+      "billing_period_type": "string",
+      "discount_enabled": "integer",
+      "discount_percent": "decimal",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "code"
+    ],
+    "purpose": "Partner business configuration by stable code; personal contacts and authentication fields excluded. Pricing JSON requires a typed projection before exposure.",
+    "provenance": [
+      "partner-db-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance.",
+      "Business partner codes identify partners. Customer identities, contacts, password hashes and reset material are never exposed. selected_skus_json/pricing_json are not raw readable fields."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown",
+      "updated_at": "unknown"
+    }
+  },
+  "partner_orders": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "id": "string",
+      "partner_code": "string",
+      "brand_name": "string",
+      "product_name": "string",
+      "sku_code": "string",
+      "quantity": "integer",
+      "status": "string",
+      "order_timestamp": "datetime",
+      "marketplace_platform": "string",
+      "revenue_total": "decimal",
+      "archived_at": "datetime",
+      "billing_status": "string",
+      "billing_paid_at": "datetime",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "sku_label": "string",
+      "deadline_hours": "integer",
+      "deadline_at": "datetime",
+      "order_type": "string",
+      "shipping_weight_grams": "integer",
+      "executive_status": "string",
+      "balance_amount": "decimal",
+      "submitted_at": "datetime",
+      "shipment_arranged_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "partner-billing-bootstrap.php",
+      "partner-stock-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "order_timestamp": "unknown",
+      "archived_at": "unknown",
+      "billing_paid_at": "unknown",
+      "created_at": "unknown",
+      "updated_at": "unknown",
+      "deadline_at": "unknown",
+      "submitted_at": "unknown",
+      "shipment_arranged_at": "unknown"
+    }
+  },
+  "partner_weekly_bills": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "bill_id": "string",
+      "partner_code": "string",
+      "period_type": "string",
+      "period_start": "date",
+      "period_end": "date",
+      "due_date": "date",
+      "status": "string",
+      "subtotal_amount": "integer",
+      "adjustment_amount": "integer",
+      "total_amount": "integer",
+      "paid_at": "datetime",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "payment_submitted_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "bill_id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "partner-billing-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "paid_at": "unknown",
+      "created_at": "unknown",
+      "updated_at": "unknown",
+      "payment_submitted_at": "unknown"
+    }
+  },
+  "partner_weekly_bill_items": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "id": "integer",
+      "bill_id": "string",
+      "partner_code": "string",
+      "order_id": "string",
+      "order_date": "datetime",
+      "platform": "string",
+      "units": "integer",
+      "amount": "integer",
+      "status": "string",
+      "dispute_id": "integer",
+      "paid_at": "datetime",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "partner-billing-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "order_date": "unknown",
+      "paid_at": "unknown",
+      "created_at": "unknown",
+      "updated_at": "unknown"
+    }
+  },
+  "partner_weekly_bill_payments": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "id": "integer",
+      "payment_key": "string",
+      "bill_id": "string",
+      "partner_code": "string",
+      "amount": "integer",
+      "status": "string",
+      "submitted_at": "datetime",
+      "confirmed_at": "datetime",
+      "accounting_transaction_id": "integer",
+      "updated_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "partner-billing-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "submitted_at": "unknown",
+      "confirmed_at": "unknown",
+      "updated_at": "unknown"
+    }
+  },
+  "partner_return_adjustments": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "id": "integer",
+      "adjustment_key": "string",
+      "return_number": "string",
+      "partner_code": "string",
+      "original_order_id": "string",
+      "bill_id": "string",
+      "bill_item_id": "integer",
+      "fault_party": "string",
+      "condition_code": "string",
+      "rate_basis_points": "integer",
+      "selected_value": "integer",
+      "adjustment_amount": "integer",
+      "created_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "partner-billing-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown"
+    }
+  },
+  "partner_order_payments": {
+    "family": "partners",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "partner_code": "string",
+      "order_id": "string",
+      "amount": "decimal",
+      "payment_date": "date",
+      "payment_method": "string",
+      "source_type": "string",
+      "source_accounting_transaction_id": "integer",
+      "created_at": "datetime",
+      "voided_at": "datetime",
+      "source_submitted_at": "datetime",
+      "source_confirmed_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Partner order settlement ledger in analytics; source of payment facts used by Partner Sales and Orders. The partner database contains orders/bills, not this ledger.",
+    "provenance": [
+      "partner-sales-bootstrap.php",
+      "api/partner-sales/index.php:235-239",
+      "api/partner-sales/index.php:316"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance.",
+      "Filter voided_at IS NULL for active settlements. source_confirmed_at is the source confirmation time; payment_date is the stored business date. No payment synchronization is run by this reader. Do not add these settlements again to the same accounting receipt."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown",
+      "voided_at": "unknown",
+      "source_submitted_at": "unknown",
+      "source_confirmed_at": "unknown"
+    }
+  },
+  "partner_wallets": {
+    "family": "wallets",
+    "database": "partner",
+    "columns": {
+      "partner_code": "string",
+      "balance": "decimal",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "partner_code"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "partner-stock-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance.",
+      "Current saved partner deposit balance is not revenue or profit and is not a historical closing balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown",
+      "updated_at": "unknown"
+    }
+  },
+  "partner_wallet_transactions": {
+    "family": "wallets",
+    "database": "partner",
+    "columns": {
+      "id": "integer",
+      "partner_code": "string",
+      "transaction_type": "string",
+      "amount": "decimal",
+      "balance_after": "decimal",
+      "reference_type": "string",
+      "created_at": "datetime",
+      "reference_id": "string"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "partner-stock-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance.",
+      "Balance_after is a ledger snapshot, not an additive flow. Do not sum it. Ledger movement and matching accounting receipts may be the same event."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown"
+    }
+  },
+  "partner_deposit_requests": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "id": "integer",
+      "partner_code": "string",
+      "requested_amount": "decimal",
+      "approved_amount": "decimal",
+      "status": "string",
+      "submitted_at": "datetime",
+      "reviewed_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Stored business records; apply the documented status and date basis before aggregation.",
+    "provenance": [
+      "partner-stock-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "submitted_at": "unknown",
+      "reviewed_at": "unknown",
+      "updated_at": "unknown"
+    }
+  },
+  "profit_loss_sku_inputs": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "year": "integer",
+      "month": "integer",
+      "sku": "string",
+      "cogs_override": "decimal",
+      "packaging_per_unit": "decimal",
+      "labor_per_unit": "decimal",
+      "other_per_unit": "decimal",
+      "updated_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "year",
+      "month",
+      "sku"
+    ],
+    "purpose": "Manual SKU cost overrides/support costs; canonical P&L also uses sold SKU catalog costs and accounting source data.",
+    "provenance": [
+      "profit-loss-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "updated_at": "UTC"
+    }
+  },
+  "profit_loss_entries": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "year": "integer",
+      "month": "integer",
+      "section": "string",
+      "label": "string",
+      "amount": "decimal",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Manual P&L additions, not the computed monthly statement. Empty rows do not imply zero sales, cost or profit.",
+    "provenance": [
+      "profit-loss-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    }
+  },
+  "profit_loss_settings": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "year": "integer",
+      "reinvest_pct": "decimal",
+      "offering_pct": "decimal",
+      "ownership_pct": "decimal",
+      "director_pct": "decimal",
+      "bng_loan_pct": "decimal",
+      "commissioner_pct": "decimal",
+      "advisor_pct": "decimal",
+      "updated_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "year"
+    ],
+    "purpose": "Yearly allocation pool defaults, not the current named-recipient rule. Monthly allocation settings and canonical jg_monthly_profit determine approved-recipient results.",
+    "provenance": [
+      "profit-loss-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "updated_at": "UTC"
+    }
+  },
+  "profit_loss_statement_metrics": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "metric_key": "string",
+      "label": "string",
+      "value_key": "string",
+      "display_format": "string",
+      "is_visible": "integer",
+      "sort_order": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "physical stored records; no automatic status/void filters",
+    "date_basis": "Business DATE and business_month fields retain their saved calendar meaning. DATETIME fields use the source convention; partner legacy timestamps have unverified historical timezone. Do not apply a blanket UTC-to-Jakarta conversion.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Display labels, formats and selected metric keys only; this table contains no computed monthly financial values.",
+    "provenance": [
+      "profit-loss-bootstrap.php"
+    ],
+    "warnings": [
+      "Physical row availability and write timestamps do not prove complete upstream synchronization or accounting reconciliation. Missing storage is unavailable, not a zero balance."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    }
+  },
+  "accounting_category_guidance": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "category_id": "integer",
+      "account_code": "string",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "Current saved category guidance; created_at/updated_at are storage timestamps.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "category_id"
+    ],
+    "purpose": "Structured category account-code mapping and guidance freshness; join category_id to current category names. Free-text guidance prose requires an explicit reviewed projection and is not returned.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero.",
+      "Only account-code mapping and storage metadata are readable here; free-text definitions, advice, references and notes are excluded."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown",
+      "updated_at": "unknown"
+    }
+  },
+  "accounting_counterparties": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "type": "string",
+      "is_active": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "Current entity state; created_at/updated_at storage timestamps.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Counterparty classifications for joining vendor_id/counterparty_id and aggregates; identities, contacts, tax IDs and notes excluded.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown",
+      "updated_at": "unknown"
+    }
+  },
+  "accounting_attachments": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "entity_type": "string",
+      "entity_id": "integer",
+      "mime_type": "string",
+      "created_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "created_at is stored attachment metadata time.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Attachment existence and type metadata; no URL, filename, actor or file content.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown"
+    }
+  },
+  "accounting_receipt_files": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "entity_type": "string",
+      "entity_id": "integer",
+      "mime_type": "string",
+      "size_bytes": "integer",
+      "created_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "created_at is stored receipt metadata time.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Receipt presence/size metadata for completeness analysis; no filenames, content, links or uploader identities.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown"
+    }
+  },
+  "accounting_review_queue": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "entity_type": "string",
+      "entity_id": "integer",
+      "severity": "string",
+      "issue_key": "string",
+      "status": "string",
+      "resolved_at": "datetime",
+      "created_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "Current queue state; filter status=open; created_at/resolved_at storage timestamps.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Accounting review status and coded issues. Open flags measure unresolved review work, not proven errors. Free-text messages and actor identities excluded.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "resolved_at": "unknown",
+      "created_at": "unknown"
+    }
+  },
+  "accounting_audit_log": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "entity_type": "string",
+      "entity_id": "integer",
+      "action": "string",
+      "created_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "created_at is stored business audit event time.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Business operation audit metadata; before/after payloads and actor IDs excluded because they can contain private information.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown"
+    }
+  },
+  "accounting_ui_preferences": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "preference_key": "string",
+      "updated_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "updated_at is saved preference time.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "preference_key"
+    ],
+    "purpose": "Presence/freshness of saved accounting presentation preferences; raw preference JSON excluded.",
+    "provenance": [
+      "accounting-bootstrap.php"
+    ],
+    "warnings": [
+      "Presentation preferences do not establish financial amounts or reporting completeness."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "updated_at": "unknown"
+    }
+  },
+  "profit_loss_allocation_settings": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "year": "integer",
+      "month": "integer",
+      "updated_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "year/month is the effective allocation month; updated_at is storage time.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "year",
+      "month"
+    ],
+    "purpose": "Presence and freshness of monthly allocation rules. Rule identities and amounts must be read through jg_monthly_profit with its approved-recipient/finance authorization.",
+    "provenance": [
+      "profit-loss-bootstrap.php"
+    ],
+    "warnings": [
+      "This metadata does not reveal the current rule or allocation amount. Raw allocation_tree_json is deliberately excluded to preserve named-recipient and finance access checks. Allocation is not cash available or paid."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "updated_at": "UTC"
+    }
+  },
+  "profit_loss_syrup_groups": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "label": "string",
+      "volume_ml": "decimal",
+      "assignment_mode": "string",
+      "is_visible": "integer",
+      "sort_order": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "Current saved grouping; volume_ml units are millilitres.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Saved product grouping rules used by the P&L presentation; scalar fields only. SKU membership JSON requires canonical typed grouping output.",
+    "provenance": [
+      "profit-loss-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    }
+  },
+  "profit_loss_product_cards": {
+    "family": "accounting",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "card_key": "string",
+      "label": "string",
+      "match_mode": "string",
+      "match_value": "string",
+      "variant_mode": "string",
+      "is_visible": "integer",
+      "sort_order": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "Current saved card configuration; storage timestamps do not indicate sales freshness.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Saved P&L product card matching/display rules; no computed amounts. SKU membership/layout JSON require typed projection.",
+    "provenance": [
+      "profit-loss-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    }
+  },
+  "partner_weekly_bill_disputes": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "id": "integer",
+      "dispute_key": "string",
+      "bill_id": "string",
+      "partner_code": "string",
+      "dispute_type": "string",
+      "status": "string",
+      "created_at": "datetime",
+      "resolved_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "Stored dispute event times; historical partner timezone unverified.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Partner bill dispute status metadata; no free-text reasons, evidence or identities.",
+    "provenance": [
+      "partner-billing-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown",
+      "resolved_at": "unknown",
+      "updated_at": "unknown"
+    }
+  },
+  "partner_weekly_bill_dispute_items": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "dispute_id": "integer",
+      "bill_item_id": "integer",
+      "original_amount": "integer",
+      "proposed_amount": "integer",
+      "resolved_amount": "integer",
+      "created_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "Stored dispute item creation time; historical partner timezone unverified.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "dispute_id",
+      "bill_item_id"
+    ],
+    "purpose": "Amounts proposed/resolved for disputed bill items; join dispute_id to dispute status. Proposals are not automatically final bill adjustments.",
+    "provenance": [
+      "partner-billing-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown"
+    }
+  },
+  "partner_weekly_bill_files": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "id": "integer",
+      "partner_code": "string",
+      "bill_id": "string",
+      "file_kind": "string",
+      "mime_type": "string",
+      "size_bytes": "integer",
+      "created_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "Stored upload metadata time; historical partner timezone unverified.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Evidence-file presence and size metadata; no names, URLs or content.",
+    "provenance": [
+      "partner-billing-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown"
+    }
+  },
+  "partner_billing_onboarding": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "partner_code": "string",
+      "billing_seen_at": "datetime",
+      "tutorial_completed_at": "datetime",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "Stored status timestamps; historical partner timezone unverified.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "partner_code"
+    ],
+    "purpose": "Partner billing onboarding business status, keyed by existing partner code.",
+    "provenance": [
+      "partner-billing-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "billing_seen_at": "unknown",
+      "tutorial_completed_at": "unknown",
+      "created_at": "unknown",
+      "updated_at": "unknown"
+    }
+  },
+  "partner_stock_events": {
+    "family": "partners",
+    "database": "partner",
+    "columns": {
+      "id": "integer",
+      "partner_code": "string",
+      "entity_type": "string",
+      "entity_id": "string",
+      "event_type": "string",
+      "created_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "Stored lifecycle event time; historical partner timezone unverified.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Partner stock/deposit/order lifecycle event metadata; actor, title and detail excluded.",
+    "provenance": [
+      "partner-stock-bootstrap.php"
+    ],
+    "warnings": [
+      "Stored observations do not prove upstream synchronization. Missing storage is unavailable, not zero."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "unknown"
+    }
+  },
+  "dashboard_wallet_backtrack_runs": {
+    "family": "wallets",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "status": "string",
+      "phase": "string",
+      "start_date": "date",
+      "end_date": "date",
+      "cursor_date": "date",
+      "cursor_account_index": "integer",
+      "import_offset": "integer",
+      "chunk_days": "integer",
+      "import_rows_per_step": "integer",
+      "sync_calls": "integer",
+      "import_pages": "integer",
+      "imported_rows": "integer",
+      "upserted_rows": "integer",
+      "created_at": "datetime",
+      "updated_at": "datetime",
+      "completed_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "start_date/end_date is requested coverage, not verified complete coverage; updated_at is run bookkeeping time.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Saved wallet backfill progress and counters; no backfill, refresh or marketplace request is triggered. Errors/raw payloads and actors excluded.",
+    "provenance": [
+      "api/wallet/index.php"
+    ],
+    "warnings": [
+      "A completed run and counts alone do not prove upstream source coverage, reconciliation or current balances. This reader only inspects saved state."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC",
+      "completed_at": "UTC"
+    }
+  },
+  "dashboard_wallet_release_sync_logs": {
+    "family": "wallets",
+    "database": "analytics",
+    "columns": {
+      "id": "integer",
+      "action": "string",
+      "status": "string",
+      "start_date": "date",
+      "end_date": "date",
+      "days": "integer",
+      "import_rows": "integer",
+      "skip_remote": "integer",
+      "remote_ok": "integer",
+      "import_ok": "integer",
+      "fetched_rows": "integer",
+      "upserted_rows": "integer",
+      "before_wallet_balance": "decimal",
+      "after_wallet_balance": "decimal",
+      "before_released_since_anchor": "decimal",
+      "after_released_since_anchor": "decimal",
+      "created_at": "datetime",
+      "updated_at": "datetime"
+    },
+    "grain": "One stored row; no implicit status or void filter.",
+    "date_basis": "Requested coverage dates and bookkeeping write times; success flags are limited to this recorded operation.",
+    "source_verified": "Source DDL and application connection reviewed; live availability remains checked on query.",
+    "default_order": [
+      "id"
+    ],
+    "purpose": "Saved wallet import outcomes and reconciliation snapshots; no sync is triggered. Raw responses/error messages excluded.",
+    "provenance": [
+      "api/wallet/index.php"
+    ],
+    "warnings": [
+      "Wallet before/after amounts are snapshots and cannot be summed. Run success does not prove complete upstream history."
+    ],
+    "units": "IDR for monetary fields unless an explicit currency field states otherwise; quantities, ratios and classification fields retain their named units.",
+    "datetime_timezones": {
+      "created_at": "UTC",
+      "updated_at": "UTC"
+    }
+  }
+}

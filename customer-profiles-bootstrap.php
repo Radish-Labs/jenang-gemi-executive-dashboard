@@ -436,39 +436,94 @@ function jg_customer_profiles_source_rows(PDO $pdo): array
     jg_orders_ensure_mirror_schema($pdo);
     jg_website_ensure_schema($pdo);
     jg_whatsapp_ensure_schema($pdo);
-    $rows = [];
+    return jg_customer_profiles_source_rows_read($pdo);
+}
 
-    $marketplace = $pdo->query(
-        'SELECT platform AS channel, account_key AS account, order_id, order_create_time AS occurred_at,
+/** Passive canonical sources. Bounded readers fail instead of returning partial history. */
+function jg_customer_profiles_source_rows_read(PDO $pdo, ?int $maxRows = null, ?array $authorizedAccounts = null): array
+{
+    if ($maxRows !== null && ($maxRows < 1 || $maxRows > 100000)) throw new InvalidArgumentException('Invalid customer history scan limit.');
+    if ($authorizedAccounts !== null) {
+        if (!array_is_list($authorizedAccounts) || count($authorizedAccounts)>100) throw new InvalidArgumentException('Invalid customer report source scope.');
+        foreach ($authorizedAccounts as $account) if (!is_string($account) || !preg_match('/^[a-z0-9][a-z0-9_-]{0,99}$/D',$account)) throw new InvalidArgumentException('Invalid customer report source account.');
+    }
+    $scopeSql = static function(string $column, ?array $values): array {
+        if ($values === null) return ['', []];
+        if ($values === []) return [' AND 1=0', []];
+        return [' AND '.$column.' IN ('.implode(',',array_fill(0,count($values),'?')).')', array_values($values)];
+    };
+    $rows = [];
+    $remainingBytes = $maxRows === null ? null : 16 * 1024 * 1024;
+
+    $marketplaceSql =         'SELECT platform AS channel, account_key AS account, order_id, order_create_time AS occurred_at,
                 username AS customer_name, username, customer_identity, customer_identity_confidence,
                 phone, address, revenue, quantity, product_name, status, raw_json
          FROM dashboard_order_mirror
          WHERE deleted_at IS NULL AND order_create_time IS NOT NULL
            AND UPPER(status) NOT LIKE "%CANCEL%" AND UPPER(status) NOT LIKE "%REFUND%"
-           AND UPPER(status) NOT IN ("UNPAID", "FAILED", "EXPIRED", "REJECTED")'
-    );
-    if ($marketplace) $rows = array_merge($rows, $marketplace->fetchAll());
+           AND UPPER(status) NOT IN ("UNPAID", "FAILED", "EXPIRED", "REJECTED")';
+    [$filter,$params] = $scopeSql('account_key',$authorizedAccounts);
+    if ($authorizedAccounts !== null) {
+        $conditions=[];$params=[];
+        foreach (['shopee','tiktok','tokopedia'] as $platform) {
+            $accounts=array_values(array_filter($authorizedAccounts,static fn(string $account):bool=>str_ends_with($account,'-'.$platform)));
+            if ($accounts===[]) continue;
+            $conditions[]='(platform = ? AND account_key IN ('.implode(',',array_fill(0,count($accounts),'?')).'))';
+            array_push($params,$platform,...$accounts);
+        }
+        $filter=' AND '.($conditions===[]?'1=0':'('.implode(' OR ',$conditions).')');
+    }
+    $rows = jg_customer_profiles_read_bounded_source($pdo, $marketplaceSql.$filter, $maxRows, $remainingBytes, $params);
 
-    $website = $pdo->query(
-        'SELECT o.platform AS channel, o.platform AS account, o.order_id, o.paid_at AS occurred_at,
+    $websiteSql =         'SELECT o.platform AS channel, o.platform AS account, o.order_id, o.paid_at AS occurred_at,
                 o.customer_name, "" AS username, o.customer_phone AS phone, o.customer_address AS address,
                 (i.unit_net_price * i.quantity) AS revenue, i.quantity, i.product_name
          FROM website_orders o
          INNER JOIN website_order_items i ON i.website_order_id = o.id
-         WHERE o.paid_at IS NOT NULL'
-    );
-    if ($website) $rows = array_merge($rows, $website->fetchAll());
+         WHERE o.paid_at IS NOT NULL';
+    [$filter,$params] = $scopeSql('o.platform',$authorizedAccounts===null?null:array_values(array_intersect($authorizedAccounts,['zero_website','jenang_gemi_website'])));
+    $rows = array_merge($rows, jg_customer_profiles_read_bounded_source($pdo, $websiteSql.$filter, $maxRows === null ? null : $maxRows - count($rows), $remainingBytes, $params));
 
-    $direct = $pdo->query(
-        'SELECT o.sales_channel AS channel, o.sales_channel AS account, o.order_id,
+    $directSql =         'SELECT o.sales_channel AS channel, o.sales_channel AS account, o.order_id,
                 COALESCE(o.listed_at, o.created_at) AS occurred_at, o.customer_name, "" AS username,
                 o.customer_phone AS phone, o.customer_address AS address, i.line_total AS revenue,
                 i.quantity, i.product_name
          FROM whatsapp_orders o
          INNER JOIN whatsapp_order_items i ON i.whatsapp_order_id = o.id
          WHERE o.status IN ("IS_LISTED", "IS_BEING_FULFILLED", "FULFILLED")
-           AND o.archive_hide_charts = 0'
-    );
-    if ($direct) $rows = array_merge($rows, $direct->fetchAll());
+           AND o.archive_hide_charts = 0';
+    $directAccounts = $authorizedAccounts===null?null:array_values(array_filter(['whatsapp'=>in_array('direct',$authorizedAccounts,true)?'whatsapp':null,'walk_in'=>in_array('counter',$authorizedAccounts,true)?'walk_in':null]));
+    [$filter,$params] = $scopeSql('o.sales_channel',$directAccounts);
+    $rows = array_merge($rows, jg_customer_profiles_read_bounded_source($pdo, $directSql.$filter, $maxRows === null ? null : $maxRows - count($rows), $remainingBytes, $params));
+    return $rows;
+}
+
+/** Preserve exact source membership; never silently truncate repeat-customer history. */
+function jg_customer_profiles_read_bounded_source(PDO $pdo, string $sql, ?int $remaining, ?int &$remainingBytes = null, array $params = []): array
+{
+    if ($remaining !== null) {
+        if ($remaining < 0) throw new RuntimeException('Customer history exceeds the bounded reporting scan.');
+        // Raw JSON is used only for canonical buyer identity. Reject oversize values
+        // instead of loading unbounded customer payloads or guessing identity.
+        $sql = str_replace('status, raw_json', 'status, SUBSTR(raw_json, 1, 65537) AS raw_json', $sql);
+        $fields = ['channel','account','order_id','occurred_at','customer_name','username','phone','address','product_name'];
+        $hasRaw = str_contains($sql, 'AS raw_json');
+        if ($hasRaw) array_push($fields, 'customer_identity', 'customer_identity_confidence', 'status', 'raw_json');
+        $bytes = implode(' + ', array_map(static fn(string $field): string => 'LENGTH(COALESCE(' . $field . ",''))", $fields));
+        // Preflight on the server before PDO can buffer large sensitive payloads.
+        $budget = $remainingBytes ?? 16 * 1024 * 1024;
+        $preflightStatement = $pdo->prepare('SELECT COUNT(*) AS scan_rows, COALESCE(SUM(' . $bytes . '),0) AS scan_bytes' . ($hasRaw ? ', COALESCE(MAX(LENGTH(raw_json)),0) AS raw_bytes' : '') . ' FROM (' . $sql . ') AS bounded_customer_source');
+        $preflightStatement->execute($params);
+        $preflight = $preflightStatement->fetch(PDO::FETCH_ASSOC);
+        if ((int)$preflight['scan_rows'] > $remaining || (int)$preflight['scan_bytes'] > $budget || ($hasRaw && (int)$preflight['raw_bytes'] > 65536)) throw new RuntimeException('Customer history exceeds the bounded source budget; no partial retention metric is returned.');
+        $remainingBytes = $budget - (int)$preflight['scan_bytes'];
+        $sql .= ' LIMIT ' . ($remaining + 1);
+    }
+    $statement = $pdo->prepare($sql);
+    if (!$statement) throw new RuntimeException('Customer history source unavailable.');
+    $statement->execute($params);
+    $rows = $statement->fetchAll(PDO::FETCH_ASSOC);
+    if ($remaining !== null && count($rows) > $remaining) throw new RuntimeException('Customer history exceeds the bounded reporting scan; no partial retention metric is returned.');
+    foreach ($rows as $row) if ($remaining !== null && strlen((string) ($row['raw_json'] ?? '')) > 65536) throw new RuntimeException('Customer identity source exceeds the bounded reporting payload.');
     return $rows;
 }
