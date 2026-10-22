@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__).'/lib/grants.php';
+require_once dirname(__DIR__).'/lib/organizational-sources.php';
 require_once dirname(__DIR__,2).'/auth.php';
 require_once dirname(__DIR__,2).'/sku-auth.php';
 header('Cache-Control: no-store');
@@ -41,6 +42,11 @@ try {
             } elseif($action==='revoke'){
                 JenangMcp\revokeOwnerGrant($c);
                 $message='Connection revoked. All existing access tokens, refresh tokens and pending codes for this connection are invalid.';
+            } elseif($action==='organizational_sources'||$action==='revoke_organizational_sources'){
+                $sources=$action==='revoke_organizational_sources'?[]:($_POST['organizational_sources']??[]);
+                if(!is_array($sources))throw new InvalidArgumentException('Invalid diagnostic source selection.');
+                JenangMcp\updateOrganizationalSources($c,$sources);
+                $message=$sources===[]?'Organizational diagnostic access revoked. Existing account-scoped reporting is unchanged.':'Selected organizational diagnostic sources approved for this connection. No tokens or OAuth scopes were changed; source availability is checked separately.';
             } else throw new InvalidArgumentException('Unsupported action.');
             // Prevent replay of an owner confirmation form.
             unset($_SESSION['jg_admin_csrf_token']);
@@ -78,6 +84,17 @@ $labels=[JenangMcp\SCOPE=>'Read product sales within the existing configured acc
 <label>Branch-tier owner password<input type="password" name="owner_password" required autocomplete="current-password"></label>
 <label class="check"><input type="checkbox" name="confirm" value="yes" required><span>I personally approve the selected capabilities until revoked, or confirm revoking this connection.</span></label>
 <div class="actions"><button name="action" value="approve">Approve selected capabilities</button><button class="danger" name="action" value="revoke">Revoke all assistant access</button></div></form></section>
+<?php if($grant&&(JenangMcp\organizationalSourceApprovalEnabled($c)||!empty($grant['organizational_sources']))): ?>
+<section><h2>Organization-wide diagnostics</h2><p>These sources span all stored accounts, including retired or unlisted accounts. They are not limited to this connection's configured account list. Only status, processing counts, timestamps and heartbeat staleness are available; no raw errors, people, credentials or security settings are included. Stored diagnostics do not prove complete sync or operational readiness.</p>
+<p>These permissions belong to the current owner grant for <strong><?= $e($c['subject']) ?></strong> and client <?= $e($c['client_id']) ?>. Revocation takes effect on existing tokens. Replacing or revoking the main grant removes these permissions. Deployment availability is separate from your approval.</p>
+<form method="post"><input type="hidden" name="csrf" value="<?= $e($csrf) ?>">
+<?php foreach(JenangMcp\organizationalSourceDefinitions() as $source=>$label): $binding=$grant['organizational_sources'][$source]??null;$active=$binding&&empty($binding['revoked_at'])&&($binding['grant_id']??null)===$grant['id']; ?>
+<label class="check"><input type="checkbox" name="organizational_sources[]" value="<?= $e($source) ?>" <?= $active?'checked':'' ?> <?= JenangMcp\organizationalSourceApprovalEnabled($c)?'':'disabled' ?>><span><?= $e($label) ?></span></label>
+<?php endforeach ?>
+<label>Branch-tier owner password<input type="password" name="owner_password" required autocomplete="current-password"></label>
+<label class="check"><input type="checkbox" name="confirm" value="yes" required><span>I personally approve the selected organization-wide diagnostic sources, or confirm revoking them.</span></label>
+<div class="actions"><?php if(JenangMcp\organizationalSourceApprovalEnabled($c)): ?><button name="action" value="organizational_sources">Save diagnostic permissions</button><?php endif ?><button class="danger" name="action" value="revoke_organizational_sources">Revoke all diagnostic access</button></div></form></section>
+<?php endif ?>
 <section><h2>Monthly report notes</h2><p>These annotations are not verified accounting records.</p><?php if(!$details['notes']): ?><p>No notes saved.</p><?php endif ?><?php foreach($details['notes'] as $note): ?><article><h3><?= $e($note['month']) ?> · revision <?= $e($note['revision']) ?></h3><p class="note"><?= $e($note['text']) ?></p><small><?= $e($note['updated_at']) ?></small></article><?php endforeach ?></section>
 <section><h2>Recent connection activity</h2><?php if(!$details['audit']): ?><p>No recorded activity.</p><?php endif ?><ul><?php foreach($details['audit'] as $event): ?><li><?= $e($event['at'].' · '.$event['action'].' · '.$event['outcome']) ?></li><?php endforeach ?></ul></section>
 <?php endif ?></main></body></html>

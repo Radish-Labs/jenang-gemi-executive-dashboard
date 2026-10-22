@@ -51,9 +51,20 @@ foreach($matrix['database_sources'] as $source){
         $mapped[]=$view;
     }
     if($source['classification']!=='mapped')inventoryCheck(!empty($source['reason']),'Excluded/unavailable sources need a concrete reason');
-    if($source['classification']==='intentionally_excluded'){
+    if(isset($source['exclusion_category'])){
         inventoryCheck(in_array($source['exclusion_category']??null,['security_secrets','mixed_business_payload','internal_presentation'],true),'Excluded source category is explicit');
-        inventoryCheck(!empty($source['future_projection_review'])&&($source['future_projection_implemented']??null)===false,'Potential safe subset is review only, not implemented access');
+        inventoryCheck(($source['sensitive_source_review_retained']??false)===true&&!empty($source['protected_fields']),'Sensitive source retains explicit protected-field exclusions');
+        inventoryCheck(in_array($source['projection_state']??null,['fully_excluded','local_implemented','prepared_authorization_blocked','prepared_upstream_blocked'],true),'Safe subset implementation state is explicit');
+        inventoryCheck(!empty($source['future_projection_review'])&&($source['future_projection_implemented']??null)===($source['projection_state']==='local_implemented'),'Prepared subset is not reported as implemented access');
+        inventoryCheck(($source['projected_fields']??[])===[],'Mixed/protected source is never silently made a generic raw table view');
+        if($source['projection_state']==='local_implemented'){
+            inventoryCheck($source['classification']==='mapped'&&$source['coverage_level']==='partial_safe_metadata_only'&&!empty($source['exposed_metadata']),'Mapped subset declares exact partial metadata coverage');
+            inventoryCheck(($source['projection_implementation']['registered']??false)===true&&($source['projection_implementation']['production_verified']??null)===false,'Local registration is distinct from production verification');
+            foreach($source['interfaces']as $interface)inventoryInterface($interface,$reports,$finance,$views,$fileViews);
+            inventoryCheck(($reports[$source['projection_implementation']['report']]['scope']??null)===JenangMcp\TABLE_SCOPE,'Safe metadata retains existing dashboard authorization');
+        }elseif(in_array($source['projection_state'],['prepared_authorization_blocked','prepared_upstream_blocked'],true)){
+            inventoryCheck($source['interfaces']===[]&&($source['projection_implementation']['registered']??null)===false&&($source['projection_implementation']['production_verified']??null)===false,'Prepared source is not falsely advertised as a registered or live interface');
+        }
     }
 }
 inventorySameSet($mapped,array_keys($views),'Every typed view maps to actual storage evidence');
@@ -79,6 +90,30 @@ foreach(['typed_file_views'=>count($fileViews),'api_consumers'=>count($apis),'fi
 $expected=$c['file_sources_by_classification'];ksort($expected);inventoryCheck(inventoryCounts($matrix['file_sources'],'classification')===$expected,'File source classification counts reconcile');
 foreach(['repository'=>'database_by_repository','classification'=>'database_by_classification','family'=>'database_by_family']as $field=>$key){$expected=$c[$key];ksort($expected);inventoryCheck(inventoryCounts($matrix['database_sources'],$field)===$expected,'Source count breakdown reconciles: '.$key);}
 $excluded=array_values(array_filter($matrix['database_sources'],fn($s)=>$s['classification']==='intentionally_excluded'));$expected=$c['deliberate_exclusions_by_category'];ksort($expected);inventoryCheck(inventoryCounts($excluded,'exclusion_category')===$expected,'Deliberate exclusion categories reconcile');
+$sensitive=array_values(array_filter($matrix['database_sources'],fn($s)=>isset($s['exclusion_category'])));
+inventorySameSet(array_column($sensitive,'id'),[
+    'dashboard:analytics_device_exclusions','dashboard:analytics_ip_exclusions','dashboard:zero_blog_preview_links',
+    'ingest:marketplace_account_tokens','ingest:shopee_account_tokens','ingest:shopee_authorization_sessions',
+    'dashboard:hard_set_audit','dashboard:hard_set_outbox','dashboard:hard_set_state','dashboard:partner_order_labels','dashboard:purchase_order_payment_proofs','dashboard:store_ops_employees_v2',
+    'ingest:executive_hard_set_sources','ingest:executive_hard_set_state','ingest:marketplace_arrangement_policy','ingest:raw_platform_events',
+    'dashboard:accounting_migrations','dashboard:executive_chart_context_migrations','dashboard:partner_registry_migrations','dashboard:partner_favicons',
+],'Original twenty sensitive sources remain reviewed even when metadata subsets are implemented');
+inventoryCheck(count($sensitive)===$c['sensitivity_reviewed_database_sources'],'Sensitive review count reconciles');
+foreach(['exclusion_category'=>'sensitivity_review_by_category','projection_state'=>'sensitivity_review_by_projection_state']as $field=>$key){$expected=$c[$key];ksort($expected);inventoryCheck(inventoryCounts($sensitive,$field)===$expected,'Sensitive review breakdown reconciles: '.$key);}
+require_once __DIR__.'/../lib/read-services/staff-counts.php';
+require_once __DIR__.'/../lib/ingest-event-metadata.php';
+require_once __DIR__.'/../lib/organizational-sources.php';
+$prepared=$matrix['prepared_metadata_readers'];
+inventoryCheck($prepared['staff']['definition']===JenangMcp\staffCountsMetricRegistry()['store_ops_staff_counts'],'Prepared staff aggregate contract drift');
+inventoryCheck($prepared['staff']['registered']===false&&$prepared['staff']['source_read_performed']===false&&!isset($reports['store_ops_staff_counts']),'Staff aggregate remains unregistered and blocked before source read');
+inventoryCheck($prepared['raw_events']['definition']===JenangMcp\ingestEventMetadataDefinition(),'Proposed event aggregate contract drift');
+inventoryCheck($prepared['raw_events']['registered']===false&&$prepared['raw_events']['source_released']===false&&$prepared['raw_events']['upstream_implemented']===false&&$prepared['raw_events']['availability_verified']===false&&JenangMcp\INGEST_EVENT_METADATA_SOURCE_RELEASED===false,'Event metadata proposal is not upstream implementation or live access');
+inventoryCheck(!in_array('raw_platform_event_metadata',array_column($matrix['pending_remote_contract']['sources'],'source'),true),'Separate event proposal does not alter the frozen original twelve-source contract');
+inventoryCheck($prepared['raw_events']['definition']['views']===['summary','groups']&&!isset($prepared['raw_events']['definition']['columns']['event_type']),'Event metadata excludes per-event rows and payload-derived event types');
+inventoryCheck($matrix['pending_remote_contract']['source_released']===false&&JenangMcp\INGEST_REPORTS_SOURCE_RELEASED===false,'Original ingestion bridge release gate remains false');
+inventoryCheck($prepared['organizational_binding']['sources']===JenangMcp\organizationalSourceDefinitions(),'Organizational source preparation covers exact two diagnostic sources');
+inventoryCheck($prepared['organizational_binding']['enabled_by_default']===false&&$prepared['organizational_binding']['active_permission_created']===false&&JenangMcp\organizationalSourceApprovalEnabled([])===false,'Organizational binding preparation is not active permission');
+inventoryCheck($c['prepared_metadata_readers']===2&&$c['pending_remote_metadata_contract_sources']===1,'Prepared metadata counts exclude organizational authorization code');
 foreach(['zero_store_items','zero_store_discounts','zero_store_discount_items','jenang_gemi_store_items','jenang_gemi_store_discounts','jenang_gemi_store_discount_items']as $view)inventoryCheck($views[$view]['database']==='sku','Regression: storefront source binds to actual SKU database');
 inventoryCheck(($views['customer_activity']['physical_table']??null)==='analytics_events','Regression: logical customer activity view resolves to real analytics_events');
 inventoryCheck(($views['customer_activity']['aggregate_only']??false)===true,'Customer activity remains aggregate-only');

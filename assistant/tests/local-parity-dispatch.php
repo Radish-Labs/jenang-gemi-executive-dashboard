@@ -24,6 +24,13 @@ $calls=0;$factory=function()use(&$calls){$calls++;throw new RuntimeException('PR
 $resolver=fn($db)=>['host'=>'fixture','name'=>'fixture','dsn'=>'mysql:host=fixture;dbname=fixture;charset=utf8mb4','user'=>'fixture','password'=>'fixture'];
 $reader=new JenangMcp\BusinessReportReader($c,$factory,$resolver);
 parityDeny(fn()=>$reader->read('partner_pricing',null,['partner_code'=>'foreign-partner'],$now),'Partner rejected before connecting');
+parityDeny(fn()=>$reader->read('partner_label_presence',null,['partner_code'=>'foreign-partner'],$now),'Label partner rejected before connecting');
+parityDeny(fn()=>$reader->read('purchase_payment_proof_presence',null,[],$now),'Unpartitioned proof metadata requires approved company scope before connecting');
+parityDeny(fn()=>$reader->read('hard_set_observations',null,[],$now),'Shared control metadata requires approved internal scope before connecting');
+foreach(['purchase_payment_proof_presence','partner_label_presence','hard_set_observations'] as $metadata){
+    parityCheck(JenangMcp\businessReportArguments(['report'=>$metadata],$now)['input_schema']['properties']['report']['enum']===[$metadata],'New metadata dispatch accepts its fixed contract');
+    parityDeny(fn()=>JenangMcp\businessReportArguments(['report'=>$metadata,'document_path'=>'/private'],$now),'Metadata dispatch rejects private selectors');
+}
 $noAccounts=$c;$noAccounts['accounts']=[];$emptyReader=new JenangMcp\BusinessReportReader($noAccounts,$factory,$resolver);
 parityDeny(fn()=>$emptyReader->read('sales_provinces',null,['start_date'=>'2026-10-01','end_date'=>'2026-10-02'],$now),'Province missing accounts rejected before connecting');
 parityCheck($calls===0,'Unauthorized report selection performs no connection');
@@ -34,6 +41,22 @@ final class ParityTransactionPDO extends PDO {
     public function rollBack():bool{$this->rollbacks++;return parent::rollBack();}
 }
 $firstSource=new ParityTransactionPDO();$sourceCalls=0;
+$internal=array_replace($c,['partners'=>[],'database_access_mode'=>'app_internal_readonly','app_internal_readonly_approved'=>true]);
+foreach(['purchase_payment_proof_presence'=>[
+    'CREATE TABLE purchase_orders(id INTEGER PRIMARY KEY)',
+    'CREATE TABLE purchase_order_payments(id INTEGER PRIMARY KEY,purchase_order_id INTEGER,proof_size_bytes INTEGER,paid_at TEXT)',
+    'CREATE TABLE purchase_order_payment_proofs(payment_id INTEGER,size_bytes INTEGER,created_at TEXT)'],
+    'partner_label_presence'=>[
+    'CREATE TABLE partner_orders(id TEXT PRIMARY KEY,partner_code TEXT,updated_at TEXT)',
+    'CREATE TABLE partner_order_labels(order_id TEXT,partner_code TEXT,size_bytes INTEGER,created_at TEXT,deleted_at TEXT,expires_at TEXT)'],
+    'hard_set_observations'=>[]] as $id=>$schema){
+    $db=new ParityTransactionPDO();foreach($schema as $sql)$db->exec($sql);
+    $metadataReader=new JenangMcp\BusinessReportReader($internal,fn()=>$db,$resolver);
+    $raw=$metadataReader->read($id,null,[],$now);$out=JenangMcp\businessReportProjection($id,null,$raw,$now);
+    parityCheck($out['report']===$id&&isset($out['data']),'Metadata returns through real dispatch and shared projection');
+    parityCheck(!$db->inTransaction()&&$db->rollbacks===1,'Metadata read snapshot closes without business commit');
+    parityCheck($id==='hard_set_observations'?$out['status']==='source_unavailable':$out['status']==='stored_metadata_available','Missing source remains distinct from successful empty metadata');
+}
 $secondFails=function()use($firstSource,&$sourceCalls){if(++$sourceCalls===1)return $firstSource;throw new RuntimeException('PRIVATE_SECOND_SOURCE_FAILURE');};
 $partialReader=new JenangMcp\BusinessReportReader($c,$secondFails,$resolver);
 try{$partialReader->read('sales_daily',null,['start_date'=>'2026-10-01','end_date'=>'2026-10-02'],$now);throw new RuntimeException('Second source failure accepted');}

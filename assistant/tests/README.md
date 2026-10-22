@@ -8,6 +8,8 @@ The next local parity batch adds `sales-parity-metrics.php`, `partner-parity.php
 
 `editor-profit-loss.php` evaluates the actual dashboard JavaScript for separate editor parity. `ingest-reports.php` checks the twelve-source contract with injected synthetic HTTP payloads; `ingest-dispatch.php` checks discovery, scopes and the closed release gate. Neither contacts the ingestion host or loads a production credential. See `../RELEASE-0.5.0.md` for the frozen candidate and activation boundaries.
 
+The separate safe-metadata supplement adds `document-presence-metrics.php`, `control-state-observations.php`, `staff-counts.php`, `ingest-event-metadata.php` and `organizational-sources.php`. These verify bounded scalar/aggregate projections, privacy, exact source scope, disabled preparations and revocation. `local-parity-dispatch.php` exercises the three registered metadata readers through the shared connection and projection path; the staff and event consumers remain unregistered. Run `PHP_BINARY=php python3 assistant/tests/organizational-settings-http.py` for the gated Settings form using disposable local state and an ephemeral `127.0.0.1` listener. It does not create a real connection or activate either global ingestion source. See `../ORGANIZATIONAL-SOURCES.md` for the independent deployment, source and owner-approval gates.
+
 Owner-managed connection and computed reporting:
 
 - `php assistant/tests/reporting-guidance.php`: metadata/empty-result regressions for ads configuration versus performance, accounting category/bill discovery, duplicate wallet representation, and unchanged scope guards. SQLite fixtures only.

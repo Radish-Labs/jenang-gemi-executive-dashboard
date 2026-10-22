@@ -16,7 +16,8 @@
     "Only approved dashboard read scope and existing account partitions; finance-recipient reporting retains separate scope/allowlist.",
     "Actual client tools and parameter schemas must reflect server registry; context advertising a name is insufficient.",
     "All computed values use canonical helpers with source/date/units/freshness and limitations.",
-    "Remote bridge requires verified deployed passive header-authenticated endpoint; no credential creation or scope expansion."
+    "Remote bridge requires verified deployed passive header-authenticated endpoint; no credential creation or scope expansion.",
+    "The original twenty sensitive sources retain protected-field exclusions even where a safe metadata subset is mapped; prepared staff/raw-event/global readers must remain explicitly unavailable until their distinct binding or upstream acceptance gates are met."
   ],
   "authorization": {
     "dashboard": "Existing approved all-configured business dashboard read families; no new family granted by inventory.",
@@ -24,7 +25,9 @@
     "brands": "Existing legacy product brand filter is not the same as all-configured dashboard business-source grant. Safe cross-brand dashboard definitions do not add a new credential or grant.",
     "recipients": "Named allocation tool still requires finance scope and saved recipient allowlist. Branch and Brent remain distinct.",
     "excluded": "Credentials, security state, identifiable customer/employee contacts, private document contents, arbitrary raw payloads, and unrestricted SQL/writes.",
-    "finance_reports": "jg_finance_report retains jg:finance:read independently of dashboard access. allocation_statement additionally requires the exact saved recipient allowlist; legacy/current editor statements do not broaden named-recipient access."
+    "finance_reports": "jg_finance_report retains jg:finance:read independently of dashboard access. allocation_statement additionally requires the exact saved recipient allowlist; legacy/current editor statements do not broaden named-recipient access.",
+    "metadata": "Proof/label and local nonsecurity observation reports use existing dashboard authorization plus source-specific company/partner guards. Protected fields remain excluded. Staff roster totals, global ingest diagnostics and new upstream sources are not enabled by this batch.",
+    "organizational_sources": "The two global ingest diagnostic sources remain hard-denied. Disabled source-specific grant-binding/Settings code is prepared only; no source grant or credential was created."
   },
   "counts": {
     "database_sources": 134,
@@ -34,9 +37,9 @@
       "ingest": 22
     },
     "database_by_classification": {
-      "mapped": 102,
-      "intentionally_excluded": 20,
-      "external_reader_blocked": 12
+      "mapped": 107,
+      "intentionally_excluded": 14,
+      "external_reader_blocked": 13
     },
     "database_by_family": {
       "accounting": 24,
@@ -61,9 +64,9 @@
     "dashboard_page_entrypoints": 34,
     "file_snapshot_families": 14,
     "file_readsites": 101,
-    "canonical_reports": 33,
+    "canonical_reports": 36,
     "canonical_reports_by_status": {
-      "implemented": 33
+      "implemented": 36
     },
     "feature_acceptance_rows": 48,
     "feature_acceptance_by_classification": {
@@ -80,17 +83,31 @@
     "finance_reports_by_status": {
       "implemented": 3
     },
-    "all_fixed_reports": 36,
+    "all_fixed_reports": 39,
     "file_sources_by_classification": {
       "mapped": 9,
       "intentionally_excluded": 5
     },
     "pending_remote_contract_sources": 12,
     "deliberate_exclusions_by_category": {
+      "internal_presentation": 4,
       "security_secrets": 6,
-      "mixed_business_payload": 10,
-      "internal_presentation": 4
-    }
+      "mixed_business_payload": 4
+    },
+    "sensitivity_reviewed_database_sources": 20,
+    "sensitivity_review_by_category": {
+      "internal_presentation": 4,
+      "security_secrets": 6,
+      "mixed_business_payload": 10
+    },
+    "sensitivity_review_by_projection_state": {
+      "fully_excluded": 13,
+      "local_implemented": 5,
+      "prepared_authorization_blocked": 1,
+      "prepared_upstream_blocked": 1
+    },
+    "prepared_metadata_readers": 2,
+    "pending_remote_metadata_contract_sources": 1
   },
   "database_sources": [
     {
@@ -1075,7 +1092,12 @@
       },
       "exclusion_category": "internal_presentation",
       "future_projection_review": "Internal migration marker only; accounting business tables/reports are mapped. No financial fact requires this table.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "internal schema markers"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "dashboard:accounting_partner_bill_receipts",
@@ -1849,7 +1871,14 @@
       },
       "exclusion_category": "security_secrets",
       "future_projection_review": "Raw device IDs and labels remain excluded; only an aggregate exclusion-rule count could be considered after privacy-setting metadata review. Canonical analytics already applies these filters internally.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "device identity",
+        "private labels",
+        "privacy exclusion configuration"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "dashboard:analytics_events",
@@ -1961,7 +1990,14 @@
       },
       "exclusion_category": "security_secrets",
       "future_projection_review": "Raw IPs and labels remain excluded; only an aggregate exclusion-rule count could be considered after privacy-setting metadata review. Canonical analytics already applies these filters internally.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "IP addresses",
+        "private labels",
+        "privacy exclusion configuration"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "dashboard:dashboard_order_location_cache",
@@ -2586,7 +2622,12 @@
       },
       "exclusion_category": "internal_presentation",
       "future_projection_review": "Internal seeding marker only; historical business corrections are already mapped and composed canonically.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "internal migration/seed markers"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "dashboard:hard_set_audit",
@@ -2595,17 +2636,21 @@
       "physical_source": "hard_set_audit",
       "database_binding": "analytics",
       "family": "sales",
-      "classification": "intentionally_excluded",
-      "coverage_level": "excluded",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "partial_safe_metadata_only",
+      "interfaces": [
+        "jg_business_report:hard_set_observations"
+      ],
       "projected_fields": {},
       "scope": {
-        "kind": "existing_dashboard_grant"
+        "kind": "company_wide_existing_internal_dashboard",
+        "oauth_scope": "jg:dashboard:read",
+        "new_grant_created": false
       },
       "row_scope": null,
-      "date_basis": "No read projection; native source date basis requires verification.",
-      "freshness": "Stored timestamp is not upstream sync evidence; no production availability asserted.",
-      "reason": "Security-sensitive automation control/audit payload; precise sanitized reporting contract not approved.",
+      "date_basis": "Stored created_at/delivered_at/updated_at UTC timestamps. Age is measured at read time; it is not a heartbeat or verification of downstream state.",
+      "freshness": "Stored metadata timestamps only; source completeness and synchronization remain unverified. Missing source/schema is unavailable, not zero.",
+      "reason": "Only ACTIVATED, AUTOMATION_PAUSED and AUTOMATION_RESUMED counts/times. Security/scope-expansion and unknown events, actors and payloads remain excluded; these are not full audit totals.",
       "evidence": {
         "declared_at": [
           {
@@ -2618,11 +2663,34 @@
             "file": "website-commerce-bootstrap.php",
             "line": 1750
           }
+        ],
+        "projection_at": [
+          {
+            "file": "assistant/lib/read-services/control-state-observations.php"
+          }
         ]
       },
       "exclusion_category": "mixed_business_payload",
-      "future_projection_review": "Potential safe operational projection: event-type counts and last event time, excluding actors and JSON. Requires a precise approved privileged-control reporting boundary; no activation or mutation.",
-      "future_projection_implemented": false
+      "future_projection_review": "Implemented partial safe subset described in exposed_metadata. Protected fields remain excluded; no raw-table or document authority follows.",
+      "future_projection_implemented": true,
+      "projection_state": "local_implemented",
+      "protected_fields": [
+        "id",
+        "actor",
+        "payload_json",
+        "SOURCES_EXPANDED and unknown event types"
+      ],
+      "sensitive_source_review_retained": true,
+      "exposed_metadata": [
+        "known business event-category counts",
+        "first/latest event times"
+      ],
+      "projection_implementation": {
+        "report": "hard_set_observations",
+        "module": "assistant/lib/read-services/control-state-observations.php",
+        "registered": true,
+        "production_verified": false
+      }
     },
     {
       "id": "dashboard:hard_set_outbox",
@@ -2631,17 +2699,21 @@
       "physical_source": "hard_set_outbox",
       "database_binding": "analytics",
       "family": "sales",
-      "classification": "intentionally_excluded",
-      "coverage_level": "excluded",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "partial_safe_metadata_only",
+      "interfaces": [
+        "jg_business_report:hard_set_observations"
+      ],
       "projected_fields": {},
       "scope": {
-        "kind": "existing_dashboard_grant"
+        "kind": "company_wide_existing_internal_dashboard",
+        "oauth_scope": "jg:dashboard:read",
+        "new_grant_created": false
       },
       "row_scope": null,
-      "date_basis": "No read projection; native source date basis requires verification.",
-      "freshness": "Stored timestamp is not upstream sync evidence; no production availability asserted.",
-      "reason": "Security-sensitive automation activation/delivery payload, excluded from business reads.",
+      "date_basis": "Stored created_at/delivered_at/updated_at UTC timestamps. Age is measured at read time; it is not a heartbeat or verification of downstream state.",
+      "freshness": "Stored metadata timestamps only; source completeness and synchronization remain unverified. Missing source/schema is unavailable, not zero.",
+      "reason": "Only the three reviewed business event categories. Recorded delivery is historical acknowledgement, not current readiness; no retries, payload/error text or idempotency material.",
       "evidence": {
         "declared_at": [
           {
@@ -2658,11 +2730,37 @@
             "file": "website-commerce-bootstrap.php",
             "line": 1675
           }
+        ],
+        "projection_at": [
+          {
+            "file": "assistant/lib/read-services/control-state-observations.php"
+          }
         ]
       },
       "exclusion_category": "mixed_business_payload",
-      "future_projection_review": "Potential safe operational projection: status counts, attempts and oldest pending/latest delivery timestamps. Exclude idempotency keys, payloads and errors. Requires approved control-queue reporting scope; readiness must remain distinct.",
-      "future_projection_implemented": false
+      "future_projection_review": "Implemented partial safe subset described in exposed_metadata. Protected fields remain excluded; no raw-table or document authority follows.",
+      "future_projection_implemented": true,
+      "projection_state": "local_implemented",
+      "protected_fields": [
+        "id",
+        "idempotency_key",
+        "payload_json",
+        "last_error",
+        "SOURCES_EXPANDED and unknown event types"
+      ],
+      "sensitive_source_review_retained": true,
+      "exposed_metadata": [
+        "known event-category queue counts",
+        "finite pending/delivered/other buckets",
+        "attempt totals/max",
+        "first/latest/oldest-pending times and ages"
+      ],
+      "projection_implementation": {
+        "report": "hard_set_observations",
+        "module": "assistant/lib/read-services/control-state-observations.php",
+        "registered": true,
+        "production_verified": false
+      }
     },
     {
       "id": "dashboard:hard_set_state",
@@ -2671,17 +2769,21 @@
       "physical_source": "hard_set_state",
       "database_binding": "analytics",
       "family": "sales",
-      "classification": "intentionally_excluded",
-      "coverage_level": "excluded",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "partial_safe_metadata_only",
+      "interfaces": [
+        "jg_business_report:hard_set_observations"
+      ],
       "projected_fields": {},
       "scope": {
-        "kind": "existing_dashboard_grant"
+        "kind": "company_wide_existing_internal_dashboard",
+        "oauth_scope": "jg:dashboard:read",
+        "new_grant_created": false
       },
       "row_scope": null,
-      "date_basis": "No read projection; native source date basis requires verification.",
-      "freshness": "Stored timestamp is not upstream sync evidence; no production availability asserted.",
-      "reason": "Privileged automation control state, excluded pending precise safe reporting need.",
+      "date_basis": "Stored created_at/delivered_at/updated_at UTC timestamps. Age is measured at read time; it is not a heartbeat or verification of downstream state.",
+      "freshness": "Stored metadata timestamps only; source completeness and synchronization remain unverified. Missing source/schema is unavailable, not zero.",
+      "reason": "Selected stored business flags only. Source permissions, actors and policy configuration remain excluded; no authorization or readiness inference.",
       "evidence": {
         "declared_at": [
           {
@@ -2698,11 +2800,36 @@
             "file": "website-commerce-bootstrap.php",
             "line": 357
           }
+        ],
+        "projection_at": [
+          {
+            "file": "assistant/lib/read-services/control-state-observations.php"
+          }
         ]
       },
       "exclusion_category": "mixed_business_payload",
-      "future_projection_review": "Potential safe operational projection: selected enabled/paused booleans and observation timestamps, excluding actor/source configuration. Requires specific security/control-state reporting approval; no enabling or control write.",
-      "future_projection_implemented": false
+      "future_projection_review": "Implemented partial safe subset described in exposed_metadata. Protected fields remain excluded; no raw-table or document authority follows.",
+      "future_projection_implemented": true,
+      "projection_state": "local_implemented",
+      "protected_fields": [
+        "activated_by",
+        "automation_paused_by",
+        "automatic_sources_json",
+        "zero_scope_automation_enabled_at",
+        "source permission configuration"
+      ],
+      "sensitive_source_review_retained": true,
+      "exposed_metadata": [
+        "stored enabled/paused booleans",
+        "activation/pause/create/update times",
+        "age/future-clock indicator"
+      ],
+      "projection_implementation": {
+        "report": "hard_set_observations",
+        "module": "assistant/lib/read-services/control-state-observations.php",
+        "registered": true,
+        "production_verified": false
+      }
     },
     {
       "id": "dashboard:jenang_gemi_store_discount_items",
@@ -3182,7 +3309,12 @@
       },
       "exclusion_category": "internal_presentation",
       "future_projection_review": "Presentation assets only; no business metric is missing. Raw logo blobs, original/stored names and paths are unnecessary for reporting.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "presentation asset URLs/content"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "dashboard:partner_order_labels",
@@ -3191,17 +3323,21 @@
       "physical_source": "partner_order_labels",
       "database_binding": "partner",
       "family": "partners",
-      "classification": "intentionally_excluded",
-      "coverage_level": "excluded",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "partial_safe_metadata_only",
+      "interfaces": [
+        "jg_business_report:partner_label_presence"
+      ],
       "projected_fields": {},
       "scope": {
-        "kind": "existing_dashboard_grant"
+        "kind": "exact_label_and_parent_partner_membership",
+        "oauth_scope": "jg:dashboard:read",
+        "new_grant_created": false
       },
       "row_scope": null,
-      "date_basis": "No read projection; native source date basis requires verification.",
-      "freshness": "Stored timestamp is not upstream sync evidence; no production availability asserted.",
-      "reason": "Private shipping-label content and storage paths.",
+      "date_basis": "Current all-time metadata for authorized orders; expiry evaluated against generated_at UTC. Created/deleted timestamps are stored values; historical producer timezone not independently verified.",
+      "freshness": "Stored metadata timestamps only; source completeness and synchronization remain unverified. Missing source/schema is unavailable, not zero.",
+      "reason": "Aggregate saved label metadata only. Label and parent partner ownership must match; orphan/mismatched relations fail unavailable. No document access or delivery/readiness inference.",
       "evidence": {
         "declared_at": [],
         "read_at": [
@@ -3213,11 +3349,40 @@
             "file": "partner-stock-bootstrap.php",
             "line": 109
           }
+        ],
+        "projection_at": [
+          {
+            "file": "assistant/lib/read-services/document-presence-metrics.php"
+          }
         ]
       },
       "exclusion_category": "mixed_business_payload",
-      "future_projection_review": "Potential business metadata: label-present count and last label timestamp through authorized partner-order joins. Existing safe partner order/shipment facts remain available. Content, names, paths and URLs require separate explicit document access and remain excluded.",
-      "future_projection_implemented": false
+      "future_projection_review": "Implemented partial safe subset described in exposed_metadata. Protected fields remain excluded; no raw-table or document authority follows.",
+      "future_projection_implemented": true,
+      "projection_state": "local_implemented",
+      "protected_fields": [
+        "document contents",
+        "filenames",
+        "paths",
+        "URLs",
+        "MIME free text",
+        "actors",
+        "order/label identities",
+        "customer identities"
+      ],
+      "sensitive_source_review_retained": true,
+      "exposed_metadata": [
+        "scoped label/order presence counts",
+        "current/deleted/expired version counts",
+        "positive-size counts and declared bytes",
+        "maximum metadata times"
+      ],
+      "projection_implementation": {
+        "report": "partner_label_presence",
+        "module": "assistant/lib/read-services/document-presence-metrics.php",
+        "registered": true,
+        "production_verified": false
+      }
     },
     {
       "id": "dashboard:partner_order_payments",
@@ -3534,7 +3699,12 @@
       },
       "exclusion_category": "internal_presentation",
       "future_projection_review": "Internal migration/import marker only; safe current partner terms are mapped. No recipient/contact registry export is implied.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "internal migration markers"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "dashboard:partner_return_adjustments",
@@ -4654,17 +4824,21 @@
       "physical_source": "purchase_order_payment_proofs",
       "database_binding": "sku",
       "family": "purchasing",
-      "classification": "intentionally_excluded",
-      "coverage_level": "excluded",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "partial_safe_metadata_only",
+      "interfaces": [
+        "jg_business_report:purchase_payment_proof_presence"
+      ],
       "projected_fields": {},
       "scope": {
-        "kind": "existing_dashboard_grant"
+        "kind": "company_wide_existing_internal_dashboard_unpartitioned_purchasing",
+        "oauth_scope": "jg:dashboard:read",
+        "new_grant_created": false
       },
       "row_scope": null,
-      "date_basis": "No read projection; native source date basis requires verification.",
-      "freshness": "Stored timestamp is not upstream sync evidence; no production availability asserted.",
-      "reason": "Private uploaded financial proof content and storage paths.",
+      "date_basis": "Optional inclusive Asia/Jakarta dates apply to purchase_order_payments.paid_at stored UTC; additional proofs are current metadata attached to that payment cohort.",
+      "freshness": "Stored metadata timestamps only; source completeness and synchronization remain unverified. Missing source/schema is unavailable, not zero.",
+      "reason": "Aggregate saved proof metadata joined through payments/orders; child proofs aggregate before joins. No document contents, identifiers, settlement or payment-effectiveness inference. Account/brand partition is unavailable.",
       "evidence": {
         "declared_at": [
           {
@@ -4685,11 +4859,39 @@
             "file": "purchase-orders-bootstrap.php",
             "line": 852
           }
+        ],
+        "projection_at": [
+          {
+            "file": "assistant/lib/read-services/document-presence-metrics.php"
+          }
         ]
       },
       "exclusion_category": "mixed_business_payload",
-      "future_projection_review": "Potential business metadata: proof-present count and timestamp through approved payment/order joins. Payments are already mapped. Blob, original filename and document contents remain excluded; content access requires separate explicit approval.",
-      "future_projection_implemented": false
+      "future_projection_review": "Implemented partial safe subset described in exposed_metadata. Protected fields remain excluded; no raw-table or document authority follows.",
+      "future_projection_implemented": true,
+      "projection_state": "local_implemented",
+      "protected_fields": [
+        "file_data",
+        "original_name",
+        "mime_type",
+        "paths",
+        "URLs",
+        "payment/proof identities",
+        "actors"
+      ],
+      "sensitive_source_review_retained": true,
+      "exposed_metadata": [
+        "aggregate primary/additional proof-presence counts",
+        "declared size totals",
+        "payment cohort counts",
+        "latest paid/proof times"
+      ],
+      "projection_implementation": {
+        "report": "purchase_payment_proof_presence",
+        "module": "assistant/lib/read-services/document-presence-metrics.php",
+        "registered": true,
+        "production_verified": false
+      }
     },
     {
       "id": "dashboard:purchase_order_payments",
@@ -6011,7 +6213,7 @@
       "database_binding": "sku",
       "family": "sales",
       "classification": "intentionally_excluded",
-      "coverage_level": "excluded",
+      "coverage_level": "aggregate_prepared_no_authorized_reader",
       "interfaces": [],
       "projected_fields": {},
       "scope": {
@@ -6020,7 +6222,7 @@
       "row_scope": null,
       "date_basis": "No read projection; native source date basis requires verification.",
       "freshness": "Stored timestamp is not upstream sync evidence; no production availability asserted.",
-      "reason": "Identifiable employee records; aggregate operational facts use sanitized fulfillment projections.",
+      "reason": "Aggregate-only staff profile-count reader is prepared but its public wrapper returns blocked_scope_binding before any PDO read. The table has no company/store/account discriminator; marketplace accounts or all-family grants do not authorize the whole roster.",
       "evidence": {
         "declared_at": [],
         "read_at": [
@@ -6039,8 +6241,26 @@
         ]
       },
       "exclusion_category": "mixed_business_payload",
-      "future_projection_review": "Potential de-identified metadata: active staff count only, after employment-data scope review. Aggregate fulfillment performance exists. PIN hashes, employee IDs/names and individual productivity remain excluded without explicit identity scope.",
-      "future_projection_implemented": false
+      "future_projection_review": "Prepared total/active/inactive profile counts require verified company ownership plus exact current owner-grant binding, or a real authorized membership join. Names, PIN hashes, identifiers and individual productivity remain excluded.",
+      "future_projection_implemented": false,
+      "projection_state": "prepared_authorization_blocked",
+      "protected_fields": [
+        "id",
+        "display_name",
+        "pin_hash",
+        "employee identities",
+        "individual productivity",
+        "unbound roster totals"
+      ],
+      "sensitive_source_review_retained": true,
+      "projection_implementation": {
+        "report": "store_ops_staff_counts",
+        "module": "assistant/lib/read-services/staff-counts.php",
+        "registered": false,
+        "production_verified": false,
+        "status": "blocked_scope_binding"
+      },
+      "exposed_metadata": []
     },
     {
       "id": "dashboard:store_ops_order_events_v2",
@@ -7032,7 +7252,13 @@
       },
       "exclusion_category": "security_secrets",
       "future_projection_review": "Preview tokens remain excluded. At most per-post preview-enabled boolean and modification time could be reviewed; no token or URL export.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "share tokens",
+        "preview access capabilities"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "dashboard:zero_blog_revisions",
@@ -7611,7 +7837,7 @@
       },
       "date_basis": "Must be retained from canonical remote source contract.",
       "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Secrets/raw private events or privileged automation policy excluded.",
+      "reason": "Privileged routing/source-permission membership and its counts remain excluded. No business fact in this table is approved as a general dashboard metric.",
       "evidence": {
         "declared_at": [
           {
@@ -7632,7 +7858,14 @@
       },
       "exclusion_category": "mixed_business_payload",
       "future_projection_review": "Potential account-filtered configured-source membership only; requires specific privileged-control metadata reporting approval. No full organization source-list expansion or activation.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "platform/account source membership",
+        "source permission counts",
+        "routing permissions"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "ingest:executive_hard_set_state",
@@ -7650,7 +7883,7 @@
       },
       "date_basis": "Must be retained from canonical remote source contract.",
       "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Secrets/raw private events or privileged automation policy excluded.",
+      "reason": "Global remote state has no reviewed passive source binding. A future fixed stored-flag/timestamp projection may be reviewed separately; actors, permission inference and source mutation remain excluded.",
       "evidence": {
         "declared_at": [
           {
@@ -7679,7 +7912,14 @@
       },
       "exclusion_category": "mixed_business_payload",
       "future_projection_review": "Potential approved enabled/activation/updated timestamp projection, excluding actors. Requires specific global control-state reporting authority; no state change.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "actors",
+        "source membership or inferred permission",
+        "unreviewed global control state"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "ingest:marketplace_account_tokens",
@@ -7718,7 +7958,14 @@
       },
       "exclusion_category": "security_secrets",
       "future_projection_review": "No reporting projection of credentials. A separately approved non-secret connection-health diagnostic would need a dedicated sanitized contract; never token values, raw responses or app secrets.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "access tokens",
+        "refresh tokens",
+        "credential and private authorization state"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "ingest:marketplace_arrangement_policy",
@@ -7736,7 +7983,7 @@
       },
       "date_basis": "Must be retained from canonical remote source contract.",
       "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Secrets/raw private events or privileged automation policy excluded.",
+      "reason": "Remote policy body and routing controls remain excluded. Potential saved revision/update-time observation needs a distinct passive globally authorized contract; current constructor/state helpers can create schema or migrate policy and must not be reused.",
       "evidence": {
         "declared_at": [
           {
@@ -7753,7 +8000,15 @@
       },
       "exclusion_category": "mixed_business_payload",
       "future_projection_review": "Potential approved policy revision/update and selected effective cutoff/eligibility fields, excluding actors and arbitrary policy JSON. Requires scoped privileged-policy reporting approval and a new passive reader; existing constructor/state can create schema or migrate policy.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "policy_json",
+        "updated_by",
+        "environment defaults",
+        "routing/selection controls"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "ingest:marketplace_fulfillment_jobs",
@@ -7763,7 +8018,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -7771,7 +8026,7 @@
       },
       "date_basis": "utc_history; one stored fulfillment job",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -7853,7 +8108,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -7861,7 +8116,7 @@
       },
       "date_basis": "utc_history; one current fulfillment order/package state",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -7955,7 +8210,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -7963,7 +8218,7 @@
       },
       "date_basis": "snapshot; global current worker heartbeat",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8005,7 +8260,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -8013,7 +8268,7 @@
       },
       "date_basis": "utc_history; one stored order item",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8067,7 +8322,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -8075,7 +8330,7 @@
       },
       "date_basis": "business_month; one account/currency/Jakarta-month rollup",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8113,7 +8368,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -8121,7 +8376,7 @@
       },
       "date_basis": "business_month; one product/flavor/SKU/account/currency/Jakarta-month rollup",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8155,7 +8410,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -8163,7 +8418,7 @@
       },
       "date_basis": "utc_history; one stored marketplace order",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8257,7 +8512,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -8265,7 +8520,7 @@
       },
       "date_basis": "utc_history; one global marketplace sync run",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8298,16 +8553,16 @@
       "physical_source": "raw_platform_events",
       "database_binding": "external_ingest_not_local",
       "family": "sales",
-      "classification": "intentionally_excluded",
-      "coverage_level": "excluded",
+      "classification": "external_reader_blocked",
+      "coverage_level": "aggregate_contract_proposed_upstream_not_implemented",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Secrets/raw private events or privileged automation policy excluded.",
+      "date_basis": "Proposed: received_at UTC history selected by inclusive Jakarta dates; received_date is UTC+07 calendar date. processed_at only contributes to stored write observation.",
+      "freshness": "First/last receipt and latest COALESCE(processed_at,received_at) are stored observations, not sync health/completeness. Missing account/timestamp quality remains unknown.",
+      "reason": "Separate raw_platform_event_metadata consumer/contract is prepared and disabled; the upstream aggregate reader is not implemented or verified. Only exact platform/account receipt counts and finite status/date groups are proposed. Private payloads and event identities remain excluded.",
       "evidence": {
         "declared_at": [
           {
@@ -8322,8 +8577,28 @@
         "read_at": []
       },
       "exclusion_category": "mixed_business_payload",
-      "future_projection_review": "Potential business freshness projection: account-filtered event-type/status counts and received/processed timestamps. Can be reviewed against existing business-account read authority; raw headers, bodies, IPs, payloads, external IDs and errors remain excluded. Not a substitute for marketplace_sync_runs.",
-      "future_projection_implemented": false
+      "future_projection_review": "Prepared fixed summary/groups consumer; upstream owner must implement passive account-scoped source and verify hosted contract before a separate readiness gate can change. No individual-event view, payload parsing, global account or event_type dimension.",
+      "future_projection_implemented": false,
+      "projection_state": "prepared_upstream_blocked",
+      "protected_fields": [
+        "id",
+        "event_type",
+        "external_event_id",
+        "remote_ip",
+        "headers_json",
+        "payload_json",
+        "raw_body",
+        "processing_error"
+      ],
+      "sensitive_source_review_retained": true,
+      "projection_implementation": {
+        "source": "raw_platform_event_metadata",
+        "module": "assistant/lib/ingest-event-metadata.php",
+        "registered": false,
+        "production_verified": false,
+        "source_released": false
+      },
+      "exposed_metadata": []
     },
     {
       "id": "ingest:shopee_account_tokens",
@@ -8366,7 +8641,14 @@
       },
       "exclusion_category": "security_secrets",
       "future_projection_review": "No reporting projection of credentials. A separately approved non-secret connection-health diagnostic would need a dedicated sanitized contract; never access/refresh tokens or raw responses.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "access tokens",
+        "refresh tokens",
+        "credential and private authorization state"
+      ],
+      "sensitive_source_review_retained": true
     },
     {
       "id": "ingest:shopee_ad_balances",
@@ -8376,7 +8658,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "ads",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -8384,7 +8666,7 @@
       },
       "date_basis": "snapshot; latest stored ad-credit balance per account",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8564,7 +8846,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "ads",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -8572,7 +8854,7 @@
       },
       "date_basis": "snapshot; current cached Shopee item metadata",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8610,7 +8892,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "ads",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -8618,7 +8900,7 @@
       },
       "date_basis": "monitor; current campaign observations and incidents in one account state",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8656,7 +8938,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "ads",
       "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
+      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -8664,7 +8946,7 @@
       },
       "date_basis": "stored_calendar_history; one local monitoring intent/acknowledgement audit event",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8731,7 +9013,14 @@
       },
       "exclusion_category": "security_secrets",
       "future_projection_review": "OAuth state, return URLs and session details remain excluded. No business metric is missing; any connection diagnostic requires specific security-metadata authorization.",
-      "future_projection_implemented": false
+      "future_projection_implemented": false,
+      "projection_state": "fully_excluded",
+      "protected_fields": [
+        "authorization codes",
+        "session capabilities",
+        "private authorization state"
+      ],
+      "sensitive_source_review_retained": true
     }
   ],
   "api_sources": [
@@ -8930,10 +9219,12 @@
     {
       "id": "/api/hard-set/",
       "source_kind": "api_consumer",
-      "classification": "intentionally_excluded",
+      "classification": "mapped",
       "file": "api/hard-set/index.php",
-      "implemented_reports": [],
-      "reason": "Privileged automation controls and activation security boundary.",
+      "implemented_reports": [
+        "hard_set_observations"
+      ],
+      "reason": "Fixed local nonsecurity stored flags and selected audit/delivery metadata are projected. Activation, readiness, permissions, source membership, unknown event types, actors, payloads and writes remain excluded.",
       "release_gate": "Local implementation is not proof of deployed/callable client schema.",
       "evidence": [
         {
@@ -8941,7 +9232,8 @@
           "line": 1
         }
       ],
-      "implemented_finance_reports": []
+      "implemented_finance_reports": [],
+      "coverage_level": "nonsecurity_observations_only"
     },
     {
       "id": "/api/inventory-recap/",
@@ -9127,8 +9419,10 @@
       "source_kind": "api_consumer",
       "classification": "mapped",
       "file": "api/partner-stock/index.php",
-      "implemented_reports": [],
-      "reason": "Safe partner stock/order/return facts; labels, recipient details and writes excluded.",
+      "implemented_reports": [
+        "partner_label_presence"
+      ],
+      "reason": "Safe partner stock/order/return facts; labels, recipient details and writes excluded. Separate safe aggregate document-presence metadata is implemented; file contents and locators remain excluded.",
       "release_gate": "Local implementation is not proof of deployed/callable client schema.",
       "evidence": [
         {
@@ -9782,7 +10076,7 @@
         }
       ],
       "interfaces": [],
-      "reason": "Passive v1 twelve-source contract implemented locally; bridge integration, publication authorization and actual hosted verification pending. Account scope and global full-source authority remain distinct."
+      "reason": "Original passive twelve-source contract and local MCP bridge are prepared but source readiness is false and actual hosted verification pending. Global sync/runtime remain hard-denied. Separate raw-event aggregate proposal is not part of this source contract."
     },
     {
       "id": "/reports/sources",
@@ -9794,7 +10088,7 @@
         }
       ],
       "interfaces": [],
-      "reason": "Passive v1 twelve-source contract implemented locally; bridge integration, publication authorization and actual hosted verification pending. Account scope and global full-source authority remain distinct."
+      "reason": "Original passive twelve-source contract and local MCP bridge are prepared but source readiness is false and actual hosted verification pending. Global sync/runtime remain hard-denied. Separate raw-event aggregate proposal is not part of this source contract."
     },
     {
       "id": "/sales/order",
@@ -10483,8 +10777,12 @@
           "file": "partner-billing-bootstrap.php"
         }
       ],
-      "reason": "Content and paths require separate explicit scope; safe metadata projections do not authorize file contents.",
-      "freshness": "Source timestamp/coverage must be reported separately from query generation time."
+      "reason": "Private file contents and locators remain excluded. Separate database-only aggregate proof/label metadata exists; it does not open, inspect or authorize these files.",
+      "freshness": "Source timestamp/coverage must be reported separately from query generation time.",
+      "metadata_interfaces": [
+        "jg_business_report:partner_label_presence",
+        "jg_business_report:purchase_payment_proof_presence"
+      ]
     },
     {
       "id": "presentation_assets",
@@ -11941,6 +12239,122 @@
         "additionalProperties": false
       },
       "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "purchase_payment_proof_presence",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "purchasing",
+      "source": "sku",
+      "canonical": "purchase-orders-bootstrap.php::jg_purchase_orders_payment_proofs primary + additional metadata model",
+      "date_basis": "Optional inclusive Asia/Jakarta dates apply to purchase_order_payments.paid_at stored UTC; additional proofs are current metadata attached to that payment cohort.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "Presence means a saved metadata record, not verified document content, a working download, payment settlement, shipping readiness or delivery.",
+        "No blob, filename, URL, path, MIME free text, uploader, customer, order ID, payment ID, account identity or proof identity is returned.",
+        "Missing source tables/columns or broken authorized relations fail unavailable; empty verified metadata is not evidence of upstream completeness.",
+        "Read-only snapshot of stored metadata only; no migration, cleanup, expiry deletion, network request, proof verification or business write."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "purchase_payment_proof_presence"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "end_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "report"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Local fixture and dispatch implementation only; production source and client discovery verification remain separate."
+    },
+    {
+      "id": "partner_label_presence",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "partners",
+      "source": "partner",
+      "canonical": "partner-stock-bootstrap.php label/order linkage; Store Ops label lookup deleted_at/expires_at lifecycle predicate",
+      "date_basis": "Current all-time metadata for authorized orders; expiry evaluated against generated_at UTC. Created/deleted timestamps are stored values; historical producer timezone not independently verified.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "Presence means a saved metadata record, not verified document content, a working download, payment settlement, shipping readiness or delivery.",
+        "No blob, filename, URL, path, MIME free text, uploader, customer, order ID, payment ID, account identity or proof identity is returned.",
+        "Missing source tables/columns or broken authorized relations fail unavailable; empty verified metadata is not evidence of upstream completeness.",
+        "Read-only snapshot of stored metadata only; no migration, cleanup, expiry deletion, network request, proof verification or business write."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "partner_label_presence"
+            ]
+          },
+          "partner_code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          }
+        },
+        "required": [
+          "report"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Local fixture and dispatch implementation only; production source and client discovery verification remain separate."
+    },
+    {
+      "id": "hard_set_observations",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "website",
+      "source": "analytics",
+      "canonical": "website-commerce-bootstrap.php hard_set_state, hard_set_audit, hard_set_outbox storage; passive scalar projections only",
+      "date_basis": "Stored created_at/delivered_at/updated_at UTC timestamps. Age is measured at read time; it is not a heartbeat or verification of downstream state.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "Company-wide unpartitioned business operational observations under the existing dashboard read grant. No per-account coverage or permission decision is inferred.",
+        "Only activation and automation pause/resume business event categories are counted. Other event types, source/permission configuration, actors, IDs, raw payloads and error text are excluded.",
+        "Stored enabled/paused flags describe business state, not authorization, readiness, current worker health or permission to execute a change.",
+        "Delivered means the local worker recorded its downstream acknowledgement at that time. Queue counts and timestamps do not prove current service agreement or complete upstream sales synchronization.",
+        "Each section distinguishes unavailable storage/schema/capacity from valid empty stored rows. Retained history has no completeness guarantee; no event is treated as zero activity when its source is unavailable.",
+        "No constructors, schema preparation, source expansion, remote calls, jobs, retries, refreshes, writes or credential reads execute. External ingest observations require a separate passive reader."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "hard_set_observations"
+            ]
+          }
+        },
+        "required": [
+          "report"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Local fixture and dispatch implementation only; production source and client discovery verification remain separate."
     }
   ],
   "reviewed_database_view_names": [
@@ -14144,7 +14558,7 @@
           "file": "api-health-log-read.php"
         }
       ],
-      "remaining_gap": "Passive local API failure history is implemented. marketplace_sync_runs now has a local passive contract; bridge and hosted verification remain pending, and global rows require existing full-source authority. Neither failure timestamps nor empty logs establish successful complete ingestion.",
+      "remaining_gap": "Passive local failure history is implemented. Original marketplace_sync_runs contract/bridge is prepared and source-released=false; actual hosted verification and organizational source authorization remain pending. Global rows are hard-denied; empty failures never prove ingestion completeness.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate",
       "implemented_canonical_helpers": [
@@ -14160,7 +14574,8 @@
       "interfaces": [
         "jg_query_table:website_metrics_outbox",
         "jg_query_table:store_ops_order_fulfillment_v2",
-        "jg_business_report:fulfillment_metrics"
+        "jg_business_report:fulfillment_metrics",
+        "jg_business_report:hard_set_observations"
       ],
       "canonical_source": "`website-commerce-bootstrap.php`: `jg_hard_set_state(PDO,bool $forUpdate=false,bool $ensureSchema=true)`, `jg_hard_set_readiness(PDO $analyticsPdo,PDO $skuPdo,bool $ensureSchema=true)`, `jg_hard_set_delivery_state(PDO)`; `/api/hard-set/`",
       "evidence": [
@@ -14168,7 +14583,7 @@
           "file": "website-commerce-bootstrap.php"
         }
       ],
-      "remaining_gap": "Stored queue/fulfillment projections exist; privileged automation/readiness controls deliberately excluded and complete remote readiness needs a passive contract.",
+      "remaining_gap": "Local nonsecurity flags and selected audit/delivery observations are implemented, but they do not prove readiness or source permissions. Complete remote readiness/delivery observations need separate passive contracts; global sync/runtime remain hard-denied.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     }
@@ -14386,12 +14801,67 @@
           "file": "assistant/lib/read-services/partner-parity.php"
         }
       ]
+    },
+    {
+      "id": "staff_roster_scope_binding",
+      "kind": "authorization_binding_blocked",
+      "interfaces": [],
+      "reason": "Aggregate-only staff profile-count reader is prepared but its public wrapper returns blocked_scope_binding before any PDO read. The table has no company/store/account discriminator; marketplace accounts or all-family grants do not authorize the whole roster.",
+      "evidence": [
+        {
+          "file": "assistant/lib/read-services/staff-counts.php"
+        },
+        {
+          "file": "assistant/STAFF-COUNTS.md"
+        }
+      ]
+    },
+    {
+      "id": "raw_event_metadata_upstream",
+      "kind": "external_passive_reader_blocked",
+      "interfaces": [],
+      "reason": "Separate raw_platform_event_metadata consumer/contract is prepared and disabled; the upstream aggregate reader is not implemented or verified. Only exact platform/account receipt counts and finite status/date groups are proposed. Private payloads and event identities remain excluded.",
+      "evidence": [
+        {
+          "file": "assistant/lib/ingest-event-metadata.php"
+        },
+        {
+          "file": "assistant/INGEST-EVENT-METADATA-CONTRACT.md"
+        }
+      ]
+    },
+    {
+      "id": "remote_control_metadata",
+      "kind": "external_projection_not_authorized",
+      "interfaces": [
+        "jg_business_report:hard_set_observations"
+      ],
+      "reason": "Local business observations do not cover ingest executive_hard_set_state or marketplace_arrangement_policy. Fixed flag/revision/time observations would need separate passive global-source contracts; source-permission membership in executive_hard_set_sources remains intentionally excluded.",
+      "evidence": [
+        {
+          "file": "assistant/CONTROL-OBSERVATIONS.md"
+        }
+      ]
+    },
+    {
+      "id": "global_ingest_source_authority",
+      "kind": "authorization_binding_blocked",
+      "interfaces": [],
+      "reason": "marketplace_sync_runs and marketplace_fulfillment_runtime remain hard-denied. Disabled source-specific owner-binding preparation does not activate either source, expand account scope or verify the hosted reader.",
+      "evidence": [
+        {
+          "file": "assistant/lib/organizational-sources.php"
+        },
+        {
+          "file": "assistant/lib/ingest-reports.php"
+        }
+      ]
     }
   ],
   "pending_remote_contract": {
     "schema_version": 1,
     "availability_verified": false,
-    "implementation_state": "source_contract_implemented_mcp_bridge_and_hosted_verification_pending",
+    "implementation_state": "local_source_contract_and_mcp_bridge_prepared_source_release_false_hosted_verification_pending",
     "sources": [
       {
         "source": "marketplace_orders",
@@ -14856,6 +15326,110 @@
         "file": "docs/ingest-report-sources.json"
       }
     ],
-    "authorization": "Account sources require exact existing enabled account grants; global sync/runtime requires explicit existing full-source authority and may remain denied. No account=all expansion."
+    "authorization": "Ten account sources require exact configured accounts. The two global sources remain hard-denied in the ingestion bridge. Disabled organizational binding/owner Settings preparation is not active access, and listing all account keys is not global authority.",
+    "source_released": false,
+    "transport_endpoint": "https://api.jenanggemi.com/reports/query",
+    "discovery_endpoint": "https://api.jenanggemi.com/reports/sources"
+  },
+  "prepared_metadata_readers": {
+    "staff": {
+      "source": "dashboard:store_ops_employees_v2",
+      "definition": {
+        "title": "Store Ops staff profile counts",
+        "family": "sales",
+        "source": "sku",
+        "scope": "jg:dashboard:read",
+        "status": "blocked_scope_binding",
+        "enabled": false,
+        "required_sources": [],
+        "activation_requires": "Reviewed company ownership of the entire Store Ops employee roster and an exact current owner-grant binding for aggregate roster counts, or a genuine authorized membership join.",
+        "canonical": "Store Ops store-ops-fulfillment-runtime.php employee schema and api/employees/index.php active flag; executive store-ops-report.php roster source.",
+        "date_basis": "Current stored profile state only. No historical staffing, employment dates, attendance or shift presence is inferred.",
+        "input_schema": {
+          "type": "object",
+          "properties": {
+            "report": {
+              "type": "string",
+              "enum": [
+                "store_ops_staff_counts"
+              ]
+            }
+          },
+          "required": [
+            "report"
+          ],
+          "additionalProperties": false
+        },
+        "limitations": [
+          "Disabled pending a verified roster boundary. Marketplace account keys, brand lists and all-family dashboard permission do not establish whole-roster authorization.",
+          "The source has no company, store or account column. Fulfillment claims are activity, not roster membership; joining them would omit staff without claims and cannot establish a company boundary.",
+          "Prepared values count active and inactive Store Ops profiles, not unique people, legal employees, headcount, logged-in staff or current attendance.",
+          "No identities, names, contacts, credential fields, roles, free-form labels, individual performance, preferences or control settings are selected or returned.",
+          "No filtering, grouping, date slicing or small-cohort drilldown is accepted. Missing or unauthorized source data is unavailable, never zero."
+        ]
+      },
+      "registered": false,
+      "source_read_performed": false
+    },
+    "raw_events": {
+      "source": "ingest:raw_platform_events",
+      "definition": {
+        "source": "raw_platform_event_metadata",
+        "scope": "account",
+        "grain": "stored webhook receipt counts without event identities",
+        "date_mode": "utc_history",
+        "columns": {
+          "status": "text",
+          "received_date": "text"
+        },
+        "group_by": [
+          "status",
+          "received_date"
+        ],
+        "additive_metrics": [],
+        "views": [
+          "summary",
+          "groups"
+        ],
+        "limitations": [
+          "Counts describe saved webhook receipts, not unique external events, orders, sales or completed fulfillment. Duplicate deliveries can be counted repeatedly.",
+          "Processed means the local processor returned without throwing; ignored or non-actionable events can be processed. Received can include invalid JSON that was saved without processing, not only queued work.",
+          "First/last receipt and latest processing/receipt timestamps are stored observations, not proof of healthy ingestion, complete history, successful jobs or current upstream availability.",
+          "Legacy writer/account attribution is unverified. Unassigned or nonmatching platform/account rows are not read or counted. Missing or invalid receipt timestamps cannot establish dated activity; their count is not supplied by this bounded aggregate contract.",
+          "Payload-derived event types, external/internal event IDs, customer/order identifiers, headers, IPs, raw bodies, JSON payloads and processing error text are excluded. No private payload is parsed."
+        ]
+      },
+      "registered": false,
+      "source_released": false,
+      "upstream_implemented": false,
+      "availability_verified": false,
+      "target_endpoint": "https://api.jenanggemi.com/reports/query",
+      "evidence": [
+        {
+          "file": "assistant/INGEST-EVENT-METADATA-CONTRACT.md"
+        },
+        {
+          "file": "assistant/lib/ingest-event-metadata.php"
+        }
+      ]
+    },
+    "organizational_binding": {
+      "sources": {
+        "marketplace_sync_runs": "Organization-wide marketplace sync status, processing counts and timestamps, including retired or unlisted accounts",
+        "marketplace_fulfillment_runtime": "Organization-wide fulfillment worker heartbeat timestamps and staleness"
+      },
+      "enabled_by_default": false,
+      "active_permission_created": false,
+      "ingest_global_reads": "hard_denied",
+      "activation_requires": "Separate deployment configuration and explicit owner Settings approval binding each exact source to current client/subject/grant; authoritative token, expiry/revocation and source binding rechecked. Preparation does not grant access.",
+      "evidence": [
+        {
+          "file": "assistant/lib/organizational-sources.php"
+        },
+        {
+          "file": "assistant/settings/index.php"
+        }
+      ]
+    }
   }
 }
