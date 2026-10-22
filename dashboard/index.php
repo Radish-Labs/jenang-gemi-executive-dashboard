@@ -58,7 +58,7 @@ $sidebarSection = match (true) {
     in_array($requestedView ?? '', ['website', 'site', 'home', 'campaign', 'campaigns', 'landing', 'landing-pages'], true) => 'website',
     default => 'home',
 };
-$dashboardBuildVersion = 'exec3.98.45';
+$dashboardBuildVersion = 'exec3.98.46';
 $adminCssVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/admin.css');
 $adminJsVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/admin.js');
 $storeOpsJsVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/store-ops.js');
@@ -71,7 +71,7 @@ $shipmentArrangementJsVersion = $dashboardBuildVersion . '-' . (string) @filemti
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <link rel="stylesheet" href="../ad-monitor.css?v=exec3.98.45">
+    <link rel="stylesheet" href="../ad-monitor.css?v=exec3.98.46">
     <title><?php echo $isAdView ? 'AD VIEW' : 'Executive Dashboard'; ?></title>
     <meta name="robots" content="noindex,nofollow">
 <?php render_admin_initial_theme_script(); ?>
@@ -2272,7 +2272,7 @@ $shipmentArrangementJsVersion = $dashboardBuildVersion . '-' . (string) @filemti
         <h2 id="monitor-confirm-title" data-monitor-confirm-title></h2><p data-monitor-confirm-description></p><p data-monitor-confirm-error role="status"></p>
         <div class="ad-monitor-actions"><button type="button" class="admin-ghost-btn" data-monitor-confirm-cancel>Cancel</button><button type="button" class="admin-primary-btn" data-monitor-confirm-save>Confirm monitoring choice</button></div>
     </dialog>
-    <script src="../ad-monitor.js?v=exec3.98.45" defer></script>
+    <script src="../ad-monitor.js?v=exec3.98.46" defer></script>
     <script type="module" src="../admin.js?v=<?php echo urlencode($adminJsVersion ?: '1'); ?>"></script>
     <script type="module" src="../partner-billing-notifications.js?v=<?php echo urlencode((string) @filemtime(dirname(__DIR__) . '/partner-billing-notifications.js')); ?>"></script>
     <script src="../store-ops.js?v=<?php echo urlencode($storeOpsJsVersion ?: '1'); ?>" defer></script>

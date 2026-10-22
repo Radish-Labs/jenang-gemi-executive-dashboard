@@ -2,6 +2,7 @@
 declare(strict_types=1);
 namespace JenangMcp;
 require_once __DIR__.'/reports.php';
+require_once __DIR__.'/reporting-guidance.php';
 const SOURCE_FAILURE_REASONS=['unavailable','host_resolution_failed','connection_failed','access_denied','database_missing','table_missing','column_missing','read_only_unavailable','settings_unavailable','scan_limit','query_failed'];
 final class ReportingSourceUnavailable extends \RuntimeException {
     public readonly array $diagnostics;
@@ -44,15 +45,17 @@ function tableDefinition(string $name): array {
     $d=$semantic[$name] ?? tableRegistry()[$name] ?? null;
     if (!$d) throw new \InvalidArgumentException('Unknown or protected table. Use jg_list_tables.');
     $d['name']=$name;
-    $d['warnings']= $name==='dashboard_order_mirror' ? ['order_net_revenue repeats on each item: summing it is forbidden; use sales_orders for order revenue. Physical rows include statuses/deleted records unless explicitly filtered.'] : ['Stored observations do not prove upstream synchronization. Physical tables require explicit status/void filters.'];
+    $guidance=tableReportingGuidance($name);
+    $d['warnings']=array_merge($d['warnings'] ?? [],$name==='dashboard_order_mirror' ? ['order_net_revenue repeats on each item: summing it is forbidden; use sales_orders for order revenue. Physical rows include statuses/deleted records unless explicitly filtered.'] : ['Stored observations do not prove upstream synchronization. Physical tables require explicit status/void filters.'],$guidance['warnings'] ?? []);
+    unset($guidance['warnings']);$d+=$guidance;
     return $d;
 }
 function listTables(array $c): array {
     tableAccess($c);$tables=[];
     foreach (['catalog','sales_lines','sales_orders',...array_keys(tableRegistry())] as $name) {
-        $d=tableDefinition($name);$tables[]=['name'=>$name,'family'=>$d['family'],'source'=>$d['database'],'aggregate_only'=>$d['aggregate_only'] ?? false,'availability'=>'query_checks_live_source'];
+        $d=tableDefinition($name);$tables[]=['name'=>$name,'family'=>$d['family'],'source'=>$d['database'],'aggregate_only'=>$d['aggregate_only'] ?? false,'availability'=>'query_checks_live_source']+array_intersect_key($d,array_flip(['purpose','source_coverage']));
     }
-    return ['tables'=>$tables,'excluded'=>'Customer/contact identities, credential/auth tables, free-text notes, receipts/proofs, raw JSON/outboxes, operational migrations and writes. No arbitrary SQL.','scope'=>TABLE_SCOPE];
+    return ['tables'=>$tables,'source_coverage'=>reportingSourceCoverage(),'accounting_guidance'=>adsAccountingGuidance(),'excluded'=>'Customer/contact identities, credential/auth tables, free-text notes, receipts/proofs, raw JSON/outboxes, operational migrations and writes. No arbitrary SQL.','scope'=>TABLE_SCOPE];
 }
 function fieldDefinition(array $d,string $field): array {
     if(isset($d['columns'][$field]))return ['type'=>$d['columns'][$field],'sql'=>'`'.$field.'`'];
