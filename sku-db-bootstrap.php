@@ -501,6 +501,47 @@ function jg_sku_cogs_at(array $history, string $targetAt, float $fallback = 0.0)
     return round($resolved, 2);
 }
 
+/** Pure version of the effective-cost calculation used by current-cost synchronization. */
+function jg_sku_effective_cogs_plan(array $skuRows, array $historyBySku, string $targetAt): array
+{
+    $rowsBySku = [];
+    foreach ($skuRows as $row) {
+        $rowSku = (string) ($row['sku'] ?? '');
+        if ($rowSku !== '') {
+            $rowsBySku[$rowSku] = $row;
+        }
+    }
+    $stockMap = jg_astra_stock_map(array_values(array_filter($skuRows, 'is_array')));
+    $plan = [];
+    $baseCosts = [];
+    foreach ($skuRows as $row) {
+        $sku = (string) ($row['sku'] ?? '');
+        $stored = (float) ($row['cogs'] ?? 0);
+        $stockTarget = $stockMap[$sku] ?? [
+            'stock_sku' => $sku,
+            'stock_ratio' => 1.0,
+            'stock_row' => $row,
+        ];
+        $baseSku = (string) ($stockTarget['stock_sku'] ?? $sku);
+        $baseRow = $rowsBySku[$baseSku] ?? $row;
+        $baseStored = (float) ($baseRow['cogs'] ?? $stored);
+        // All variants use this same base row and instant; resolve its schedule only once.
+        if (!array_key_exists($baseSku, $baseCosts)) {
+            $baseCosts[$baseSku] = jg_sku_cogs_at($historyBySku[$baseSku] ?? [], $targetAt, $baseStored);
+        }
+        $baseResolved = $baseCosts[$baseSku];
+        $resolved = round($baseResolved * (float) ($stockTarget['stock_ratio'] ?? 1.0), 2);
+        $plan[$sku] = [
+            'sku' => $sku,
+            'stock_sku' => $baseSku,
+            'stock_ratio' => (float) ($stockTarget['stock_ratio'] ?? 1.0),
+            'effective_cogs' => $resolved,
+            'base_effective_cogs' => $baseResolved,
+        ];
+    }
+    return $plan;
+}
+
 function jg_sku_sync_current_cogs(PDO $pdo): void
 {
     $skuRows = $pdo->query(
@@ -518,29 +559,13 @@ function jg_sku_sync_current_cogs(PDO $pdo): void
     foreach ($historyRows as $row) {
         $historyBySku[(string) ($row['sku'] ?? '')][] = $row;
     }
-    $rowsBySku = [];
-    foreach ($skuRows as $row) {
-        $rowSku = (string) ($row['sku'] ?? '');
-        if ($rowSku !== '') {
-            $rowsBySku[$rowSku] = $row;
-        }
-    }
-    $stockMap = jg_astra_stock_map(array_values(array_filter($skuRows, 'is_array')));
     $targetAt = (new DateTimeImmutable('now', jg_sku_business_timezone()))->format('Y-m-d H:i:s');
+    $plan = jg_sku_effective_cogs_plan($skuRows, $historyBySku, $targetAt);
     $update = $pdo->prepare('UPDATE sku_skus SET cogs = :cogs, updated_at = :updated_at WHERE sku = :sku');
     foreach ($skuRows as $row) {
         $sku = (string) ($row['sku'] ?? '');
         $stored = (float) ($row['cogs'] ?? 0);
-        $stockTarget = $stockMap[$sku] ?? [
-            'stock_sku' => $sku,
-            'stock_ratio' => 1.0,
-            'stock_row' => $row,
-        ];
-        $baseSku = (string) ($stockTarget['stock_sku'] ?? $sku);
-        $baseRow = $rowsBySku[$baseSku] ?? $row;
-        $baseStored = (float) ($baseRow['cogs'] ?? $stored);
-        $baseResolved = jg_sku_cogs_at($historyBySku[$baseSku] ?? [], $targetAt, $baseStored);
-        $resolved = round($baseResolved * (float) ($stockTarget['stock_ratio'] ?? 1.0), 2);
+        $resolved = (float) $plan[$sku]['effective_cogs'];
         if (abs($resolved - $stored) < 0.005) {
             continue;
         }

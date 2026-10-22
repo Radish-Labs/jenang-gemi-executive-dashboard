@@ -496,6 +496,12 @@ function jg_profit_loss_legacy_year(int $year): array
         }
     }
 
+    return jg_profit_loss_legacy_year_from_data($legacy, $year);
+}
+
+/** Pure selector shared with the bounded reporting reader; it performs no I/O. */
+function jg_profit_loss_legacy_year_from_data(array $legacy, int $year): array
+{
     $years = is_array($legacy['years'] ?? null) ? $legacy['years'] : [];
     $data = $years[(string) $year] ?? [];
     return is_array($data) ? $data : [];

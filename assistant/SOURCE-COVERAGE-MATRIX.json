@@ -23,7 +23,8 @@
     "accounts": "Explicit account_key/source_account/parent scope joins are enforced where available; unpartitioned aggregate scope is declared. No account=all broadening beyond configured accounts.",
     "brands": "Existing legacy product brand filter is not the same as all-configured dashboard business-source grant. Safe cross-brand dashboard definitions do not add a new credential or grant.",
     "recipients": "Named allocation tool still requires finance scope and saved recipient allowlist. Branch and Brent remain distinct.",
-    "excluded": "Credentials, security state, identifiable customer/employee contacts, private document contents, arbitrary raw payloads, and unrestricted SQL/writes."
+    "excluded": "Credentials, security state, identifiable customer/employee contacts, private document contents, arbitrary raw payloads, and unrestricted SQL/writes.",
+    "finance_reports": "jg_finance_report retains jg:finance:read independently of dashboard access. allocation_statement additionally requires the exact saved recipient allowlist; legacy/current editor statements do not broaden named-recipient access."
   },
   "counts": {
     "database_sources": 134,
@@ -56,24 +57,39 @@
     "typed_file_views": 1,
     "semantic_sales_views": 3,
     "api_consumers": 44,
-    "ingest_api_routes": 57,
+    "ingest_api_routes": 59,
     "dashboard_page_entrypoints": 34,
     "file_snapshot_families": 14,
-    "file_readsites": 100,
-    "canonical_reports": 22,
+    "file_readsites": 101,
+    "canonical_reports": 33,
     "canonical_reports_by_status": {
-      "implemented": 22
+      "implemented": 33
     },
     "feature_acceptance_rows": 48,
     "feature_acceptance_by_classification": {
-      "mapped": 32,
-      "projection_needs_semantic": 15,
+      "mapped": 41,
+      "projection_needs_semantic": 6,
       "intentionally_excluded": 1
     },
     "feature_gaps_by_category": {
-      "implementable": 10,
-      "external_passive_reader_blocked": 5,
+      "implementable": 0,
+      "external_passive_reader_blocked": 6,
       "intentionally_excluded": 1
+    },
+    "finance_reports": 3,
+    "finance_reports_by_status": {
+      "implemented": 3
+    },
+    "all_fixed_reports": 36,
+    "file_sources_by_classification": {
+      "mapped": 9,
+      "intentionally_excluded": 5
+    },
+    "pending_remote_contract_sources": 12,
+    "deliberate_exclusions_by_category": {
+      "security_secrets": 6,
+      "mixed_business_payload": 10,
+      "internal_presentation": 4
     }
   },
   "database_sources": [
@@ -1056,7 +1072,10 @@
             "line": 1166
           }
         ]
-      }
+      },
+      "exclusion_category": "internal_presentation",
+      "future_projection_review": "Internal migration marker only; accounting business tables/reports are mapped. No financial fact requires this table.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:accounting_partner_bill_receipts",
@@ -1827,7 +1846,10 @@
             "line": 1520
           }
         ]
-      }
+      },
+      "exclusion_category": "security_secrets",
+      "future_projection_review": "Raw device IDs and labels remain excluded; only an aggregate exclusion-rule count could be considered after privacy-setting metadata review. Canonical analytics already applies these filters internally.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:analytics_events",
@@ -1936,7 +1958,10 @@
             "line": 1442
           }
         ]
-      }
+      },
+      "exclusion_category": "security_secrets",
+      "future_projection_review": "Raw IPs and labels remain excluded; only an aggregate exclusion-rule count could be considered after privacy-setting metadata review. Canonical analytics already applies these filters internally.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:dashboard_order_location_cache",
@@ -1980,7 +2005,7 @@
         "read_at": [
           {
             "file": "api/orders/index.php",
-            "line": 2877
+            "line": 2927
           }
         ]
       }
@@ -2075,27 +2100,27 @@
           },
           {
             "file": "api/orders/index.php",
-            "line": 2009
+            "line": 2007
           },
           {
             "file": "api/orders/index.php",
-            "line": 2403
+            "line": 2407
           },
           {
             "file": "api/orders/index.php",
-            "line": 2619
+            "line": 2629
           },
           {
             "file": "api/orders/index.php",
-            "line": 2791
+            "line": 2835
           },
           {
             "file": "api/orders/index.php",
-            "line": 3302
+            "line": 3352
           },
           {
             "file": "api/orders/index.php",
-            "line": 3345
+            "line": 3395
           },
           {
             "file": "api/wallet/index.php",
@@ -2505,7 +2530,7 @@
           },
           {
             "file": "api/zero-sales-proof/index.php",
-            "line": 250
+            "line": 231
           },
           {
             "file": "executive-context.php",
@@ -2527,7 +2552,7 @@
           },
           {
             "file": "api/zero-sales-proof/index.php",
-            "line": 262
+            "line": 243
           }
         ]
       }
@@ -2558,7 +2583,10 @@
           }
         ],
         "read_at": []
-      }
+      },
+      "exclusion_category": "internal_presentation",
+      "future_projection_review": "Internal seeding marker only; historical business corrections are already mapped and composed canonically.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:hard_set_audit",
@@ -2588,10 +2616,13 @@
         "read_at": [
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 1737
+            "line": 1750
           }
         ]
-      }
+      },
+      "exclusion_category": "mixed_business_payload",
+      "future_projection_review": "Potential safe operational projection: event-type counts and last event time, excluding actors and JSON. Requires a precise approved privileged-control reporting boundary; no activation or mutation.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:hard_set_outbox",
@@ -2621,14 +2652,17 @@
         "read_at": [
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 1599
+            "line": 1612
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 1662
+            "line": 1675
           }
         ]
-      }
+      },
+      "exclusion_category": "mixed_business_payload",
+      "future_projection_review": "Potential safe operational projection: status counts, attempts and oldest pending/latest delivery timestamps. Exclude idempotency keys, payloads and errors. Requires approved control-queue reporting scope; readiness must remain distinct.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:hard_set_state",
@@ -2665,7 +2699,10 @@
             "line": 357
           }
         ]
-      }
+      },
+      "exclusion_category": "mixed_business_payload",
+      "future_projection_review": "Potential safe operational projection: selected enabled/paused booleans and observation timestamps, excluding actor/source configuration. Requires specific security/control-state reporting approval; no enabling or control write.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:jenang_gemi_store_discount_items",
@@ -2883,7 +2920,7 @@
         "read_at": [
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 1940
+            "line": 1953
           }
         ]
       }
@@ -2980,7 +3017,7 @@
         "declared_at": [
           {
             "file": "api/orders/index.php",
-            "line": 3557
+            "line": 3607
           },
           {
             "file": "api/sku-db/index.php",
@@ -2990,23 +3027,23 @@
         "read_at": [
           {
             "file": "api/orders/index.php",
-            "line": 3875
+            "line": 3927
           },
           {
             "file": "api/orders/index.php",
-            "line": 4201
+            "line": 4253
           },
           {
             "file": "api/orders/index.php",
-            "line": 4216
+            "line": 4268
           },
           {
             "file": "api/orders/index.php",
-            "line": 4231
+            "line": 4283
           },
           {
             "file": "api/orders/index.php",
-            "line": 4243
+            "line": 4295
           }
         ]
       }
@@ -3142,7 +3179,10 @@
             "line": 1025
           }
         ]
-      }
+      },
+      "exclusion_category": "internal_presentation",
+      "future_projection_review": "Presentation assets only; no business metric is missing. Raw logo blobs, original/stored names and paths are unnecessary for reporting.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:partner_order_labels",
@@ -3174,7 +3214,10 @@
             "line": 109
           }
         ]
-      }
+      },
+      "exclusion_category": "mixed_business_payload",
+      "future_projection_review": "Potential business metadata: label-present count and last label timestamp through authorized partner-order joins. Existing safe partner order/shipment facts remain available. Content, names, paths and URLs require separate explicit document access and remain excluded.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:partner_order_payments",
@@ -3488,7 +3531,10 @@
             "line": 75
           }
         ]
-      }
+      },
+      "exclusion_category": "internal_presentation",
+      "future_projection_review": "Internal migration/import marker only; safe current partner terms are mapped. No recipient/contact registry export is implied.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:partner_return_adjustments",
@@ -4429,7 +4475,7 @@
           },
           {
             "file": "product-costs-bootstrap.php",
-            "line": 177
+            "line": 178
           }
         ]
       }
@@ -4640,7 +4686,10 @@
             "line": 852
           }
         ]
-      }
+      },
+      "exclusion_category": "mixed_business_payload",
+      "future_projection_review": "Potential business metadata: proof-present count and timestamp through approved payment/order joins. Payments are already mapped. Blob, original filename and document contents remain excluded; content access requires separate explicit approval.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:purchase_order_payments",
@@ -4890,7 +4939,7 @@
           },
           {
             "file": "api/orders/index.php",
-            "line": 3642
+            "line": 3692
           },
           {
             "file": "api/partners/index.php",
@@ -4899,10 +4948,6 @@
           {
             "file": "api/partners/public/index.php",
             "line": 214
-          },
-          {
-            "file": "api/product-costs/index.php",
-            "line": 59
           },
           {
             "file": "api/profit-loss/index.php",
@@ -4950,7 +4995,11 @@
           },
           {
             "file": "partner-auth-catalog.php",
-            "line": 105
+            "line": 48
+          },
+          {
+            "file": "product-costs-read-service.php",
+            "line": 15
           },
           {
             "file": "purchase-orders-bootstrap.php",
@@ -5019,11 +5068,7 @@
         "read_at": [
           {
             "file": "api/orders/index.php",
-            "line": 3652
-          },
-          {
-            "file": "api/product-costs/index.php",
-            "line": 77
+            "line": 3704
           },
           {
             "file": "api/profit-loss/index.php",
@@ -5038,8 +5083,12 @@
             "line": 886
           },
           {
+            "file": "product-costs-read-service.php",
+            "line": 34
+          },
+          {
             "file": "sku-db-bootstrap.php",
-            "line": 516
+            "line": 557
           }
         ]
       }
@@ -5096,7 +5145,7 @@
           },
           {
             "file": "api/orders/index.php",
-            "line": 3645
+            "line": 3695
           },
           {
             "file": "api/partners/index.php",
@@ -5105,10 +5154,6 @@
           {
             "file": "api/partners/public/index.php",
             "line": 216
-          },
-          {
-            "file": "api/product-costs/index.php",
-            "line": 61
           },
           {
             "file": "api/profit-loss/index.php",
@@ -5148,7 +5193,11 @@
           },
           {
             "file": "partner-auth-catalog.php",
-            "line": 107
+            "line": 50
+          },
+          {
+            "file": "product-costs-read-service.php",
+            "line": 17
           },
           {
             "file": "purchase-orders-bootstrap.php",
@@ -5274,7 +5323,7 @@
           },
           {
             "file": "product-costs-bootstrap.php",
-            "line": 162
+            "line": 163
           },
           {
             "file": "sku-db-bootstrap.php",
@@ -5327,7 +5376,7 @@
         "read_at": [
           {
             "file": "api/orders/index.php",
-            "line": 3667
+            "line": 3718
           },
           {
             "file": "api/sales/index.php",
@@ -5335,7 +5384,7 @@
           },
           {
             "file": "product-costs-bootstrap.php",
-            "line": 136
+            "line": 137
           }
         ]
       }
@@ -5392,7 +5441,7 @@
           },
           {
             "file": "api/orders/index.php",
-            "line": 3644
+            "line": 3694
           },
           {
             "file": "api/partners/index.php",
@@ -5401,10 +5450,6 @@
           {
             "file": "api/partners/public/index.php",
             "line": 215
-          },
-          {
-            "file": "api/product-costs/index.php",
-            "line": 60
           },
           {
             "file": "api/profit-loss/index.php",
@@ -5444,7 +5489,11 @@
           },
           {
             "file": "partner-auth-catalog.php",
-            "line": 106
+            "line": 49
+          },
+          {
+            "file": "product-costs-read-service.php",
+            "line": 16
           },
           {
             "file": "purchase-orders-bootstrap.php",
@@ -5616,11 +5665,11 @@
           },
           {
             "file": "api/orders/index.php",
-            "line": 3606
+            "line": 3656
           },
           {
             "file": "api/orders/index.php",
-            "line": 3641
+            "line": 3691
           },
           {
             "file": "api/partners/index.php",
@@ -5629,10 +5678,6 @@
           {
             "file": "api/partners/public/index.php",
             "line": 213
-          },
-          {
-            "file": "api/product-costs/index.php",
-            "line": 58
           },
           {
             "file": "api/profit-loss/index.php",
@@ -5708,7 +5753,11 @@
           },
           {
             "file": "partner-auth-catalog.php",
-            "line": 104
+            "line": 47
+          },
+          {
+            "file": "product-costs-read-service.php",
+            "line": 14
           },
           {
             "file": "product-purchases-reporting-service.php",
@@ -5724,7 +5773,7 @@
           },
           {
             "file": "sku-db-bootstrap.php",
-            "line": 508
+            "line": 549
           },
           {
             "file": "storefront-catalog-read.php",
@@ -5740,11 +5789,11 @@
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 1921
+            "line": 1934
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 1933
+            "line": 1946
           },
           {
             "file": "whatsapp-orders-bootstrap.php",
@@ -5799,7 +5848,7 @@
         "declared_at": [
           {
             "file": "api/orders/index.php",
-            "line": 3542
+            "line": 3592
           },
           {
             "file": "api/sku-db/index.php",
@@ -5813,15 +5862,15 @@
         "read_at": [
           {
             "file": "api/orders/index.php",
-            "line": 3608
+            "line": 3658
           },
           {
             "file": "api/orders/index.php",
-            "line": 4081
+            "line": 4133
           },
           {
             "file": "api/orders/index.php",
-            "line": 4249
+            "line": 4301
           },
           {
             "file": "api/sku-db/index.php",
@@ -5889,7 +5938,7 @@
           },
           {
             "file": "api/orders/index.php",
-            "line": 3643
+            "line": 3693
           },
           {
             "file": "api/partners/index.php",
@@ -5898,10 +5947,6 @@
           {
             "file": "api/partners/public/index.php",
             "line": 217
-          },
-          {
-            "file": "api/product-costs/index.php",
-            "line": 62
           },
           {
             "file": "api/profit-loss/index.php",
@@ -5937,7 +5982,11 @@
           },
           {
             "file": "partner-auth-catalog.php",
-            "line": 108
+            "line": 51
+          },
+          {
+            "file": "product-costs-read-service.php",
+            "line": 18
           },
           {
             "file": "purchase-orders-bootstrap.php",
@@ -5988,7 +6037,10 @@
             "line": 186
           }
         ]
-      }
+      },
+      "exclusion_category": "mixed_business_payload",
+      "future_projection_review": "Potential de-identified metadata: active staff count only, after employment-data scope review. Aggregate fulfillment performance exists. PIN hashes, employee IDs/names and individual productivity remain excluded without explicit identity scope.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:store_ops_order_events_v2",
@@ -6367,19 +6419,19 @@
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 833
+            "line": 846
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 881
+            "line": 894
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 895
+            "line": 908
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 2062
+            "line": 2075
           }
         ]
       }
@@ -6479,27 +6531,27 @@
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 832
+            "line": 845
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 880
+            "line": 893
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 894
+            "line": 907
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 1228
+            "line": 1241
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 2034
+            "line": 2047
           },
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 2061
+            "line": 2074
           },
           {
             "file": "zero-commerce-bootstrap.php",
@@ -6575,15 +6627,15 @@
           },
           {
             "file": "whatsapp-orders-bootstrap.php",
-            "line": 1491
+            "line": 1504
           },
           {
             "file": "whatsapp-orders-bootstrap.php",
-            "line": 1682
+            "line": 1695
           },
           {
             "file": "whatsapp-orders-bootstrap.php",
-            "line": 1696
+            "line": 1709
           }
         ]
       }
@@ -6682,23 +6734,23 @@
           },
           {
             "file": "whatsapp-orders-bootstrap.php",
-            "line": 1490
+            "line": 1503
           },
           {
             "file": "whatsapp-orders-bootstrap.php",
-            "line": 1679
+            "line": 1692
           },
           {
             "file": "whatsapp-orders-bootstrap.php",
-            "line": 1695
+            "line": 1708
           },
           {
             "file": "whatsapp-orders-bootstrap.php",
-            "line": 1711
+            "line": 1724
           },
           {
             "file": "whatsapp-orders-bootstrap.php",
-            "line": 1765
+            "line": 1778
           }
         ]
       }
@@ -6977,7 +7029,10 @@
             "line": 699
           }
         ]
-      }
+      },
+      "exclusion_category": "security_secrets",
+      "future_projection_review": "Preview tokens remain excluded. At most per-post preview-enabled boolean and modification time could be reviewed; no token or URL export.",
+      "future_projection_implemented": false
     },
     {
       "id": "dashboard:zero_blog_revisions",
@@ -7374,7 +7429,7 @@
         "read_at": [
           {
             "file": "website-commerce-bootstrap.php",
-            "line": 1939
+            "line": 1952
           }
         ]
       }
@@ -7574,7 +7629,10 @@
             "line": 164
           }
         ]
-      }
+      },
+      "exclusion_category": "mixed_business_payload",
+      "future_projection_review": "Potential account-filtered configured-source membership only; requires specific privileged-control metadata reporting approval. No full organization source-list expansion or activation.",
+      "future_projection_implemented": false
     },
     {
       "id": "ingest:executive_hard_set_state",
@@ -7618,7 +7676,10 @@
             "line": 144
           }
         ]
-      }
+      },
+      "exclusion_category": "mixed_business_payload",
+      "future_projection_review": "Potential approved enabled/activation/updated timestamp projection, excluding actors. Requires specific global control-state reporting authority; no state change.",
+      "future_projection_implemented": false
     },
     {
       "id": "ingest:marketplace_account_tokens",
@@ -7654,7 +7715,10 @@
             "line": 119
           }
         ]
-      }
+      },
+      "exclusion_category": "security_secrets",
+      "future_projection_review": "No reporting projection of credentials. A separately approved non-secret connection-health diagnostic would need a dedicated sanitized contract; never token values, raw responses or app secrets.",
+      "future_projection_implemented": false
     },
     {
       "id": "ingest:marketplace_arrangement_policy",
@@ -7686,7 +7750,10 @@
             "line": 43
           }
         ]
-      }
+      },
+      "exclusion_category": "mixed_business_payload",
+      "future_projection_review": "Potential approved policy revision/update and selected effective cutoff/eligibility fields, excluding actors and arbitrary policy JSON. Requires scoped privileged-policy reporting approval and a new passive reader; existing constructor/state can create schema or migrate policy.",
+      "future_projection_implemented": false
     },
     {
       "id": "ingest:marketplace_fulfillment_jobs",
@@ -7696,15 +7763,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "utc_history; one stored fulfillment job",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -7770,6 +7837,12 @@
             "line": 2366
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "marketplace_fulfillment_jobs",
+        "scope": "account",
+        "date_mode": "utc_history"
       }
     },
     {
@@ -7780,15 +7853,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "utc_history; one current fulfillment order/package state",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -7801,6 +7874,10 @@
           }
         ],
         "read_at": [
+          {
+            "file": "src/IngestReportCatalog.php",
+            "line": 66
+          },
           {
             "file": "src/MarketplaceFulfillmentRepository.php",
             "line": 340
@@ -7862,6 +7939,12 @@
             "line": 2286
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "marketplace_fulfillment_orders",
+        "scope": "account",
+        "date_mode": "utc_history"
       }
     },
     {
@@ -7872,15 +7955,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "snapshot; global current worker heartbeat",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -7894,6 +7977,10 @@
         ],
         "read_at": [
           {
+            "file": "src/IngestStoredReports.php",
+            "line": 152
+          },
+          {
             "file": "src/MarketplaceFulfillmentRepository.php",
             "line": 154
           },
@@ -7902,6 +7989,12 @@
             "line": 829
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "marketplace_fulfillment_runtime",
+        "scope": "global",
+        "date_mode": "snapshot"
       }
     },
     {
@@ -7912,15 +8005,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "utc_history; one stored order item",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -7958,6 +8051,12 @@
             "line": 1884
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "marketplace_order_items",
+        "scope": "account",
+        "date_mode": "utc_history"
       }
     },
     {
@@ -7968,15 +8067,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "business_month; one account/currency/Jakarta-month rollup",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -7998,6 +8097,12 @@
             "line": 1689
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "marketplace_order_monthly_rollups",
+        "scope": "account",
+        "date_mode": "business_month"
       }
     },
     {
@@ -8008,15 +8113,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "business_month; one product/flavor/SKU/account/currency/Jakarta-month rollup",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -8034,6 +8139,12 @@
             "line": 1730
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "marketplace_order_product_monthly_rollups",
+        "scope": "account",
+        "date_mode": "business_month"
       }
     },
     {
@@ -8044,15 +8155,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "utc_history; one stored marketplace order",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -8065,6 +8176,10 @@
           }
         ],
         "read_at": [
+          {
+            "file": "src/IngestReportCatalog.php",
+            "line": 33
+          },
           {
             "file": "src/MarketplaceOrderRepository.php",
             "line": 358
@@ -8126,6 +8241,12 @@
             "line": 1813
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "marketplace_orders",
+        "scope": "account",
+        "date_mode": "utc_history"
       }
     },
     {
@@ -8136,15 +8257,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "utc_history; one global marketplace sync run",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -8162,6 +8283,12 @@
             "line": 656
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "marketplace_sync_runs",
+        "scope": "global",
+        "date_mode": "utc_history"
       }
     },
     {
@@ -8193,7 +8320,10 @@
           }
         ],
         "read_at": []
-      }
+      },
+      "exclusion_category": "mixed_business_payload",
+      "future_projection_review": "Potential business freshness projection: account-filtered event-type/status counts and received/processed timestamps. Can be reviewed against existing business-account read authority; raw headers, bodies, IPs, payloads, external IDs and errors remain excluded. Not a substitute for marketplace_sync_runs.",
+      "future_projection_implemented": false
     },
     {
       "id": "ingest:shopee_account_tokens",
@@ -8233,7 +8363,10 @@
             "line": 176
           }
         ]
-      }
+      },
+      "exclusion_category": "security_secrets",
+      "future_projection_review": "No reporting projection of credentials. A separately approved non-secret connection-health diagnostic would need a dedicated sanitized contract; never access/refresh tokens or raw responses.",
+      "future_projection_implemented": false
     },
     {
       "id": "ingest:shopee_ad_balances",
@@ -8243,15 +8376,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "ads",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "snapshot; latest stored ad-credit balance per account",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -8269,6 +8402,12 @@
             "line": 550
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "shopee_ad_balances",
+        "scope": "account",
+        "date_mode": "snapshot"
       }
     },
     {
@@ -8279,7 +8418,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "ads",
       "classification": "mapped",
-      "coverage_level": "passive_bridge_implemented_deployment_pending",
+      "coverage_level": "passive_bridge_implemented_runtime_separate_acceptance",
       "interfaces": [
         "jg_ads_history:campaigns"
       ],
@@ -8329,7 +8468,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "ads",
       "classification": "mapped",
-      "coverage_level": "passive_bridge_implemented_deployment_pending",
+      "coverage_level": "passive_bridge_implemented_runtime_separate_acceptance",
       "interfaces": [
         "jg_ads_history:daily_or_summary"
       ],
@@ -8391,7 +8530,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "ads",
       "classification": "mapped",
-      "coverage_level": "passive_bridge_implemented_deployment_pending",
+      "coverage_level": "passive_bridge_implemented_runtime_separate_acceptance",
       "interfaces": [
         "jg_ads_history:hourly"
       ],
@@ -8425,15 +8564,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "ads",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "snapshot; current cached Shopee item metadata",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -8455,6 +8594,12 @@
             "line": 472
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "shopee_ad_items",
+        "scope": "account",
+        "date_mode": "snapshot"
       }
     },
     {
@@ -8465,15 +8610,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "ads",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "monitor; current campaign observations and incidents in one account state",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -8483,6 +8628,10 @@
         ],
         "read_at": [
           {
+            "file": "src/IngestStoredReports.php",
+            "line": 207
+          },
+          {
             "file": "src/ShopeeAdMonitor.php",
             "line": 23
           },
@@ -8491,6 +8640,12 @@
             "line": 33
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "shopee_ad_monitor",
+        "scope": "account",
+        "date_mode": "monitor"
       }
     },
     {
@@ -8501,15 +8656,15 @@
       "database_binding": "external_ingest_not_local",
       "family": "ads",
       "classification": "external_reader_blocked",
-      "coverage_level": "missing_safe_remote_contract",
+      "coverage_level": "passive_contract_implemented_bridge_and_hosted_verification_pending",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Must be retained from canonical remote source contract.",
-      "freshness": "Deployment and actual coverage require live verification; no remote row counts inferred.",
-      "reason": "Existing service credential must stay header-only; passive constructor and bounded sanitized projection required. No direct local-table alias or live marketplace refresh.",
+      "date_basis": "stored_calendar_history; one local monitoring intent/acknowledgement audit event",
+      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
+      "reason": "Local passive /reports/query contract implemented; MCP bridge, production authorization/contract deployment and live verification remain pending. Existing account scope applies; global sources require explicit full-source authority. No availability or zero-row inference.",
       "evidence": {
         "declared_at": [
           {
@@ -8523,6 +8678,12 @@
             "line": 106
           }
         ]
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "shopee_ad_monitor_audit",
+        "scope": "account",
+        "date_mode": "stored_calendar_history"
       }
     },
     {
@@ -8567,7 +8728,10 @@
             "line": 203
           }
         ]
-      }
+      },
+      "exclusion_category": "security_secrets",
+      "future_projection_review": "OAuth state, return URLs and session details remain excluded. No business metric is missing; any connection diagnostic requires specific security-metadata authorization.",
+      "future_projection_implemented": false
     }
   ],
   "api_sources": [
@@ -8591,7 +8755,8 @@
           "file": "api/accounting/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/ad-monitor/",
@@ -8606,7 +8771,8 @@
           "file": "api/ad-monitor/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/ads/",
@@ -8621,7 +8787,8 @@
           "file": "api/ads/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/affiliates/",
@@ -8636,7 +8803,8 @@
           "file": "api/affiliates/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/analytics/",
@@ -8654,22 +8822,26 @@
           "file": "api/analytics/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/api-health/",
       "source_kind": "api_consumer",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "file": "api/api-health/index.php",
-      "implemented_reports": [],
-      "reason": "Passive health log projection absent; live health route probes external endpoints and writes log.",
+      "implemented_reports": [
+        "api_health_history"
+      ],
+      "reason": "Passive sanitized saved failure history is implemented. Successful checks/current health and remote marketplace sync ledger are not represented; active probes and credential checks remain excluded.",
       "release_gate": "Local implementation is not proof of deployed/callable client schema.",
       "evidence": [
         {
           "file": "api/api-health/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/blogs/",
@@ -8686,7 +8858,8 @@
           "file": "api/blogs/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/branch-tier/",
@@ -8701,7 +8874,8 @@
           "file": "api/branch-tier/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/context/",
@@ -8716,7 +8890,8 @@
           "file": "api/context/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/customer-profiles/",
@@ -8733,7 +8908,8 @@
           "file": "api/customer-profiles/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/daily-columns/",
@@ -8748,7 +8924,8 @@
           "file": "api/daily-columns/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/hard-set/",
@@ -8763,7 +8940,8 @@
           "file": "api/hard-set/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/inventory-recap/",
@@ -8782,7 +8960,8 @@
           "file": "api/inventory-recap/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/jenang-gemi-store/",
@@ -8799,7 +8978,8 @@
           "file": "api/jenang-gemi-store/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/jenang-gemi-website-orders/",
@@ -8816,7 +8996,8 @@
           "file": "api/jenang-gemi-website-orders/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/library-signal/",
@@ -8831,7 +9012,8 @@
           "file": "api/library-signal/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/live/",
@@ -8846,7 +9028,8 @@
           "file": "api/live/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/marketplace-auth/",
@@ -8861,22 +9044,30 @@
           "file": "api/marketplace-auth/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/orders/",
       "source_kind": "api_consumer",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "file": "api/orders/index.php",
-      "implemented_reports": [],
-      "reason": "Safe facts and semantic sales exist; exact product ranking/comparison/forecast and province composition are not all implemented.",
+      "implemented_reports": [
+        "sales_daily",
+        "product_sales_catalog",
+        "product_sales_analytics",
+        "sales_provinces",
+        "sales_flavor_breakdown"
+      ],
+      "reason": "Canonical scoped daily, catalog, selected-product/dimension rankings/history/forecast and deterministic province counts are implemented. Marketplace-only flavor pivot is also implemented; distinct native status/count/date semantics are retained.",
       "release_gate": "Local implementation is not proof of deployed/callable client schema.",
       "evidence": [
         {
           "file": "api/orders/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/partner-billing/",
@@ -8893,7 +9084,8 @@
           "file": "api/partner-billing/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/partner-db-status/",
@@ -8908,24 +9100,27 @@
           "file": "api/partner-db-status/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/partner-sales/",
       "source_kind": "api_consumer",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "file": "api/partner-sales/index.php",
       "implemented_reports": [
-        "sales_snapshot"
+        "partner_contribution",
+        "partner_sales_summary"
       ],
-      "reason": "Stored partner facts and composed sales snapshot; standalone partner contribution screen not fully reproduced.",
+      "reason": "Canonical contribution and saved order/nonvoid-receipt summaries implemented. No backfill or remote Store Ops fallback; stored receipt completeness remains unverified.",
       "release_gate": "Local implementation is not proof of deployed/callable client schema.",
       "evidence": [
         {
           "file": "api/partner-sales/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/partner-stock/",
@@ -8940,7 +9135,8 @@
           "file": "api/partner-stock/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/partners/auth/",
@@ -8955,22 +9151,26 @@
           "file": "api/partners/auth/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/partners/",
       "source_kind": "api_consumer",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "file": "api/partners/index.php",
-      "implemented_reports": [],
-      "reason": "Safe profile terms mapped; private contact/login fields and complete computed partner price list excluded or not yet projected.",
+      "implemented_reports": [
+        "partner_pricing"
+      ],
+      "reason": "Canonical safe partner-specific catalog membership and effective pricing implemented; raw registry, private contacts/login fields, live Astra refresh and mutations excluded.",
       "release_gate": "Local implementation is not proof of deployed/callable client schema.",
       "evidence": [
         {
           "file": "api/partners/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/partners/password/",
@@ -8985,22 +9185,26 @@
           "file": "api/partners/password/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/partners/public/",
       "source_kind": "api_consumer",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "file": "api/partners/public/index.php",
-      "implemented_reports": [],
-      "reason": "Catalog and partner terms available; computed partner-specific catalog/price response lacks dedicated parity adapter.",
+      "implemented_reports": [
+        "partner_pricing"
+      ],
+      "reason": "Canonical safe partner-specific catalog membership and effective pricing implemented; raw registry, private contacts/login fields, live Astra refresh and mutations excluded.",
       "release_gate": "Local implementation is not proof of deployed/callable client schema.",
       "evidence": [
         {
           "file": "api/partners/public/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/product-costs/",
@@ -9008,16 +9212,18 @@
       "classification": "mapped",
       "file": "api/product-costs/index.php",
       "implemented_reports": [
-        "packing_costs"
+        "packing_costs",
+        "sku_effective_costs"
       ],
-      "reason": "Typed effective COGS and canonical saved packing lookup.",
+      "reason": "Shared canonical effective COGS, ASTRA scaling, saved schedules and per-SKU packing completeness implemented without synchronization/import. Unknown/unconfigured costs and group readiness remain distinct.",
       "release_gate": "Local implementation is not proof of deployed/callable client schema.",
       "evidence": [
         {
           "file": "api/product-costs/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/product-purchases/",
@@ -9034,21 +9240,26 @@
           "file": "api/product-purchases/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/profit-loss/",
       "source_kind": "api_consumer",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "file": "api/profit-loss/index.php",
       "implemented_reports": [],
-      "reason": "Legacy inputs/configuration projected; display definitions are not values, and legacy file-based calculation lacks a dedicated adapter.",
+      "reason": "Historical file P&L and safe stored inputs are implemented. Separate nonlegacy editor composition is implemented under finance authorization; it is not the current accounting allocation formula.",
       "release_gate": "Local implementation is not proof of deployed/callable client schema.",
       "evidence": [
         {
           "file": "api/profit-loss/index.php",
           "line": 1
         }
+      ],
+      "implemented_finance_reports": [
+        "legacy_profit_loss",
+        "editor_profit_loss"
       ]
     },
     {
@@ -9057,13 +9268,16 @@
       "classification": "mapped",
       "file": "api/profit-share/index.php",
       "implemented_reports": [],
-      "reason": "jg_monthly_profit uses canonical combination and current saved recipient rule; separate finance grant and recipient allowlist required.",
+      "reason": "Canonical monthly allocation and annual/selected-month statement require finance scope and exact saved recipient allowlist. One shared sales snapshot and accounting transaction do not imply cross-source atomicity.",
       "release_gate": "Local implementation is not proof of deployed/callable client schema.",
       "evidence": [
         {
           "file": "api/profit-share/index.php",
           "line": 1
         }
+      ],
+      "implemented_finance_reports": [
+        "allocation_statement"
       ]
     },
     {
@@ -9079,7 +9293,8 @@
           "file": "api/public-blog/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/sales/",
@@ -9096,7 +9311,8 @@
           "file": "api/sales/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/settings/",
@@ -9111,7 +9327,8 @@
           "file": "api/settings/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/shipment-arrangement/",
@@ -9126,7 +9343,8 @@
           "file": "api/shipment-arrangement/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/sku-db/",
@@ -9141,7 +9359,8 @@
           "file": "api/sku-db/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/store-ops/",
@@ -9158,7 +9377,8 @@
           "file": "api/store-ops/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/wallet/",
@@ -9175,7 +9395,8 @@
           "file": "api/wallet/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/website-orders/",
@@ -9192,7 +9413,8 @@
           "file": "api/website-orders/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/whatsapp-orders/",
@@ -9209,7 +9431,8 @@
           "file": "api/whatsapp-orders/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/zero-commerce/",
@@ -9224,22 +9447,26 @@
           "file": "api/zero-commerce/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/zero-sales-proof/",
       "source_kind": "api_consumer",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "file": "api/zero-sales-proof/index.php",
-      "implemented_reports": [],
-      "reason": "Stored sales/context accessible; exact ZERO-specific cached report composition not yet a dedicated read adapter.",
+      "implemented_reports": [
+        "sales_proof_composition"
+      ],
+      "reason": "Bounded saved company-wide PUBLIC rounded units claim/context flag available. Despite endpoint name, no ZERO-only partition exists; exact units and marketplace/context/overlap components are absent from the saved cache and remain unknown.",
       "release_gate": "Local implementation is not proof of deployed/callable client schema.",
       "evidence": [
         {
           "file": "api/zero-sales-proof/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/zero-store/",
@@ -9256,7 +9483,8 @@
           "file": "api/zero-store/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     },
     {
       "id": "/api/zero-website-orders/",
@@ -9273,7 +9501,8 @@
           "file": "api/zero-website-orders/index.php",
           "line": 1
         }
-      ]
+      ],
+      "implemented_finance_reports": []
     }
   ],
   "ingest_api_sources": [
@@ -9542,6 +9771,30 @@
       ],
       "interfaces": [],
       "reason": "Authentication, setup, diagnostics or live operations are not exposed as business-data tools; safe reporting projection must remain separate."
+    },
+    {
+      "id": "/reports/query",
+      "source_kind": "remote_api",
+      "classification": "external_reader_blocked",
+      "evidence": [
+        {
+          "file": "public/index.php"
+        }
+      ],
+      "interfaces": [],
+      "reason": "Passive v1 twelve-source contract implemented locally; bridge integration, publication authorization and actual hosted verification pending. Account scope and global full-source authority remain distinct."
+    },
+    {
+      "id": "/reports/sources",
+      "source_kind": "remote_api",
+      "classification": "external_reader_blocked",
+      "evidence": [
+        {
+          "file": "public/index.php"
+        }
+      ],
+      "interfaces": [],
+      "reason": "Passive v1 twelve-source contract implemented locally; bridge integration, publication authorization and actual hosted verification pending. Account scope and global full-source authority remain distinct."
     },
     {
       "id": "/sales/order",
@@ -10014,7 +10267,8 @@
       "classification": "mapped",
       "interfaces": [
         "jg_business_report:sales_snapshot",
-        "jg_monthly_profit"
+        "jg_monthly_profit",
+        "jg_finance_report:allocation_statement"
       ],
       "evidence": [
         {
@@ -10083,14 +10337,19 @@
       "id": "legacy_pnl_file",
       "source_kind": "file_or_snapshot",
       "physical_source": "data/profit-loss-legacy.json",
-      "classification": "projection_needs_semantic",
-      "interfaces": [],
+      "classification": "mapped",
+      "interfaces": [
+        "jg_finance_report:legacy_profit_loss"
+      ],
       "evidence": [
         {
           "file": "profit-loss-bootstrap.php"
+        },
+        {
+          "file": "assistant/lib/finance-parity.php"
         }
       ],
-      "reason": "Legacy read/editor source; bounded semantic projection and explicit legacy period definition needed.",
+      "reason": "Stored historical statement/product/entry projection implemented under finance scope; explicit legacy month coverage, fixed file and no current allocation inference.",
       "freshness": "Source timestamp/coverage must be reported separately from query generation time."
     },
     {
@@ -10117,45 +10376,74 @@
       "id": "api_health_log",
       "source_kind": "file_or_snapshot",
       "physical_source": "data/api-health-log.json",
-      "classification": "projection_needs_semantic",
-      "interfaces": [],
+      "classification": "mapped",
+      "interfaces": [
+        "jg_business_report:api_health_history"
+      ],
       "evidence": [
         {
+          "file": "api-health-log-read.php"
+        },
+        {
           "file": "api/api-health/index.php"
+        },
+        {
+          "file": "assistant/lib/read-services/health-metrics.php"
         }
       ],
-      "reason": "Needs passive sanitized endpoint/status/time projection; do not invoke active probe route or emit raw error/URL secrets.",
+      "reason": "Bounded saved failure-only history with static check IDs/status/time. Missing/invalid sources are unavailable; no active probes, credential-status output, raw URLs/errors/bodies or upstream sync claim.",
       "freshness": "Source timestamp/coverage must be reported separately from query generation time."
     },
     {
       "id": "zero_sales_proof_cache",
       "source_kind": "file_or_snapshot",
-      "physical_source": "temporary ZERO sales-proof hashed JSON",
-      "classification": "projection_needs_semantic",
-      "interfaces": [],
+      "physical_source": "temporary zero-sales-proof-v1 year cache: company-wide public rounded claim",
+      "classification": "mapped",
+      "interfaces": [
+        "jg_business_report:sales_proof_composition"
+      ],
       "evidence": [
         {
           "file": "api/zero-sales-proof/index.php"
+        },
+        {
+          "file": "sales-proof-reporting.php"
+        },
+        {
+          "file": "assistant/lib/read-services/sales-parity-metrics.php"
         }
       ],
-      "reason": "Brand-filtered saved proof/report composition requires bounded passive reader; not private receipt content.",
-      "freshness": "Source timestamp/coverage must be reported separately from query generation time."
+      "reason": "Only saved rounded company-wide PUBLIC units claim, year, context flag and cache times are available. Exact units and source/context/overlap breakdown are not stored and remain unknown. Not a ZERO-only brand total.",
+      "freshness": "Source timestamp/coverage must be reported separately from query generation time.",
+      "coverage_level": "saved_public_claim_only",
+      "unavailable_components": [
+        "exact_units",
+        "marketplace_units",
+        "context_units",
+        "overlap_units",
+        "brand_partition"
+      ]
     },
     {
       "id": "partner_pricing_code",
       "source_kind": "file_or_snapshot",
       "physical_source": "configured partner SKU pricing/catalog rules",
-      "classification": "projection_needs_semantic",
-      "interfaces": [],
+      "classification": "mapped",
+      "interfaces": [
+        "jg_business_report:partner_pricing"
+      ],
       "evidence": [
         {
-          "file": "partner-auth-catalog.php"
+          "file": "partner-catalog-values.php"
         },
         {
-          "file": "api/partners/public/index.php"
+          "file": "partner-pricing.php"
+        },
+        {
+          "file": "assistant/lib/read-services/partner-parity.php"
         }
       ],
-      "reason": "Safe stored catalog/terms exist; full canonical partner-specific derived pricing still needs read adapter.",
+      "reason": "Bounded safe partner-specific catalog and effective pricing use canonical rules; private registry/contact/auth data excluded.",
       "freshness": "Source timestamp/coverage must be reported separately from query generation time."
     },
     {
@@ -11105,6 +11393,554 @@
         "additionalProperties": false
       },
       "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "api_health_history",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "sales",
+      "source": "passive_api_health_log",
+      "canonical": "api-health-log-read.php::jg_api_health_read_log_snapshot / jg_api_health_read_log; api/api-health/index.php saved failure log",
+      "date_basis": "Saved recorded_at UTC failure events, newest appended first; not check execution time or current service health.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "Failure-only retained log: no rows does not establish health, successful checks or complete incident history. The dashboard retains at most 120 failures.",
+        "Only approved static business check IDs, status codes and recorded times are exposed. Credential checks, unknown IDs, stored labels, URLs, details, errors and response bodies are omitted.",
+        "No checks, network requests, database connections, refreshes or log writes run. Status codes describe historical checks; 0 means no status was recorded.",
+        "This is shared application operational history under the existing dashboard grant, not account-specific health. No account identifiers or account-specific details are exposed.",
+        "File modification and failure timestamps are observations only. Current health and marketplace ingestion completeness remain unknown; marketplace_sync_runs is a separate remote source.",
+        "Offset pagination is stable within a saved file snapshot; concurrent appended failures can shift subsequent pages. Compare file modification time and retained counts across requests."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "api_health_history"
+            ]
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 120
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 119
+          }
+        },
+        "required": [
+          "report"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "sales_provinces",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "sales",
+      "source": "analytics",
+      "canonical": "api/orders/index.php::jg_orders_location_aggregate_rows + jg_orders_location_aggregate_payload; deterministic local province/locality aliases",
+      "date_basis": "Non-deleted marketplace mirror order_create_time UTC within inclusive Jakarta dates; all saved order statuses, matching dashboard map semantics.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "Marketplace mirror only; website/direct/partner geography is not added. All saved statuses are included; counts are not paid orders or sales.",
+        "Exact configured account keys are applied before address processing. Only province counts leave the adapter; addresses, raw JSON, order IDs and customers never leave it.",
+        "A unique order uses the first stored row in dashboard order (newest order timestamp/id). Unknown province remains unmatched; it is never assigned by guesswork.",
+        "No location provider call, cache lookup, write, schema creation or source repair. Complete stored scan is not complete upstream coverage."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "sales_provinces"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "pattern": "^20[2-9][0-9]-[0-9]{2}-[0-9]{2}$"
+          },
+          "end_date": {
+            "type": "string",
+            "pattern": "^20[2-9][0-9]-[0-9]{2}-[0-9]{2}$"
+          }
+        },
+        "required": [
+          "report",
+          "start_date",
+          "end_date"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "sales_proof_composition",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "sales",
+      "source": "saved_public_proof",
+      "canonical": "api/zero-sales-proof/index.php saved zero-sales-proof-v1-YEAR cache; sales-proof-reporting.php::jg_zero_sales_proof_claim_from_summary",
+      "date_basis": "The year and recorded cache date/updated_at in the saved public proof. Query time is not source freshness.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "This existing public proof is composed from company-wide marketplace summary and executive context; despite its ZERO endpoint name, no ZERO-only brand partition is recorded.",
+        "Only the saved rounded units claim and recorded context flag can be verified here. Exact units and live/context/overlap components are absent from the cache and remain unavailable.",
+        "No provider fetch, cache generation/refresh/write, directory creation, context migration or database connection. Missing cache is unavailable, not zero units."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "sales_proof_composition"
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2025,
+            "maximum": 2100
+          }
+        },
+        "required": [
+          "report",
+          "year"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "sales_daily",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "sales",
+      "source": "analytics_partner",
+      "canonical": "api/orders/index.php::jg_orders_daily_marketplace_rows + jg_orders_daily_summary_from_inputs + scoped canonical website/direct/partner readers",
+      "date_basis": "Native daily screen: marketplace order date with active sale and release-status filters; website paid date; listed direct orders; saved partner order date.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "Stored canonical source semantics, not company net profit, cash collected or recipient allocation. Missing sources fail; no sync, schema preparation, receipt backfill or cache write occurs.",
+        "Only configured marketplace/website/direct accounts and approved partners are read. Authorized source totals are not proof of whole-company or upstream completeness; cross-source duplicate orders remain unreconciled.",
+        "Marketplace order_create_time and website paid_at use UTC to Jakarta. Direct listed_at falls back to created_at. Partner filtering preserves the native saved order date convention; legacy timezone remains unverified.",
+        "Customer/order identities, raw payloads, private notes and contacts are omitted; source records stay internal. Separate database snapshots are not atomic."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "sales_daily"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "pattern": "^20[2-9][0-9]-[0-9]{2}-[0-9]{2}$"
+          },
+          "end_date": {
+            "type": "string",
+            "pattern": "^20[2-9][0-9]-[0-9]{2}-[0-9]{2}$"
+          }
+        },
+        "required": [
+          "report",
+          "start_date",
+          "end_date"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "product_sales_analytics",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "sales",
+      "source": "analytics_sku_partner",
+      "canonical": "api/orders/index.php::jg_orders_product_analytics_marketplace_rows + jg_orders_aggregate_product_analytics_rows + jg_orders_analytics_forecast; shared SKU lookup and scoped canonical source readers",
+      "date_basis": "Native product analytics dates/grouping; marketplace preaggregation does not apply the daily screen paid/active-status filter. Monthly forecast uses the existing current-month elapsed-calendar-day run rate.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "Stored canonical source semantics, not company net profit, cash collected or recipient allocation. Missing sources fail; no sync, schema preparation, receipt backfill or cache write occurs.",
+        "Only configured marketplace/website/direct accounts and approved partners are read. Authorized source totals are not proof of whole-company or upstream completeness; cross-source duplicate orders remain unreconciled.",
+        "Marketplace order_create_time and website paid_at use UTC to Jakarta. Direct listed_at falls back to created_at. Partner filtering preserves the native saved order date convention; legacy timezone remains unverified.",
+        "Customer/order identities, raw payloads, private notes and contacts are omitted; source records stay internal. Separate database snapshots are not atomic.",
+        "Canonical product transaction counts are SKU/period occurrences and may count one order across several variants; they are not the daily screen distinct-order count.",
+        "Unmapped SKU rows and rows outside the chosen product are identified in coverage; missing mapping is not a zero sale.",
+        "Forecast is the existing simple run rate, potentially including a partial current day; no payday/weekday modeling or future-month prediction is claimed. It is a sales estimate, not profit or personal allocation."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "product_sales_analytics"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "pattern": "^20[2-9][0-9]-[0-9]{2}-[0-9]{2}$"
+          },
+          "end_date": {
+            "type": "string",
+            "pattern": "^20[2-9][0-9]-[0-9]{2}-[0-9]{2}$"
+          },
+          "product": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"
+          },
+          "grain": {
+            "type": "string",
+            "enum": [
+              "hour",
+              "day",
+              "week",
+              "month"
+            ]
+          },
+          "dimension": {
+            "type": "string",
+            "enum": [
+              "product",
+              "flavor",
+              "volume",
+              "sku"
+            ]
+          },
+          "flavor": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "volume": {
+            "type": "string",
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "report",
+          "start_date",
+          "end_date",
+          "product"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "sales_flavor_breakdown",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "sales",
+      "source": "analytics_sku",
+      "canonical": "api/orders/index.php::jg_orders_product_flavor_marketplace_rows + jg_orders_aggregate_product_flavor_rows",
+      "date_basis": "Native marketplace-only flavor pivot; order_create_time UTC converted to Jakarta day/week/month, grouped by SKU before flavor/size pivot. Non-deleted stored rows, without daily active-status filtering.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "This is the exact marketplace-only flavor/size pivot. Website, direct and partner sales are intentionally absent because the canonical dashboard pivot omits them; use product_sales_analytics for combined-source rankings/history.",
+        "All non-deleted stored marketplace statuses are included by native preaggregation, unlike the daily screen. Free gifts contribute zero sales quantity/revenue.",
+        "Account predicates run before grouping; no customer/order identity, private payload, cost history, provider call or schema preparation. Unmapped SKU groups remain explicit; upstream completeness is unverified."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "sales_flavor_breakdown"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "pattern": "^20[2-9][0-9]-[0-9]{2}-[0-9]{2}$"
+          },
+          "end_date": {
+            "type": "string",
+            "pattern": "^20[2-9][0-9]-[0-9]{2}-[0-9]{2}$"
+          },
+          "product": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,79}$"
+          },
+          "grain": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ]
+          }
+        },
+        "required": [
+          "report",
+          "start_date",
+          "end_date",
+          "product"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "product_sales_catalog",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "sales",
+      "source": "sku",
+      "canonical": "api/orders/index.php::jg_orders_product_breakdown_catalog_payload",
+      "date_basis": "Current saved catalog membership and product/flavor/size keys.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "Current catalog dimensions for selecting canonical analytics; not sales or available-to-promise stock. Missing SKU dimension joins fail rather than silently dropping variants."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "product_sales_catalog"
+            ]
+          }
+        },
+        "required": [
+          "report"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "partner_contribution",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "partners",
+      "source": "partner",
+      "canonical": "partner-sales-summary.php::jg_partner_sales_summary_facts",
+      "date_basis": "Annual canonical UTC order_timestamp fallback created_at converted to Asia/Jakarta; historical input timezone unverified.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "Passive stored data only. No migration, schema preparation, payment backfill, stock refresh, remote fallback or business write is performed. Missing storage fails as unavailable; empty stored rows do not establish upstream completeness.",
+        "Partner codes are business keys. Customer/order/payment identifiers, contacts, proof files, private notes and authentication fields are never returned.",
+        "Across separate databases the source snapshots are not atomic. Source modification time is not proof of synchronization.",
+        "Includes class A and class B orders exactly like the all-channel contribution helper. Cancelled/void orders are excluded. Recorded seller revenue includes unpaid receivables; it is not collected cash, net profit or recipient allocation.",
+        "Product facts use canonical line-price precedence and proportional revenue fallback. Product order counts count line occurrences and are not distinct-order counts. Annual buckets include any future-dated saved orders in that year."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "partner_contribution"
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2025,
+            "maximum": 2100
+          },
+          "partner_code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          }
+        },
+        "required": [
+          "report",
+          "year"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "partner_sales_summary",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "partners",
+      "source": "partner",
+      "canonical": "partner-sales-bootstrap.php::jg_partner_sales_normalize_order + jg_partner_sales_summary",
+      "date_basis": "Same native saved COALESCE(order_timestamp,created_at) date filter as /api/partner-sales; no UTC conversion. Payments are all current nonvoid receipts for the selected orders, not payment-date cash flow.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "Passive stored data only. No migration, schema preparation, payment backfill, stock refresh, remote fallback or business write is performed. Missing storage fails as unavailable; empty stored rows do not establish upstream completeness.",
+        "Partner codes are business keys. Customer/order/payment identifiers, contacts, proof files, private notes and authentication fields are never returned.",
+        "Across separate databases the source snapshots are not atomic. Source modification time is not proof of synchronization.",
+        "Excludes class_b_stock orders as the partner-sales screen does. Cancelled orders retain status counts but do not contribute active order value, paid amount or units.",
+        "Outstanding is max(order value minus current nonvoid receipts,0). Overpayment remains in paid amount; collection rate is capped at 100%. Zero-priced orders canonically classify as paid; missing/zero recorded values are separately flagged and are not proof of collection.",
+        "The UI can synchronize confirmed bill receipts on read. Reporting does not run that mutation; saved payment coverage remains unverified. No remote Store Ops fallback is contacted."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "partner_sales_summary"
+            ]
+          },
+          "start_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "end_date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "partner_code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          }
+        },
+        "required": [
+          "report",
+          "start_date",
+          "end_date"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "partner_pricing",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "partners",
+      "source": "partner",
+      "canonical": "partner-pricing.php::jg_partner_effective_sku_price + partner-catalog-values.php::jg_partner_auth_catalog_record",
+      "date_basis": "Current stored selected SKU membership, custom prices or discount-on-list-price; no historical price reconstruction.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "Passive stored data only. No migration, schema preparation, payment backfill, stock refresh, remote fallback or business write is performed. Missing storage fails as unavailable; empty stored rows do not establish upstream completeness.",
+        "Partner codes are business keys. Customer/order/payment identifiers, contacts, proof files, private notes and authentication fields are never returned.",
+        "Across separate databases the source snapshots are not atomic. Source modification time is not proof of synchronization.",
+        "Discount-enabled prices use list price × (1−normalized percent), rounded to 2 decimals. Otherwise the saved custom SKU price is used. A missing custom price remains explicitly unavailable even though the canonical fallback is zero; an explicit 100% discount may validly price at zero.",
+        "Missing SKU/dimension rows are listed explicitly. No Astra stock synchronization occurs, and saved stock is not a commitment or availability guarantee."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "partner_pricing"
+            ]
+          },
+          "partner_code": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$"
+          }
+        },
+        "required": [
+          "report",
+          "partner_code"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
+    },
+    {
+      "id": "sku_effective_costs",
+      "source_kind": "canonical_report",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "stock",
+      "source": "sku",
+      "canonical": "product-costs-read-service.php::jg_product_costs_read_payload; sku-db-bootstrap.php::jg_sku_effective_cogs_plan and jg_sku_cogs_at",
+      "date_basis": "Packing uses the selected Jakarta business year/month. Effective COGS uses effective_at as Jakarta local wall time, defaulting to the current Jakarta instant independently of the packing month. Recorded history is UTC; mixed legacy effective dates are preserved exactly as the dashboard resolves them.",
+      "scope": "jg:dashboard:read",
+      "limitations": [
+        "This is the shared configured SKU catalog, not marketplace/account-specific cost attribution. No sales, stock deduction, payment or write is performed.",
+        "Effective costs are restated from schedules recorded now, including retroactive changes; they are not a historical database snapshot as known at the effective date.",
+        "ASTRA-linked selling sizes use base-SKU history and the canonical scaling ratio; arbitrary per-variant stored values may differ until normal app synchronization runs.",
+        "A zero COGS value is returned as zero with a review flag, since the schema cannot distinguish intentional zero from an unconfigured default. Missing required packing is null; explicitly saved zero packing is complete.",
+        "Packing not required contributes zero to combined unit cost even if an old stored packing row remains. Grouped UI readiness may differ from per-SKU readiness when flavor prices differ.",
+        "Legacy packing import and current-COGS synchronization are not run. Pending legacy import is disclosed; raw source absence or read failure is unavailable, never zero.",
+        "Unit rates and their sum are not realized period COGS, profit, purchase outlay or available cash. Historical completeness and supplier/source synchronization remain unverified.",
+        "This report covers the current SKU catalog. History or packing rows for retired/unmapped SKUs remain in their physical table readers; their unmatched counts are disclosed."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "sku_effective_costs"
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2025,
+            "maximum": 2100,
+            "description": "Selected packing configuration year; future configured periods are allowed, not a claim of realized cost."
+          },
+          "month": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 12,
+            "description": "Selected packing configuration month, independent of the COGS effective instant."
+          },
+          "effective_at": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}$",
+            "description": "COGS evaluation instant in Asia/Jakarta, 2025–2100; defaults to now. Future instants evaluate saved schedules and do not establish realized cost."
+          },
+          "sku": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "include_history": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 200
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          }
+        },
+        "required": [
+          "report",
+          "year",
+          "month"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Requires passing fixture/security/build tests plus live tool-discovery and source verification; registry presence alone is insufficient."
     }
   ],
   "reviewed_database_view_names": [
@@ -11377,17 +12213,9 @@
       "classification": "remote_transport_requires_projected_reader"
     },
     {
-      "id": "api/api-health/index.php:file_get_contents:6ad2c42092a1b70b",
-      "file": "api/api-health/index.php",
-      "line": 43,
-      "reader": "jg_api_health_read_log",
-      "call": "file_get_contents",
-      "classification": "reviewed_persistent_or_transport_read"
-    },
-    {
       "id": "api/api-health/index.php:file_get_contents:7f3b105930502294",
       "file": "api/api-health/index.php",
-      "line": 120,
+      "line": 100,
       "reader": "jg_api_health_fetch",
       "call": "file_get_contents",
       "classification": "remote_transport_requires_projected_reader"
@@ -11499,7 +12327,7 @@
     {
       "id": "api/orders/index.php:file_get_contents:8477ede797e4f83a",
       "file": "api/orders/index.php",
-      "line": 3076,
+      "line": 3126,
       "reader": "jg_orders_location_aliases",
       "call": "file_get_contents",
       "classification": "reviewed_persistent_or_transport_read"
@@ -11507,7 +12335,7 @@
     {
       "id": "api/orders/index.php:file_get_contents:7f3b105930502294",
       "file": "api/orders/index.php",
-      "line": 3528,
+      "line": 3578,
       "reader": "jg_orders_fetch_json_with_timeout",
       "call": "file_get_contents",
       "classification": "remote_transport_requires_projected_reader"
@@ -11515,7 +12343,7 @@
     {
       "id": "api/orders/index.php:file_get_contents:6ad2c42092a1b70b",
       "file": "api/orders/index.php",
-      "line": 3764,
+      "line": 3816,
       "reader": "jg_orders_product_name_map",
       "call": "file_get_contents",
       "classification": "reviewed_persistent_or_transport_read"
@@ -11827,7 +12655,7 @@
     {
       "id": "api/zero-sales-proof/index.php:file_get_contents:6ad2c42092a1b70b",
       "file": "api/zero-sales-proof/index.php",
-      "line": 114,
+      "line": 115,
       "reader": "jg_zero_sales_proof_cache_read",
       "call": "file_get_contents",
       "classification": "reviewed_persistent_or_transport_read"
@@ -11835,7 +12663,7 @@
     {
       "id": "api/zero-sales-proof/index.php:file_get_contents:7f3b105930502294",
       "file": "api/zero-sales-proof/index.php",
-      "line": 200,
+      "line": 181,
       "reader": "jg_zero_sales_proof_marketplace_summary",
       "call": "file_get_contents",
       "classification": "remote_transport_requires_projected_reader"
@@ -11843,7 +12671,7 @@
     {
       "id": "api/zero-sales-proof/index.php:file_get_contents:6ad2c42092a1b70b",
       "file": "api/zero-sales-proof/index.php",
-      "line": 314,
+      "line": 295,
       "reader": "jg_zero_sales_proof_context_rows_from_file",
       "call": "file_get_contents",
       "classification": "reviewed_persistent_or_transport_read"
@@ -11851,7 +12679,7 @@
     {
       "id": "api/zero-sales-proof/index.php:file_get_contents:c690c275cc718aad",
       "file": "api/zero-sales-proof/index.php",
-      "line": 356,
+      "line": 337,
       "reader": "jg_zero_sales_proof_live_overlap",
       "call": "file_get_contents",
       "classification": "reviewed_persistent_or_transport_read"
@@ -11863,6 +12691,22 @@
       "reader": "zero_store_body",
       "call": "file_get_contents",
       "classification": "request_input_not_stored_business_source"
+    },
+    {
+      "id": "api-health-log-read.php:file_get_contents:6ad2c42092a1b70b",
+      "file": "api-health-log-read.php",
+      "line": 18,
+      "reader": "jg_api_health_read_log",
+      "call": "file_get_contents",
+      "classification": "reviewed_persistent_or_transport_read"
+    },
+    {
+      "id": "api-health-log-read.php:fopen:84c80b002c30eef0",
+      "file": "api-health-log-read.php",
+      "line": 41,
+      "reader": "jg_api_health_read_log_file_snapshot",
+      "call": "fopen",
+      "classification": "reviewed_persistent_or_transport_read"
     },
     {
       "id": "bin/big-set-preflight.php:file_get_contents:7f3b105930502294",
@@ -12011,7 +12855,7 @@
     {
       "id": "website-commerce-bootstrap.php:fopen:ead35f8bf33b1ac6",
       "file": "website-commerce-bootstrap.php",
-      "line": 1010,
+      "line": 1023,
       "reader": "jg_website_store_label",
       "call": "fopen",
       "classification": "private_proof_or_upload_excluded"
@@ -12019,7 +12863,7 @@
     {
       "id": "website-commerce-bootstrap.php:file_get_contents:7f3b105930502294",
       "file": "website-commerce-bootstrap.php",
-      "line": 1134,
+      "line": 1147,
       "reader": "jg_website_http_json",
       "call": "file_get_contents",
       "classification": "remote_transport_requires_projected_reader"
@@ -12027,7 +12871,7 @@
     {
       "id": "website-commerce-bootstrap.php:file_get_contents:5c33f89e2a056130",
       "file": "website-commerce-bootstrap.php",
-      "line": 1958,
+      "line": 1971,
       "reader": "jg_hard_set_readiness",
       "call": "file_get_contents",
       "classification": "reviewed_persistent_or_transport_read"
@@ -12035,7 +12879,7 @@
     {
       "id": "website-commerce-bootstrap.php:file_get_contents:3f233c1e7f8bcdf0",
       "file": "website-commerce-bootstrap.php",
-      "line": 1979,
+      "line": 1992,
       "reader": "jg_hard_set_readiness",
       "call": "file_get_contents",
       "classification": "reviewed_persistent_or_transport_read"
@@ -12112,6 +12956,7 @@
       "api/zero-store/index.php",
       "api/zero-website-orders/index.php",
       "api-health/index.php",
+      "api-health-log-read.php",
       "astra-stock-bootstrap.php",
       "auth.php",
       "back-dash/index.php",
@@ -12140,6 +12985,7 @@
       "order-reporting-primitives.php",
       "partner-auth-catalog.php",
       "partner-billing-bootstrap.php",
+      "partner-catalog-values.php",
       "partner-db-bootstrap.php",
       "partner-pricing.php",
       "partner-profile/index.php",
@@ -12153,6 +12999,7 @@
       "product-breakdowns/index.php",
       "product-costs/index.php",
       "product-costs-bootstrap.php",
+      "product-costs-read-service.php",
       "product-purchases/index.php",
       "product-purchases-bootstrap.php",
       "product-purchases-reporting-service.php",
@@ -12163,6 +13010,7 @@
       "profit-share-bootstrap.php",
       "purchase-orders-bootstrap.php",
       "sales-flavor-scope.php",
+      "sales-proof-reporting.php",
       "sales-summary-stability.php",
       "sku-auth.php",
       "sku-db/index.php",
@@ -12200,6 +13048,8 @@
       "src/GenericMarketplaceOrderService.php",
       "src/GenericMarketplaceTokenRepository.php",
       "src/Http.php",
+      "src/IngestReportCatalog.php",
+      "src/IngestStoredReports.php",
       "src/MarketplaceDeadline.php",
       "src/MarketplaceFulfillmentGateway.php",
       "src/MarketplaceFulfillmentPolicy.php",
@@ -12235,7 +13085,8 @@
       "src/TikTokHandoverPolicy.php",
       "src/ads-history-route.php",
       "src/ads-monitor-route.php",
-      "src/bootstrap.php"
+      "src/bootstrap.php",
+      "src/ingest-reports-route.php"
     ]
   },
   "known_live_findings_not_runtime_claims": [
@@ -12310,71 +13161,93 @@
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     },
     {
-      "gap_category": "implementable",
+      "gap_category": null,
       "id": "feature_04",
       "family": "partners",
       "feature": "Partner all-channel contribution",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "interfaces": [
-        "jg_query_table:partner_orders",
-        "jg_business_report:sales_snapshot"
+        "jg_business_report:partner_contribution"
       ],
       "canonical_source": "`partner-sales-summary.php`: `jg_partner_sales_summary_orders(PDO $pdo,int $year)` and pure `jg_partner_sales_summary_facts(array $orders,int $year)`; merged in sales endpoint",
       "evidence": [
         {
           "file": "partner-sales-summary.php"
+        },
+        {
+          "file": "assistant/lib/read-services/partner-parity.php"
         }
       ],
-      "remaining_gap": "Standalone canonical partner contribution drilldown is not yet verified; complete snapshot includes contribution.",
+      "remaining_gap": null,
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
-      "scope": "Existing dashboard or narrower legacy product scope as appropriate"
+      "scope": "Existing dashboard or narrower legacy product scope as appropriate",
+      "implemented_canonical_helpers": [
+        "partner-sales-summary.php::jg_partner_sales_summary_facts"
+      ]
     },
     {
-      "gap_category": "implementable",
+      "gap_category": null,
       "id": "feature_05",
       "family": "sales",
       "feature": "Daily sales by channel/account; /api/orders/?action=daily_summary",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "interfaces": [
-        "jg_query_table:sales_orders"
+        "jg_business_report:sales_daily"
       ],
       "canonical_source": "`api/orders/index.php`: `jg_orders_daily_summary_payload(PDO $pdo,string $startDate,string $endDate,bool $forceRepair=false)`; `jg_orders_daily_add_order_rows(array &$days,array &$accounts,array $rows)`",
       "evidence": [
         {
           "file": "api/orders/index.php"
+        },
+        {
+          "file": "assistant/lib/read-services/sales-parity-metrics.php"
         }
       ],
-      "remaining_gap": "Date/channel grouped facts are available; exact canonical daily-screen parity is not yet verified.",
+      "remaining_gap": null,
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
-      "scope": "Existing dashboard or narrower legacy product scope as appropriate"
+      "scope": "Existing dashboard or narrower legacy product scope as appropriate",
+      "implemented_canonical_helpers": [
+        "api/orders/index.php::jg_orders_daily_marketplace_rows + jg_orders_daily_summary_from_inputs + scoped canonical website/direct/partner readers"
+      ]
     },
     {
-      "gap_category": "implementable",
+      "gap_category": null,
       "id": "feature_06",
       "family": "sales",
       "feature": "Product/flavor/size rankings and history; /api/orders/, UI dashboard/product-analytics/",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "interfaces": [
-        "jg_query_table:sales_lines",
-        "jg_product_report"
+        "jg_business_report:product_sales_catalog",
+        "jg_business_report:product_sales_analytics",
+        "jg_business_report:sales_flavor_breakdown"
       ],
       "canonical_source": "`api/orders/index.php`: `jg_orders_product_breakdown_catalog_payload`, `jg_orders_aggregate_product_flavor_rows`, `jg_orders_product_flavor_breakdown_payload`, `jg_orders_aggregate_product_analytics_rows`, `jg_orders_product_analytics_payload`",
       "evidence": [
         {
           "file": "api/orders/index.php"
+        },
+        {
+          "file": "assistant/lib/read-services/sales-parity-metrics.php"
         }
       ],
-      "remaining_gap": "Safe product facts exist; canonical rankings, comparisons and full history adapters are not yet verified.",
+      "remaining_gap": null,
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
-      "scope": "Existing dashboard or narrower legacy product scope as appropriate"
+      "scope": "Existing dashboard or narrower legacy product scope as appropriate",
+      "implemented_canonical_helpers": [
+        "api/orders/index.php::jg_orders_product_breakdown_catalog_payload",
+        "api/orders/index.php::jg_orders_product_analytics_marketplace_rows + jg_orders_aggregate_product_analytics_rows + jg_orders_analytics_forecast; shared SKU lookup and scoped canonical source readers",
+        "api/orders/index.php::jg_orders_product_flavor_marketplace_rows + jg_orders_aggregate_product_flavor_rows"
+      ]
     },
     {
-      "gap_category": "implementable",
+      "gap_category": null,
       "id": "feature_07",
       "family": "sales",
       "feature": "Product demand forecast",
-      "classification": "projection_needs_semantic",
-      "interfaces": [],
+      "classification": "mapped",
+      "interfaces": [
+        "jg_business_report:product_sales_analytics"
+      ],
       "canonical_source": "`api/orders/index.php`: `jg_orders_analytics_forecast`; UI `dashboard/product-analytics/product-analytics.js` consumes forecast, actual history and comparisons",
       "evidence": [
         {
@@ -12382,30 +13255,42 @@
         },
         {
           "file": "api/orders/index.php"
+        },
+        {
+          "file": "assistant/lib/read-services/sales-parity-metrics.php"
         }
       ],
-      "remaining_gap": "Product analytics forecast is distinct from inventory demand forecast; no standalone canonical product forecast adapter verified.",
+      "remaining_gap": null,
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
-      "scope": "Existing dashboard or narrower legacy product scope as appropriate"
+      "scope": "Existing dashboard or narrower legacy product scope as appropriate",
+      "implemented_canonical_helpers": [
+        "api/orders/index.php::jg_orders_product_analytics_marketplace_rows + jg_orders_aggregate_product_analytics_rows + jg_orders_analytics_forecast; shared SKU lookup and scoped canonical source readers"
+      ]
     },
     {
-      "gap_category": "implementable",
+      "gap_category": null,
       "id": "feature_08",
       "family": "sales",
       "feature": "Regional order distribution; /api/orders/?action=location_summary",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "interfaces": [
-        "jg_query_table:dashboard_order_location_cache"
+        "jg_business_report:sales_provinces"
       ],
       "canonical_source": "`api/orders/index.php`: `jg_orders_location_summary_payload(PDO $pdo,string $startDate,string $endDate,bool $forceRefresh=false)`, pure `jg_orders_location_aggregate_payload(array $provinceCounts,int $totalOrders,int $unmatchedOrders,array $summary)`",
       "evidence": [
         {
           "file": "api/orders/index.php"
+        },
+        {
+          "file": "assistant/lib/read-services/sales-parity-metrics.php"
         }
       ],
-      "remaining_gap": "Cache metadata exists; province-count payload needs bounded passive projection without addresses or cache/geocoder writes.",
+      "remaining_gap": null,
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
-      "scope": "Existing dashboard or narrower legacy product scope as appropriate"
+      "scope": "Existing dashboard or narrower legacy product scope as appropriate",
+      "implemented_canonical_helpers": [
+        "api/orders/index.php::jg_orders_location_aggregate_rows + jg_orders_location_aggregate_payload; deterministic local province/locality aliases"
+      ]
     },
     {
       "gap_category": null,
@@ -12478,34 +13363,44 @@
       "scope": "Finance scope plus recipient allowlist"
     },
     {
-      "gap_category": "implementable",
+      "gap_category": null,
       "id": "feature_12",
       "family": "allocation",
       "feature": "Annual/multiple-month recipient view; /api/profit-share/",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "interfaces": [
-        "jg_monthly_profit"
+        "jg_finance_report:allocation_statement"
       ],
       "canonical_source": "`profit-share-bootstrap.php`: `jg_profit_share_build(string $recipient,int $year,DateTimeImmutable $now,callable $salesForYear,callable $accountingForYear,callable $treeForMonth)`; report-month selection helper",
       "evidence": [
         {
           "file": "profit-share-bootstrap.php"
+        },
+        {
+          "file": "assistant/lib/finance-parity.php"
         }
       ],
-      "remaining_gap": "Repeated authorized monthly calls are possible; no atomic annual allocation statement.",
+      "remaining_gap": null,
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
-      "scope": "Finance scope plus recipient allowlist"
+      "scope": "Finance scope; exact recipient allowlist for allocation statements",
+      "implemented_canonical_helpers": [
+        "monthlyProfitProjection / jg_profit_share_combine / jg_profit_loss_settings"
+      ]
     },
     {
-      "gap_category": "implementable",
+      "gap_category": null,
       "id": "feature_13",
       "family": "accounting",
       "feature": "Legacy P&L manual entries, SKU inputs, syrup groups, product cards and statement definitions; /api/profit-loss/",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "interfaces": [
+        "jg_finance_report:legacy_profit_loss",
+        "jg_finance_report:editor_profit_loss",
         "jg_query_table:profit_loss_entries",
+        "jg_query_table:profit_loss_sku_inputs",
         "jg_query_table:profit_loss_syrup_groups",
-        "jg_query_table:profit_loss_product_cards"
+        "jg_query_table:profit_loss_product_cards",
+        "jg_query_table:profit_loss_statement_metrics"
       ],
       "canonical_source": "`profit-loss-bootstrap.php`: `jg_profit_loss_syrup_groups(PDO)`, `jg_profit_loss_product_cards(PDO)`, `jg_profit_loss_statement_metrics(PDO)`, `jg_profit_loss_legacy_year(int)`; UI `profit-loss/profit-loss.js`",
       "evidence": [
@@ -12514,11 +13409,18 @@
         },
         {
           "file": "profit-loss-bootstrap.php"
+        },
+        {
+          "file": "assistant/lib/finance-parity.php"
         }
       ],
-      "remaining_gap": "Safe inputs/display definitions mapped; legacy file values and editor calculation need bounded semantic adapter.",
+      "remaining_gap": null,
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
-      "scope": "Existing dashboard or narrower legacy product scope as appropriate"
+      "scope": "Finance scope for computed P&L; existing dashboard scope for safe input projections",
+      "implemented_canonical_helpers": [
+        "jg_profit_loss_legacy_year_from_data; profit-loss/profit-loss.js::calculateStatement legacy branch",
+        "profit-loss/profit-loss.js::calculateProducts, catalogCogsForMonth, calculateStatement; api/profit-loss catalog/ASTRA preparation"
+      ]
     },
     {
       "gap_category": null,
@@ -12851,7 +13753,7 @@
           "file": "accounting-bootstrap.php"
         }
       ],
-      "remaining_gap": "No canonical dashboard affordability model was found in the reviewed source. A new financial-advice calculation is deliberately unsupported in this source-parity release; balances and allocations cannot be treated as available purchasing funds.",
+      "remaining_gap": "No canonical dashboard affordability model was found in reviewed source. A new financial-advice calculation is deliberately unsupported in this source-parity release; balances and allocations cannot be treated as available purchasing funds.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     },
@@ -12897,44 +13799,60 @@
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     },
     {
-      "gap_category": "implementable",
+      "gap_category": null,
       "id": "feature_32",
       "family": "stock",
       "feature": "COGS history, effective cost schedules and packing completeness; /api/product-costs/",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "interfaces": [
-        "jg_query_table:sku_cogs_history",
-        "jg_business_report:packing_costs"
+        "jg_business_report:sku_effective_costs",
+        "jg_business_report:packing_costs",
+        "jg_query_table:sku_cogs_history"
       ],
       "canonical_source": "`product-costs-bootstrap.php`: `jg_product_costs_period(int $year,int $month)`, `jg_product_costs_packing_lookup(PDO,int $year)`; endpoint `jg_product_costs_catalog(PDO)` and `jg_product_costs_response(PDO,int $year,int $month): never`",
       "evidence": [
         {
           "file": "product-costs-bootstrap.php"
+        },
+        {
+          "file": "assistant/lib/read-services/cost-parity-metrics.php"
+        },
+        {
+          "file": "product-costs-read-service.php"
         }
       ],
-      "remaining_gap": "Stored cost schedules and configured packing mapped; a complete SKU effective-cost/packing completeness response is not yet independently verified.",
+      "remaining_gap": null,
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
-      "scope": "Existing dashboard or narrower legacy product scope as appropriate"
+      "scope": "Existing dashboard or narrower legacy product scope as appropriate",
+      "implemented_canonical_helpers": [
+        "product-costs-read-service.php::jg_product_costs_read_payload; sku-db-bootstrap.php::jg_sku_effective_cogs_plan and jg_sku_cogs_at",
+        "product-costs-bootstrap.php::jg_product_costs_packing_lookup"
+      ]
     },
     {
-      "gap_category": "implementable",
+      "gap_category": null,
       "id": "feature_33",
       "family": "partners",
       "feature": "Partner order/payment sales summary; /api/partner-sales/",
-      "classification": "projection_needs_semantic",
+      "classification": "mapped",
       "interfaces": [
-        "jg_query_table:partner_orders",
-        "jg_query_table:partner_order_payments"
+        "jg_business_report:partner_sales_summary"
       ],
       "canonical_source": "`partner-sales-bootstrap.php`: pure `jg_partner_sales_normalize_order(array $row,array $payments)`, `jg_partner_sales_summary(array $orders)`; endpoint database/Store Ops loaders",
       "evidence": [
         {
           "file": "partner-sales-bootstrap.php"
+        },
+        {
+          "file": "assistant/lib/read-services/partner-parity.php"
         }
       ],
-      "remaining_gap": "Order/payment facts mapped; full canonical partner-sales screen composition needs verification; table absence cannot mean zero receipts.",
+      "remaining_gap": null,
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
-      "scope": "Existing dashboard or narrower legacy product scope as appropriate"
+      "scope": "Existing dashboard or narrower legacy product scope as appropriate",
+      "implemented_canonical_helpers": [
+        "partner-sales-bootstrap.php::jg_partner_sales_normalize_order + jg_partner_sales_summary"
+      ]
     },
     {
       "gap_category": null,
@@ -13013,7 +13931,7 @@
           "file": "ads-bootstrap.php"
         }
       ],
-      "remaining_gap": "All-status stored history bridge implemented locally. Live route/catalog verification pending; product-to-campaign mapping, stored balance, monitor observations and full canonical ad economics remain separate gaps.",
+      "remaining_gap": "All-status stored history bridge exists. The twelve-source passive contract now includes item mapping, stored balances and monitor observations; bridge integration and hosted verification remain pending. Full canonical ad economics must compose these verified inputs rather than infer spend from bills/topups.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     },
@@ -13035,7 +13953,7 @@
           "file": "ad-monitor-bootstrap.php"
         }
       ],
-      "remaining_gap": "Local thresholds mapped; actual stored ad balance/observation is external and requires passive reader.",
+      "remaining_gap": "Local thresholds are mapped. The passive stored-balance contract is implemented locally; MCP bridge, actual hosted balance/observation verification and approved account scope remain pending.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     },
@@ -13205,23 +14123,33 @@
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     },
     {
-      "gap_category": "implementable",
+      "gap_category": "external_passive_reader_blocked",
       "id": "feature_47",
       "family": "freshness",
       "feature": "API and ingestion health / existing diagnostic logs",
       "classification": "projection_needs_semantic",
       "interfaces": [
+        "jg_business_report:api_health_history",
         "jg_query_table:dashboard_wallet_release_sync_logs"
       ],
       "canonical_source": "`/api/api-health/`: `jg_api_health_read_log(): array`, `jg_api_health_run_checks(): array`, `jg_api_health_http_check(array $check): array`",
       "evidence": [
         {
           "file": "api/api-health/index.php"
+        },
+        {
+          "file": "assistant/lib/read-services/health-metrics.php"
+        },
+        {
+          "file": "api-health-log-read.php"
         }
       ],
-      "remaining_gap": "Local wallet sync observations mapped; ingest sync ledger and passive sanitized health-log reader remain external/local gaps.",
+      "remaining_gap": "Passive local API failure history is implemented. marketplace_sync_runs now has a local passive contract; bridge and hosted verification remain pending, and global rows require existing full-source authority. Neither failure timestamps nor empty logs establish successful complete ingestion.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
-      "scope": "Existing dashboard or narrower legacy product scope as appropriate"
+      "scope": "Existing dashboard or narrower legacy product scope as appropriate",
+      "implemented_canonical_helpers": [
+        "api-health-log-read.php::jg_api_health_read_log_snapshot / jg_api_health_read_log; api/api-health/index.php saved failure log"
+      ]
     },
     {
       "gap_category": "external_passive_reader_blocked",
@@ -13244,5 +14172,690 @@
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     }
-  ]
+  ],
+  "finance_reports": [
+    {
+      "id": "allocation_statement",
+      "source_kind": "canonical_finance_report",
+      "interface": "jg_finance_report:allocation_statement",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "accounting",
+      "source": "sales_snapshot_and_analytics",
+      "canonical": "monthlyProfitProjection / jg_profit_share_combine / jg_profit_loss_settings",
+      "date_basis": "Dashboard calendar month, posted accounting business_month and that month’s saved allocation rule.",
+      "scope": "jg:finance:read",
+      "recipient_required": true,
+      "limitations": [
+        "Exact owner-approved recipient only. Stored sales snapshot and accounting do not form an atomic cross-source snapshot.",
+        "Rule uncertainty makes allocated amount unknown; allocation is not cash or payment."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "allocation_statement"
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2025,
+            "maximum": 2100
+          },
+          "recipient": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "description": "Exact recipient included in the current owner-approved finance grant. Branch and Brent are distinct."
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "minItems": 1,
+            "maxItems": 12,
+            "uniqueItems": true,
+            "description": "Selected months in this year; omitted means January through the current month, or all twelve for a past year. Future periods are rejected."
+          }
+        },
+        "required": [
+          "year",
+          "recipient",
+          "report"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Fixture and authorization tests plus actual deployed/callable tool and source verification. Never expose finance calculations through the dashboard-only report tool."
+    },
+    {
+      "id": "legacy_profit_loss",
+      "source_kind": "canonical_finance_report",
+      "interface": "jg_finance_report:legacy_profit_loss",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "accounting",
+      "source": "legacy_pnl_file",
+      "canonical": "jg_profit_loss_legacy_year_from_data; profit-loss/profit-loss.js::calculateStatement legacy branch",
+      "date_basis": "Stored legacy spreadsheet year/month; no transaction-date inference.",
+      "scope": "jg:finance:read",
+      "recipient_required": false,
+      "limitations": [
+        "Stored legacy composition, not current profit-share allocation. Named-recipient allocation requires the allocation_statement report and exact approved recipient.",
+        "Omitted months selects calendar year to date; missing selected legacy months fail explicitly. For the partial 2026 legacy file select months 1 through 5.",
+        "Private workbook paths, entry labels/notes and unknown fields are excluded; product summary/detail layers overlap."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "legacy_profit_loss"
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2024,
+            "maximum": 2100
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "minItems": 1,
+            "maxItems": 12,
+            "uniqueItems": true,
+            "description": "Selected months in this year; omitted means January through the current month, or all twelve for a past year. Future periods are rejected."
+          }
+        },
+        "required": [
+          "report",
+          "year"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Fixture and authorization tests plus actual deployed/callable tool and source verification. Never expose finance calculations through the dashboard-only report tool."
+    },
+    {
+      "id": "editor_profit_loss",
+      "source_kind": "canonical_finance_report",
+      "interface": "jg_finance_report:editor_profit_loss",
+      "classification": "mapped",
+      "implementation_status": "implemented",
+      "family": "accounting",
+      "source": "editor_sales_sku_inputs_and_legacy",
+      "canonical": "profit-loss/profit-loss.js::calculateProducts, catalogCogsForMonth, calculateStatement; api/profit-loss catalog/ASTRA preparation",
+      "date_basis": "Editor calendar month; COGS uses that editor’s month-end history selection, and manual inputs use saved year/month.",
+      "scope": "jg:finance:read",
+      "recipient_required": false,
+      "limitations": [
+        "This is the SKU/manual-input P&L editor, distinct from the accounting P&L used for recipient allocation.",
+        "Missing sources fail closed; absent overrides use documented editor defaults and missing catalog/COGS coverage is explicit.",
+        "Historical legacy months use stored spreadsheet statements; product summary and detail layers overlap. No allocation tree or named-recipient result.",
+        "Sales, analytics, SKU and fixed files do not share an atomic snapshot. No refresh or final-close claim."
+      ],
+      "remaining_gap": null,
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "editor_profit_loss"
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2024,
+            "maximum": 2100
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "minItems": 1,
+            "maxItems": 12,
+            "uniqueItems": true,
+            "description": "Selected months in this year; omitted means January through the current month, or all twelve for a past year. Future periods are rejected."
+          }
+        },
+        "required": [
+          "report",
+          "year"
+        ],
+        "additionalProperties": false
+      },
+      "release_gate": "Fixture and authorization tests plus actual deployed/callable tool and source verification. Never expose finance calculations through the dashboard-only report tool."
+    }
+  ],
+  "remaining_source_limitations": [
+    {
+      "id": "saved_public_proof_components",
+      "kind": "information_not_stored",
+      "interfaces": [
+        "jg_business_report:sales_proof_composition"
+      ],
+      "reason": "Saved public cache contains rounded company-wide claim and context flag only. Exact units, brand partition and source/context/overlap components cannot be reconstructed from it without additional canonical inputs.",
+      "evidence": [
+        {
+          "file": "sales-proof-reporting.php"
+        },
+        {
+          "file": "assistant/lib/read-services/sales-parity-metrics.php"
+        }
+      ]
+    },
+    {
+      "id": "upstream_affiliate_program",
+      "kind": "external_passive_reader_blocked",
+      "interfaces": [
+        "jg_business_report:traffic_analytics"
+      ],
+      "reason": "Local landing/affiliate traffic aggregates are mapped. The separate /admin-affiliates.php program source used by api/affiliates is not a verified passive reporting contract and is not one of the twelve ingest database tables.",
+      "evidence": [
+        {
+          "file": "api/affiliates/index.php"
+        }
+      ]
+    },
+    {
+      "id": "remote_partner_receipt_fallback",
+      "kind": "external_passive_reader_blocked",
+      "interfaces": [
+        "jg_business_report:partner_sales_summary"
+      ],
+      "reason": "Stored orders and nonvoid receipts are mapped. No mutating receipt backfill or remote Store Ops fallback occurs; stored receipt coverage is not certified complete.",
+      "evidence": [
+        {
+          "file": "api/partner-sales/index.php"
+        },
+        {
+          "file": "assistant/lib/read-services/partner-parity.php"
+        }
+      ]
+    }
+  ],
+  "pending_remote_contract": {
+    "schema_version": 1,
+    "availability_verified": false,
+    "implementation_state": "source_contract_implemented_mcp_bridge_and_hosted_verification_pending",
+    "sources": [
+      {
+        "source": "marketplace_orders",
+        "scope": "account",
+        "grain": "one stored marketplace order",
+        "date_mode": "utc_history",
+        "columns": {
+          "id": "id",
+          "platform": "text",
+          "account_key": "text",
+          "company": "text",
+          "order_id": "text",
+          "order_status": "text",
+          "currency": "text",
+          "funds_release_status": "text",
+          "net_revenue": "decimal",
+          "gross_revenue": "decimal",
+          "marketplace_fees": "decimal",
+          "funds_released_amount": "decimal",
+          "funds_released": "bool",
+          "item_count": "int",
+          "ordered_at": "datetime",
+          "platform_updated_at": "datetime",
+          "funds_released_at": "datetime",
+          "created_at": "datetime",
+          "updated_at": "datetime"
+        },
+        "group_by": [
+          "order_status",
+          "currency",
+          "funds_released"
+        ],
+        "additive_metrics": [
+          "net_revenue",
+          "gross_revenue",
+          "marketplace_fees",
+          "funds_released_amount",
+          "item_count"
+        ],
+        "views": [
+          "rows",
+          "summary",
+          "groups"
+        ],
+        "limitations": [
+          "All stored order statuses are included; use status filters for accounting comparisons. Recorded order revenue is not settled cash or audited revenue."
+        ]
+      },
+      {
+        "source": "marketplace_order_items",
+        "scope": "account",
+        "grain": "one stored order item",
+        "date_mode": "utc_history",
+        "columns": {
+          "id": "id",
+          "order_row_id": "id",
+          "platform": "text",
+          "account_key": "text",
+          "company": "text",
+          "order_id": "text",
+          "item_key": "text",
+          "sku": "text",
+          "product_name": "text",
+          "product_type": "text",
+          "flavor": "text",
+          "currency": "text",
+          "quantity": "int",
+          "cogs_quantity": "int",
+          "is_free_gift": "bool",
+          "net_revenue": "decimal",
+          "gross_revenue": "decimal",
+          "ordered_at": "datetime",
+          "created_at": "datetime",
+          "updated_at": "datetime",
+          "parent_order_status": "text",
+          "parent_found": "bool"
+        },
+        "group_by": [
+          "product_type",
+          "flavor",
+          "sku",
+          "currency",
+          "is_free_gift",
+          "parent_order_status"
+        ],
+        "additive_metrics": [
+          "quantity",
+          "cogs_quantity",
+          "net_revenue",
+          "gross_revenue"
+        ],
+        "views": [
+          "rows",
+          "summary",
+          "groups"
+        ],
+        "limitations": [
+          "All item statuses retained. Parent status is null when matching account/platform metadata is absent. Item revenue must not be added to order revenue. Orders cannot be counted by adding item rows."
+        ]
+      },
+      {
+        "source": "marketplace_order_monthly_rollups",
+        "scope": "account",
+        "grain": "one account/currency/Jakarta-month rollup",
+        "date_mode": "business_month",
+        "columns": {
+          "year": "int",
+          "month": "int",
+          "orders": "int",
+          "item_count": "int",
+          "platform": "text",
+          "account_key": "text",
+          "company": "text",
+          "currency": "text",
+          "net_revenue": "decimal",
+          "gross_revenue": "decimal",
+          "marketplace_fees": "decimal",
+          "last_order_at": "datetime",
+          "updated_at": "datetime"
+        },
+        "group_by": [
+          "year",
+          "month",
+          "currency"
+        ],
+        "additive_metrics": [
+          "orders",
+          "item_count",
+          "net_revenue",
+          "gross_revenue",
+          "marketplace_fees"
+        ],
+        "views": [
+          "rows",
+          "summary",
+          "groups"
+        ],
+        "limitations": [
+          "Saved Jakarta-month rollups exclude statuses matching CANCEL|UNPAID|REFUND|RETURN|REJECT|FAILED|EXPIRED|CLOSED in their canonical writer. Current month may be partial; do not add rollups to raw orders/items."
+        ]
+      },
+      {
+        "source": "marketplace_order_product_monthly_rollups",
+        "scope": "account",
+        "grain": "one product/flavor/SKU/account/currency/Jakarta-month rollup",
+        "date_mode": "business_month",
+        "columns": {
+          "year": "int",
+          "month": "int",
+          "orders": "int",
+          "quantity": "int",
+          "cogs_quantity": "int",
+          "platform": "text",
+          "account_key": "text",
+          "product_type": "text",
+          "flavor": "text",
+          "sku": "text",
+          "product_name": "text",
+          "currency": "text",
+          "net_revenue": "decimal",
+          "gross_revenue": "decimal",
+          "updated_at": "datetime"
+        },
+        "group_by": [
+          "year",
+          "month",
+          "currency",
+          "product_type",
+          "flavor",
+          "sku"
+        ],
+        "additive_metrics": [
+          "quantity",
+          "cogs_quantity",
+          "net_revenue",
+          "gross_revenue"
+        ],
+        "views": [
+          "rows",
+          "summary",
+          "groups"
+        ],
+        "limitations": [
+          "Saved Jakarta-month rollups exclude statuses matching CANCEL|UNPAID|REFUND|RETURN|REJECT|FAILED|EXPIRED|CLOSED in their canonical writer. Current month may be partial; do not add rollups to raw orders/items.",
+          "Product orders overlap across products; orders are deliberately not an additive aggregate."
+        ]
+      },
+      {
+        "source": "marketplace_sync_runs",
+        "scope": "global",
+        "grain": "one global marketplace sync run",
+        "date_mode": "utc_history",
+        "columns": {
+          "id": "id",
+          "mode": "text",
+          "status": "text",
+          "stored": "int",
+          "accounts_checked": "int",
+          "accounts_ok": "int",
+          "from_at": "datetime",
+          "to_at": "datetime",
+          "started_at": "datetime",
+          "finished_at": "datetime",
+          "has_error": "bool"
+        },
+        "group_by": [
+          "mode",
+          "status"
+        ],
+        "additive_metrics": [],
+        "views": [
+          "rows",
+          "summary",
+          "groups"
+        ],
+        "limitations": [
+          "This unpartitioned ledger spans all worker accounts, including historical scope. It cannot be attributed to a selected account. stored is repeated processing work, not distinct orders. Run success does not prove complete history."
+        ]
+      },
+      {
+        "source": "marketplace_fulfillment_orders",
+        "scope": "account",
+        "grain": "one current fulfillment order/package state",
+        "date_mode": "utc_history",
+        "columns": {
+          "id": "id",
+          "platform": "text",
+          "account_key": "text",
+          "order_id": "text",
+          "package_id": "text",
+          "marketplace_order_status": "text",
+          "marketplace_package_status": "text",
+          "workflow_status": "text",
+          "shipping_provider_name": "text",
+          "handover_method": "text",
+          "exception_status": "text",
+          "shipment_arranged": "bool",
+          "label_ready": "bool",
+          "is_listed": "bool",
+          "is_processed": "bool",
+          "pickup_confirmed_at": "datetime",
+          "shipment_arranged_at": "datetime",
+          "arrange_attempted_at": "datetime",
+          "handover_decided_at": "datetime",
+          "handover_scheduled_start_at": "datetime",
+          "handover_scheduled_end_at": "datetime",
+          "label_downloaded_at": "datetime",
+          "label_printed_at": "datetime",
+          "label_disposed_at": "datetime",
+          "processed_at": "datetime",
+          "created_at": "datetime",
+          "updated_at": "datetime",
+          "has_error": "bool"
+        },
+        "group_by": [
+          "marketplace_order_status",
+          "marketplace_package_status",
+          "workflow_status",
+          "shipping_provider_name",
+          "handover_method",
+          "exception_status",
+          "shipment_arranged",
+          "label_ready",
+          "is_listed",
+          "is_processed"
+        ],
+        "additive_metrics": [
+          "shipment_arranged",
+          "label_ready",
+          "is_listed",
+          "is_processed"
+        ],
+        "views": [
+          "rows",
+          "summary",
+          "groups"
+        ],
+        "limitations": [
+          "Date filter is last stored update time of current package state, not delivery date or event history. Flags describe stored processing/label readiness only; shipment arrangement does not prove delivery or current upstream readiness. Packages may share an order ID."
+        ]
+      },
+      {
+        "source": "marketplace_fulfillment_jobs",
+        "scope": "account",
+        "grain": "one stored fulfillment job",
+        "date_mode": "utc_history",
+        "columns": {
+          "id": "id",
+          "fulfillment_order_id": "id",
+          "job_type": "text",
+          "status": "text",
+          "attempts": "int",
+          "max_attempts": "int",
+          "available_at": "datetime",
+          "reserved_at": "datetime",
+          "created_at": "datetime",
+          "updated_at": "datetime",
+          "platform": "text",
+          "account_key": "text",
+          "order_id": "text",
+          "package_id": "text",
+          "has_error": "bool"
+        },
+        "group_by": [
+          "job_type",
+          "status"
+        ],
+        "additive_metrics": [],
+        "views": [
+          "rows",
+          "summary",
+          "groups"
+        ],
+        "limitations": [
+          "Account/platform scope is enforced through the parent fulfillment row. Orphans cannot be assigned to an account and are excluded. Dates select latest stored job update; status does not authorize retries."
+        ]
+      },
+      {
+        "source": "marketplace_fulfillment_runtime",
+        "scope": "global",
+        "grain": "global current worker heartbeat",
+        "date_mode": "snapshot",
+        "columns": {
+          "id": "id",
+          "last_started_at": "datetime",
+          "last_finished_at": "datetime",
+          "last_success_at": "datetime",
+          "updated_at": "datetime",
+          "has_error": "bool"
+        },
+        "group_by": [],
+        "additive_metrics": [],
+        "views": [
+          "rows",
+          "summary"
+        ],
+        "limitations": [
+          "Global heartbeat is not account-specific readiness, credential validation, delivery confirmation or evidence that every job succeeded. No security configuration is inspected."
+        ]
+      },
+      {
+        "source": "shopee_ad_items",
+        "scope": "account",
+        "grain": "current cached Shopee item metadata",
+        "date_mode": "snapshot",
+        "columns": {
+          "item_id": "id",
+          "account_key": "text",
+          "item_name": "text",
+          "item_sku": "text",
+          "updated_at": "datetime"
+        },
+        "group_by": [
+          "item_sku"
+        ],
+        "additive_metrics": [],
+        "views": [
+          "rows",
+          "summary",
+          "groups"
+        ],
+        "limitations": [
+          "Current cached product metadata, not a historical item catalog. Image URLs, raw payloads and unreviewed model JSON are excluded."
+        ]
+      },
+      {
+        "source": "shopee_ad_balances",
+        "scope": "account",
+        "grain": "latest stored ad-credit balance per account",
+        "date_mode": "snapshot",
+        "columns": {
+          "account_key": "text",
+          "total_balance": "decimal",
+          "updated_at": "datetime"
+        },
+        "group_by": [],
+        "additive_metrics": [],
+        "views": [
+          "rows",
+          "summary"
+        ],
+        "limitations": [
+          "Latest stored IDR ad credit, not historical balance, expense or verified current available funds. Unspecified balance source_timestamp format is excluded. No low-balance threshold is invented."
+        ]
+      },
+      {
+        "source": "shopee_ad_monitor",
+        "scope": "account",
+        "grain": "current campaign observations and incidents in one account state",
+        "date_mode": "monitor",
+        "columns": {
+          "campaign_id": "id",
+          "name": "text",
+          "ad_type": "text",
+          "status": "text",
+          "previous_status": "text",
+          "desired_state": "text",
+          "intent_source": "text",
+          "missing": "bool",
+          "observation_current": "bool",
+          "first_observed_at": "int",
+          "last_observed_at": "int",
+          "status_observed_since": "int",
+          "last_running_at": "int",
+          "intent_updated_at": "int",
+          "end_time": "int",
+          "incident_id": "incident_id",
+          "detected_at": "int",
+          "acknowledged_at": "int",
+          "resolved_incident_id": "incident_id",
+          "resolved_at": "int",
+          "resolution_reason": "text",
+          "actor": "text",
+          "reason": "text",
+          "source_changed_at": "int"
+        },
+        "group_by": [],
+        "additive_metrics": [],
+        "views": [
+          "rows",
+          "summary"
+        ],
+        "limitations": [
+          "Pause actor, upstream reason and source change time are unavailable. Observation time is not the upstream transition time. Monitoring selection/acknowledgement never changes live ads."
+        ]
+      },
+      {
+        "source": "shopee_ad_monitor_audit",
+        "scope": "account",
+        "grain": "one local monitoring intent/acknowledgement audit event",
+        "date_mode": "stored_calendar_history",
+        "columns": {
+          "id": "id",
+          "account_key": "text",
+          "created_at": "datetime",
+          "action": "text",
+          "campaign_id": "id",
+          "incident_id": "incident_id",
+          "revision": "int"
+        },
+        "group_by": [
+          "action"
+        ],
+        "additive_metrics": [],
+        "views": [
+          "rows",
+          "summary",
+          "groups"
+        ],
+        "limitations": [
+          "Local monitoring actions only, not marketplace ad changes. Actor identity, request IDs and raw audit details are excluded. created_at uses legacy database-default timestamp; historical timezone is unverified, so date bounds refer to stored calendar days."
+        ]
+      }
+    ],
+    "evidence": [
+      {
+        "repository": "ingest",
+        "file": "docs/ingest-stored-reports.md"
+      },
+      {
+        "repository": "ingest",
+        "file": "docs/ingest-report-sources.json"
+      }
+    ],
+    "authorization": "Account sources require exact existing enabled account grants; global sync/runtime requires explicit existing full-source authority and may remain denied. No account=all expansion."
+  }
 }

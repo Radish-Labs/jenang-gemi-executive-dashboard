@@ -57,7 +57,7 @@ try {
     $narrow=$redeem($approved,issueCode($approved,array_replace($q,['scope'=>JenangMcp\SCOPE])));$na=$actor($approved,$narrow);
     denied(fn()=>reportNotes($na,['month'=>'2026-10','text'=>'x','expected_revision'=>1],true),'Narrow token cannot write');
     $calls=0;$read=function() use(&$calls){$calls++;throw new RuntimeException('unexpected read');};
-    foreach(['jg_monthly_profit'=>['month'=>'2026-10','recipient'=>'Branch'],'jg_save_report_note'=>['month'=>'2026-10','text'=>'x','expected_revision'=>1]] as $name=>$args){
+    foreach(['jg_monthly_profit'=>['month'=>'2026-10','recipient'=>'Branch'],'jg_finance_report'=>['report'=>'legacy_profit_loss','year'=>2025,'months'=>[1]],'jg_save_report_note'=>['month'=>'2026-10','text'=>'x','expected_revision'=>1]] as $name=>$args){
         $r=rpc(['jsonrpc'=>'2.0','id'=>1,'method'=>'tools/call','params'=>['name'=>$name,'arguments'=>$args]],$na,$read);
         expect($r['result']['isError']&&!empty($r['result']['_meta']['mcp/www_authenticate']),'Insufficient-scope challenge '.$name);
     }
@@ -74,6 +74,7 @@ try {
         $data=$context['structuredContent']['data'];
         expect($data['scopes']===explode(' ',$subset['scope']),'Context reports actual token scopes');
         expect($data['writes_enabled']===JenangMcp\hasScope($scope,JenangMcp\NOTES_SCOPE),'Optional write status follows token, not owner scope union');
+        expect(array_keys($data['finance_reports'])===['allocation_statement','legacy_profit_loss','editor_profit_loss'],'Finance metadata is discoverable without expanding actual token scopes');
         if(!JenangMcp\hasScope($scope,JenangMcp\NOTES_SCOPE)) {
             $deniedNote=rpc(['jsonrpc'=>'2.0','id'=>2,'method'=>'tools/call','params'=>['name'=>'jg_save_report_note','arguments'=>['month'=>'2026-10','text'=>'must not save','expected_revision'=>1]]],$subject,$read)['result'];
             expect($deniedNote['isError'] && str_contains($deniedNote['_meta']['mcp/www_authenticate'][0],'scope="'.JenangMcp\NOTES_SCOPE.'"'),'Note write still requires its exact scope');
@@ -81,6 +82,8 @@ try {
         if(JenangMcp\hasScope($scope,JenangMcp\FINANCE_SCOPE)) {
             $finance=rpc(['jsonrpc'=>'2.0','id'=>3,'method'=>'tools/call','params'=>['name'=>'jg_monthly_profit','arguments'=>['month'=>'2026-10','recipient'=>'Brent']]],$subject,$read)['result'];
             expect($finance['isError'] && !isset($finance['_meta']['mcp/www_authenticate']) && str_contains($finance['content'][0]['text'],'outside'),'Finance scope reaches recipient guard without requiring note scope');
+            $statement=rpc(['jsonrpc'=>'2.0','id'=>4,'method'=>'tools/call','params'=>['name'=>'jg_finance_report','arguments'=>['report'=>'allocation_statement','year'=>2026,'months'=>[1],'recipient'=>'Brent']]],$subject,$read)['result'];
+            expect($statement['isError']&&!isset($statement['_meta']['mcp/www_authenticate'])&&str_contains($statement['content'][0]['text'],'outside'),'Annual statement preserves exact recipient guard');
         }
     }
     expect($calls===0,'Context and authorization tests never read business sources');

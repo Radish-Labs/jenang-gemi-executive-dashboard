@@ -129,10 +129,11 @@ function jg_product_costs_selected_group_skus(array $groupSkus, mixed $requested
 }
 
 /** @return array<string, array<string, mixed>> */
-function jg_product_costs_packing_lookup(PDO $pdo, int $year): array
+function jg_product_costs_packing_lookup(PDO $pdo, int $year, bool $includeActor = true): array
 {
+    $actorSelect = $includeActor ? 'updated_by' : 'NULL AS updated_by';
     $stmt = $pdo->prepare(
-        'SELECT year, month, sku, packing_per_item, updated_by, updated_at
+        'SELECT year, month, sku, packing_per_item, ' . $actorSelect . ', updated_at
          FROM sku_packing_costs
          WHERE year = :year
          ORDER BY month, sku'

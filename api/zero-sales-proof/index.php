@@ -1,5 +1,6 @@
 <?php
 declare(strict_types=1);
+require_once dirname(__DIR__, 2) . '/sales-proof-reporting.php';
 
 function jg_zero_sales_proof_send_cors_headers(): void
 {
@@ -151,27 +152,7 @@ function jg_zero_sales_proof_build_payload(int $year): array
 
     $summary = jg_zero_sales_proof_apply_context($summary, $context);
 
-    $units = jg_zero_sales_proof_units($summary);
-    if ($units <= 0) {
-        throw new RuntimeException('Yearly unit total is empty.');
-    }
-
-    $roundedUnits = intdiv($units, 1000) * 1000;
-    if ($roundedUnits < 1000) {
-        throw new RuntimeException('Yearly unit total is too small for a thousands proof claim.');
-    }
-
-    return [
-        'ok' => true,
-        'year' => $year,
-        'metric' => 'units_sold',
-        'rounded_units' => $roundedUnits,
-        'display' => number_format($roundedUnits) . '+',
-        'cache_date' => (new DateTimeImmutable('now', new DateTimeZone('Asia/Jakarta')))->format('Y-m-d'),
-        'updated_at' => gmdate(DATE_ATOM),
-        'source' => 'executive_dashboard_sales_summary',
-        'context_applied' => (bool) ($summary['context_applied'] ?? false),
-    ];
+    return jg_zero_sales_proof_claim_from_summary($summary, $year);
 }
 
 /**
@@ -450,33 +431,4 @@ function jg_zero_sales_proof_apply_context(array $summary, array $context): arra
     $summary['years'] = $years;
     $summary['context_applied'] = true;
     return $summary;
-}
-
-/**
- * @param array<string, mixed> $summary
- */
-function jg_zero_sales_proof_units(array $summary): int
-{
-    $totals = is_array($summary['totals'] ?? null) ? $summary['totals'] : [];
-    foreach (['item_count', 'items', 'units', 'quantity'] as $key) {
-        if (is_numeric($totals[$key] ?? null)) {
-            return max(0, (int) round((float) $totals[$key]));
-        }
-    }
-
-    $months = is_array($summary['months'] ?? null) ? $summary['months'] : [];
-    $monthTotal = 0;
-    foreach ($months as $month) {
-        if (!is_array($month)) {
-            continue;
-        }
-        foreach (['item_count', 'items', 'units', 'quantity'] as $key) {
-            if (is_numeric($month[$key] ?? null)) {
-                $monthTotal += (int) round((float) $month[$key]);
-                break;
-            }
-        }
-    }
-
-    return max(0, $monthTotal);
 }

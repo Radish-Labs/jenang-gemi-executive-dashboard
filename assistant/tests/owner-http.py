@@ -119,15 +119,31 @@ require $file;
         check(status==200 and note['isError'] and 'scope="jg:report-notes:write"' in note['_meta']['mcp/www_authenticate'][0],'Optional write remains separately denied over HTTP')
         status,_,body=call(readonly_tokens['access_token'],'jg_monthly_profit',{'month':'2026-10','recipient':'Brent'});finance=json.loads(body)['result']
         check(status==200 and finance['isError'] and 'outside' in body and not finance.get('_meta',{}).get('mcp/www_authenticate'),'Finance read needs no note-write scope and still enforces recipient')
+        status,_,body=call(readonly_tokens['access_token'],'jg_finance_report',{'report':'allocation_statement','year':2026,'months':[1],'recipient':'Brent'});statement=json.loads(body)['result']
+        check(status==200 and statement['isError'] and 'outside' in body and not statement.get('_meta',{}).get('mcp/www_authenticate'),'Multi-month statement enforces exact recipient before reading sources without optional write access')
+        finance_tool=next(tool for tool in json.loads(request('/assistant/mcp/',{'jsonrpc':'2.0','id':3,'method':'tools/list'},bearer=readonly_tokens['access_token'],raw=True)[2])['result']['tools'] if tool['name']=='jg_finance_report')
+        check(finance_tool['securitySchemes']==[{'type':'oauth2','scopes':['jg:finance:read']}], 'Finance report advertises only its own read scope')
+        # Exercise a real dashboard-only OAuth token, even though the owner grant permits finance.
+        status,_,dashboard_html=request('/assistant/oauth/authorize.php?'+urllib.parse.urlencode(authorization|{'scope':'jg:dashboard:read'}))
+        dashboard_intent=re.search(r'name="intent" value="([^"]+)"',dashboard_html).group(1)
+        status,headers,_=request('/assistant/oauth/authorize.php',{'csrf':csrf(dashboard_html),'intent':dashboard_intent,'action':'approve'})
+        dashboard_code=urllib.parse.parse_qs(urllib.parse.urlparse(headers['Location']).query)['code'][0]
+        status,_,body=request('/assistant/oauth/token.php',exchange|{'code':dashboard_code});dashboard_tokens=json.loads(body)
+        check(status==200 and dashboard_tokens['scope']=='jg:dashboard:read','Dashboard-only OAuth token remains a strict subset of owner approval')
+        for report in ['allocation_statement','legacy_profit_loss','editor_profit_loss']:
+            status,_,body=call(dashboard_tokens['access_token'],'jg_finance_report',{'report':report,'year':2026,'months':[1]});denied=json.loads(body)['result']
+            check(status==200 and denied['isError'] and 'scope="jg:finance:read"' in denied['_meta']['mcp/www_authenticate'][0],report+' requires finance scope before source reads')
         # Expiration is enforced by the real MCP handler even for scope-free context.
         test_state=json.loads((directory/'state.json').read_text())
         test_state['tokens'][hashlib.sha256(readonly_tokens['access_token'].encode()).hexdigest()]['exp']=int(time.time())-1
         (directory/'state.json').write_text(json.dumps(test_state))
         check(call(readonly_tokens['access_token'],'jg_get_context',{})[0]==401,'Expired subset token cannot inspect context')
+        check(call(readonly_tokens['access_token'],'jg_finance_report',{'report':'allocation_statement','year':2026,'months':[1],'recipient':'Branch'})[0]==401,'Expired finance token cannot read statement')
         check(call('x'*43,'jg_get_context',{})[0]==401,'Unknown bearer rejected')
         revoke={'csrf':csrf(html),'action':'revoke','owner_password':'fixture-owner-confirmation','confirm':'yes'}
         check(request('/assistant/settings/',revoke)[0]==200,'Owner revokes through actual Settings handler')
         check(call(tokens['access_token'],'jg_get_context',{})[0]==401,'Revoked bearer rejected over HTTP')
+        check(call(tokens['access_token'],'jg_finance_report',{'report':'legacy_profit_loss','year':2026,'months':[1]})[0]==401,'Revoked finance token cannot read historical P&L')
         refresh={'grant_type':'refresh_token','client_id':cfg['client_id'],'resource':authorization['resource'],'refresh_token':tokens['refresh_token']}
         check(request('/assistant/oauth/token.php',refresh)[0]==400,'Revoked refresh rejected over HTTP')
         print(json.dumps({'http_checks':checks,'fixtures_only':True,'result':'passed'}))

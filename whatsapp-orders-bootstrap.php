@@ -1472,17 +1472,30 @@ function jg_whatsapp_metric_line_revenue(array $row): float
     return $discount + 0.009 >= $gross ? 0.0 : round(max(0.0, $gross - $discount), 2);
 }
 
-function jg_whatsapp_metric_order_rows(PDO $pdo, string $startDate, string $endDate): array
+function jg_whatsapp_metric_order_rows(PDO $pdo, string $startDate, string $endDate, bool $prepareSchema = true, bool $includeCustomers = true, ?array $allowedAccounts = null): array
 {
-    jg_whatsapp_ensure_schema($pdo);
+    if ($prepareSchema) jg_whatsapp_ensure_schema($pdo);
+    $customerSelect = $includeCustomers ? 'o.customer_name, o.customer_address, o.customer_phone' : 'NULL AS customer_name, NULL AS customer_address, NULL AS customer_phone';
     $timezone = new DateTimeZone('Asia/Jakarta');
     $start = (new DateTimeImmutable($startDate . ' 00:00:00', $timezone))
         ->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s.u');
     $end = (new DateTimeImmutable($endDate . ' 00:00:00', $timezone))->modify('+1 day')
         ->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s.u');
     $statusSql = implode(',', array_fill(0, count(JG_WHATSAPP_ORDER_METRIC_STATUSES), '?'));
+    $scopeSql = '';
+    $scopeParams = [];
+    if ($allowedAccounts !== null) {
+        $channels = [];
+        foreach (array_values(array_unique($allowedAccounts)) as $account) {
+            if (!in_array($account, ['direct', 'counter'], true)) throw new InvalidArgumentException('Unsupported direct-order source.');
+            $channels[] = $account === 'counter' ? 'walk_in' : 'whatsapp';
+        }
+        if ($channels === []) return [];
+        $scopeSql = ' AND o.sales_channel IN (' . implode(',', array_fill(0, count($channels), '?')) . ')';
+        $scopeParams = $channels;
+    }
     $stmt = $pdo->prepare(
-        'SELECT o.order_id, o.status, o.sales_channel, o.customer_name, o.customer_address, o.customer_phone,
+        'SELECT o.order_id, o.status, o.sales_channel, ' . $customerSelect . ',
                 o.payment_status, o.payment_method, o.payment_account_key, o.paid_at, o.created_at, o.listed_at,
                 o.merchandise_total, o.shipping_cost,
                 i.id AS item_id, i.sku, i.product_name, i.brand_name, i.base_product_name, i.flavor_name,
@@ -1492,10 +1505,10 @@ function jg_whatsapp_metric_order_rows(PDO $pdo, string $startDate, string $endD
          WHERE o.status IN (' . $statusSql . ')
            AND o.archive_hide_charts = 0
            AND COALESCE(o.listed_at, o.created_at) >= ?
-           AND COALESCE(o.listed_at, o.created_at) < ?
+           AND COALESCE(o.listed_at, o.created_at) < ?' . $scopeSql . '
          ORDER BY COALESCE(o.listed_at, o.created_at) DESC, o.id DESC, i.id'
     );
-    $stmt->execute([...JG_WHATSAPP_ORDER_METRIC_STATUSES, $start, $end]);
+    $stmt->execute([...JG_WHATSAPP_ORDER_METRIC_STATUSES, $start, $end, ...$scopeParams]);
     return array_map(static function (array $row): array {
         $timestamp = jg_website_atom((string) ($row['listed_at'] ?: $row['created_at']));
         $salesChannel = jg_whatsapp_sales_channel($row['sales_channel'] ?? 'whatsapp');

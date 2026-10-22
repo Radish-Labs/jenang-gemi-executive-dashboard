@@ -6,6 +6,7 @@ require dirname(__DIR__, 2) . '/config.php';
 require dirname(__DIR__, 2) . '/analytics-bootstrap.php';
 require dirname(__DIR__, 2) . '/sku-db-bootstrap.php';
 require dirname(__DIR__, 2) . '/partner-db-bootstrap.php';
+require_once dirname(__DIR__, 2) . '/api-health-log-read.php';
 
 jg_admin_require_auth_json();
 
@@ -26,27 +27,6 @@ function jg_api_health_config(string $envKey, string $configKey, string $default
     }
 
     return $default;
-}
-
-function jg_api_health_log_path(): string
-{
-    return dirname(__DIR__, 2) . '/data/api-health-log.json';
-}
-
-function jg_api_health_read_log(): array
-{
-    $path = jg_api_health_log_path();
-    if (!is_file($path)) {
-        return [];
-    }
-
-    $raw = @file_get_contents($path);
-    if (!is_string($raw) || trim($raw) === '') {
-        return [];
-    }
-
-    $decoded = json_decode($raw, true);
-    return is_array($decoded) ? array_values(array_filter($decoded, 'is_array')) : [];
 }
 
 function jg_api_health_write_log(array $entries): void

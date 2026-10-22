@@ -73,6 +73,7 @@ final class AnalyticsQueryCapture extends PDO
 {
     public string $queryText = '';
     public function __construct() {}
+    public function getAttribute(int $attribute): mixed { return $attribute === PDO::ATTR_DRIVER_NAME ? 'mysql' : null; }
     public function prepare(string $query, array $options = []): PDOStatement|false
     {
         $this->queryText = $query;

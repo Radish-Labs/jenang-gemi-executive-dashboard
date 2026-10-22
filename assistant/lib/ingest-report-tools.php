@@ -1,0 +1,28 @@
+<?php
+declare(strict_types=1);
+namespace JenangMcp;
+require_once __DIR__.'/ingest-reports.php';
+
+function ingestReportTools(): array {
+    $auth=[['type'=>'oauth2','scopes'=>[TABLE_SCOPE]]];
+    return [[
+        'name'=>'jg_ingest_report','title'=>'Stored marketplace and ads source reports',
+        'description'=>'Read one reviewed stored ingestion source with an exact already-authorized account. Discover source columns, date modes, grouping, additive metrics and access/availability states in jg_list_tables.ingestion_sources. Supports bounded rows, summaries and groups; not arbitrary SQL. Source deployment is checked separately: an unpublished or unavailable reader returns an explicit error, never zero. Global sync/runtime sources are denied because this connection has no explicit full-organizational source authorization. All order statuses remain unless filtered; raw orders/items/rollups overlap and must not be added together. Stored ad credit is not ad expense or cash available. Freshness and unknown completeness remain explicit. No refresh, migrations, credentials, job/ad actions or business writes.',
+        'inputSchema'=>['type'=>'object','properties'=>[
+            'source'=>['type'=>'string','pattern'=>'^[a-z][a-z0-9_]{0,79}$','maxLength'=>80],
+            'account_key'=>['type'=>'string','pattern'=>'^[a-z0-9][a-z0-9_-]{0,99}$','maxLength'=>100],
+            'view'=>['type'=>'string','enum'=>['rows','summary','groups']],
+            'start_date'=>['type'=>'string','pattern'=>'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'],
+            'end_date'=>['type'=>'string','pattern'=>'^[0-9]{4}-[0-9]{2}-[0-9]{2}$'],
+            'start_month'=>['type'=>'string','pattern'=>'^[0-9]{4}-(0[1-9]|1[0-2])$'],
+            'end_month'=>['type'=>'string','pattern'=>'^[0-9]{4}-(0[1-9]|1[0-2])$'],
+            'limit'=>['type'=>'integer','minimum'=>1,'maximum'=>200],
+            'offset'=>['type'=>'integer','minimum'=>0,'maximum'=>100000],
+            'filters'=>['type'=>'object','maxProperties'=>8,'additionalProperties'=>['anyOf'=>[['type'=>'string','maxLength'=>255],['type'=>'number'],['type'=>'boolean']]]],
+            'group_by'=>['type'=>'array','minItems'=>1,'maxItems'=>3,'uniqueItems'=>true,'items'=>['type'=>'string','pattern'=>'^[a-z][a-z0-9_]{0,79}$','maxLength'=>80]],
+        ],'required'=>['source','account_key'],'additionalProperties'=>false],
+        'annotations'=>['readOnlyHint'=>true,'destructiveHint'=>false,'idempotentHint'=>true,'openWorldHint'=>false],
+        'securitySchemes'=>$auth,'_meta'=>['securitySchemes'=>$auth],
+        'outputSchema'=>['type'=>'object','properties'=>['data'=>['type'=>'object']],'required'=>['data']],
+    ]];
+}

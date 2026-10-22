@@ -817,13 +817,26 @@ function jg_website_metrics(PDO $pdo, ?string $platform = null, ?int $year = nul
     return jg_website_metrics_read($pdo, $platform, $year);
 }
 
-function jg_website_paid_order_rows(PDO $pdo, string $startDate, string $endDate, bool $prepareSchema = true, bool $includeCustomers = true): array
+function jg_website_paid_order_rows(PDO $pdo, string $startDate, string $endDate, bool $prepareSchema = true, bool $includeCustomers = true, ?array $allowedPlatforms = null): array
 {
     if ($prepareSchema) jg_website_ensure_schema($pdo);
     $customerSelect = $includeCustomers ? 'o.customer_name, o.customer_address, o.customer_phone' : 'NULL AS customer_name, NULL AS customer_address, NULL AS customer_phone';
     $timezone = new DateTimeZone('Asia/Jakarta');
     $start = (new DateTimeImmutable($startDate . ' 00:00:00', $timezone))->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s.u');
     $end = (new DateTimeImmutable($endDate . ' 00:00:00', $timezone))->modify('+1 day')->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d H:i:s.u');
+    $scopeSql = '';
+    $params = [':start_at' => $start, ':end_at' => $end];
+    if ($allowedPlatforms !== null) {
+        if ($allowedPlatforms === []) return [];
+        $keys = [];
+        foreach (array_values(array_unique($allowedPlatforms)) as $index => $platform) {
+            if (!in_array($platform, ['zero_website', 'jenang_gemi_website'], true)) throw new InvalidArgumentException('Unsupported website source.');
+            $key = ':platform_scope_' . $index;
+            $keys[] = $key;
+            $params[$key] = $platform;
+        }
+        $scopeSql = ' AND o.platform IN (' . implode(',', $keys) . ')';
+    }
     $stmt = $pdo->prepare(
         'SELECT o.platform, o.order_id, o.created_at, o.paid_at, ' . $customerSelect . ',
                 o.gross_revenue, o.net_revenue, o.cogs AS order_cogs,
@@ -831,10 +844,10 @@ function jg_website_paid_order_rows(PDO $pdo, string $startDate, string $endDate
                 i.quantity, i.unit_gross_price, i.unit_net_price, i.unit_cogs
          FROM website_orders o
          INNER JOIN website_order_items i ON i.website_order_id = o.id
-         WHERE o.paid_at IS NOT NULL AND o.paid_at >= :start_at AND o.paid_at < :end_at
+         WHERE o.paid_at IS NOT NULL AND o.paid_at >= :start_at AND o.paid_at < :end_at' . $scopeSql . '
          ORDER BY o.paid_at DESC, o.id DESC, i.id'
     );
-    $stmt->execute([':start_at' => $start, ':end_at' => $end]);
+    $stmt->execute($params);
     return array_map(static fn (array $row): array => [
         'timestamp' => jg_website_atom((string) $row['paid_at']),
         'order_create_time' => jg_website_atom((string) $row['paid_at']),

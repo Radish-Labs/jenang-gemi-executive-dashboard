@@ -2,7 +2,7 @@
 
 `jg_business_report` calls `businessReport($config, $arguments)` in `assistant/lib/business-reports.php`. `businessReportRegistry()` supplies discovery metadata and each exact input schema. The shared tool descriptor can use a string report ID, so adding a reviewed report does not require another tool name. Unknown IDs/fields, unsupported periods and unapproved account selections fail before reads.
 
-The existing `jg:dashboard:read` grant authorizes these read-only business calculations. No metrics scope, credential, persistent grant, mutation operation or SQL argument is added. The RPC authentication layer continues to enforce token expiry/revocation; the report entry point checks the configured dashboard approval and active dashboard scope. `jg_monthly_profit` alone retains named-recipient finance authorization and saved recipient checks.
+The existing `jg:dashboard:read` grant authorizes these read-only business calculations. No metrics scope, credential, persistent grant, mutation operation or SQL argument is added. The RPC authentication layer continues to enforce token expiry/revocation; the report entry point checks the configured dashboard approval and active dashboard scope. `jg_monthly_profit` and the separate `jg_finance_report` retain finance authorization and exact saved-recipient checks for allocations. Historical P&L also requires finance authorization.
 
 | Report | Inputs | Canonical result |
 |---|---|---|
@@ -22,15 +22,25 @@ The existing `jg:dashboard:read` grant authorizes these read-only business calcu
 | `accounting_overview` | `month` | Canonical current cash, receivables, obligations and selected-month activity |
 | `cash_flow` | `month` | Canonical actual recorded cash income/cost, including paid-PO/bill overlap reconciliation |
 | `inventory_forecast` | optional `sku`, `limit`, `offset` | Canonical inventory model; unavailable commitments suppress commitment-dependent procurement outputs |
-
 | `storefront_catalog` | `platform` | Canonical storefront stock, effective pricing and saved discount membership |
 | `blog_status` | none | Saved and effective editorial status; no private article content |
 | `website_analytics` | `timeframe`, `site` | Canonical scoped website visitors, page views, clicks and duration |
 | `traffic_analytics` | `timeframe`, `dataset` | Canonical landing or affiliate engagement aggregates |
 | `customer_retention` | none | Canonical repeat/lifecycle aggregates; identity processing remains internal |
 | `fulfillment_metrics` | paired dates | Canonical configured-account fulfillment counts, durations and errors |
+| `sales_daily` | paired dates | Canonical daily screen across configured marketplace, paid website, listed direct and approved partner sources |
+| `product_sales_analytics` | paired dates, discovered product; optional grain/dimensions | Canonical ranking, history, comparisons and current-month sales run rate; not a profit forecast |
+| `product_sales_catalog` | none | Saved product/flavor/size keys for selecting product analytics |
+| `sales_flavor_breakdown` | paired dates, discovered product; optional grain | Exact canonical marketplace flavor-size pivot, with configured-account filtering |
+| `sales_provinces` | paired dates | Configured marketplace province counts across all stored statuses; private addresses stay internal |
+| `sales_proof_composition` | `year` | Saved rounded public company-wide units claim; absent exact components remain unknown |
+| `partner_contribution` | `year`, optional partner code | Canonical approved-partner contribution under its saved date convention |
+| `partner_sales_summary` | paired dates, optional partner code | Canonical partner orders and non-void local receipts; no backfill or refresh |
+| `partner_pricing` | partner code | Current canonical membership/custom pricing, with missing custom values flagged |
+| `sku_effective_costs` | packing year/month; optional effective time, SKU and paging | Canonical scheduled COGS, ASTRA scaling and packing completeness; future settings are not realized costs |
+| `api_health_history` | optional paging | Sanitized retained failure log; not current health or proof of successful synchronization |
 
-The registry is authoritative for all 22 implemented reports and exact arguments. Call discovery before supplying report-specific arguments.
+The registry is authoritative for all 33 implemented business reports and exact arguments. Call discovery before supplying report-specific arguments. Finance reports are separately discoverable through `jg_get_context.finance_reports` and callable only through `jg_finance_report`; see `FINANCE-PARITY.md`. The editor and historical P&L calculations are not interchangeable with current accounting P&L or named-recipient allocation.
 
 ## Scope and source semantics
 
@@ -59,6 +69,12 @@ Fixture entry points:
 - `php assistant/tests/inventory-forecast-metrics.php`
 - `php assistant/tests/commerce-derived-metrics.php`
 - `php assistant/tests/pnl-read-guards.php`
+- `php assistant/tests/local-parity-dispatch.php`
+- `php assistant/tests/sales-parity-metrics.php`
+- `php assistant/tests/partner-parity.php`
+- `php assistant/tests/read-services/cost-parity-metrics.php`
+- `php assistant/tests/health-metrics.php`
+- `php assistant/tests/finance-parity.php`
 
 The six entry points pass **307 assertions**: business dispatcher 114, cash 27, derived accounting 40, wallets 43, stock/purchasing 23, commerce 30 and product purchases 30. Separately, the integrated commerce-derived suite passes 122, inventory forecast 67, and shared P&L settings guard 5; 501 assertions across these targeted suites. Existing accounting cash history, wallet cash, Store Ops walk-in cash, cash flow, summary, P&L, inventory recap, wallet API and product purchase regression suites pass. Tests use disposable SQLite fixtures with query-only transactions; no production credentials, writes, ad actions or source refreshes occur.
 

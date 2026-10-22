@@ -1984,19 +1984,17 @@ function jg_orders_aggregate_product_flavor_rows(
     ];
 }
 
-function jg_orders_product_flavor_breakdown_payload(
-    PDO $pdo,
-    string $startDate,
-    string $endDate,
-    string $product,
-    string $grain
-): array {
+function jg_orders_product_flavor_marketplace_rows(PDO $pdo, string $startDate, string $endDate, string $grain, ?array $allowedAccounts = null): array
+{
     [$from, $to] = jg_orders_range_bounds($startDate, $endDate);
-    $localDate = 'DATE(DATE_ADD(order_create_time, INTERVAL 7 HOUR))';
+    $sqlite = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite';
+    $params = [':from_date' => $from, ':to_date' => $to];
+    $scope = jg_orders_report_account_scope_sql($allowedAccounts, $params);
+    $localDate = $sqlite ? 'DATE(order_create_time, "+7 hours")' : 'DATE(DATE_ADD(order_create_time, INTERVAL 7 HOUR))';
     $periodExpression = match ($grain) {
         'day' => $localDate,
-        'week' => 'DATE_SUB(' . $localDate . ', INTERVAL WEEKDAY(' . $localDate . ') DAY)',
-        default => 'DATE_FORMAT(' . $localDate . ', "%Y-%m-01")',
+        'week' => $sqlite ? 'DATE(' . $localDate . ', "-" || ((CAST(strftime("%w", ' . $localDate . ') AS INTEGER) + 6) % 7) || " days")' : 'DATE_SUB(' . $localDate . ', INTERVAL WEEKDAY(' . $localDate . ') DAY)',
+        default => $sqlite ? 'strftime("%Y-%m-01", ' . $localDate . ')' : 'DATE_FORMAT(' . $localDate . ', "%Y-%m-01")',
     };
     $stmt = $pdo->prepare(
         'SELECT CASE WHEN sku <> "" THEN sku ELSE item_key END AS sku,
@@ -2009,15 +2007,22 @@ function jg_orders_product_flavor_breakdown_payload(
          FROM dashboard_order_mirror
          WHERE deleted_at IS NULL
            AND order_create_time >= :from_date
-           AND order_create_time < :to_date
+           AND order_create_time < :to_date' . $scope . '
          GROUP BY CASE WHEN sku <> "" THEN sku ELSE item_key END, ' . $periodExpression . '
          ORDER BY order_create_time DESC'
     );
-    $stmt->execute([
-        ':from_date' => $from,
-        ':to_date' => $to,
-    ]);
-    $rows = array_values(array_filter($stmt->fetchAll(), 'is_array'));
+    $stmt->execute($params);
+    return array_values(array_filter($stmt->fetchAll(), 'is_array'));
+}
+
+function jg_orders_product_flavor_breakdown_payload(
+    PDO $pdo,
+    string $startDate,
+    string $endDate,
+    string $product,
+    string $grain
+): array {
+    $rows = jg_orders_product_flavor_marketplace_rows($pdo, $startDate, $endDate, $grain);
     $skuLookup = jg_orders_sku_lookup(jg_sku_db());
     return jg_orders_aggregate_product_flavor_rows(
         $rows,
@@ -2379,17 +2384,16 @@ function jg_orders_aggregate_product_analytics_rows(
     ];
 }
 
-function jg_orders_product_analytics_payload(
-    PDO $pdo,
-    string $startDate,
-    string $endDate,
-    string $product,
-    string $grain,
-    array $selection
-): array {
+function jg_orders_product_analytics_marketplace_rows(PDO $pdo, string $startDate, string $endDate, string $grain, ?array $allowedAccounts = null): array
+{
     [$from, $to] = jg_orders_range_bounds($startDate, $endDate);
     // Keep separate hours before PHP aggregates them; daily grouping loses the original sale times.
     $periodFormat = $grain === 'hour' ? '%Y-%m-%d %H:00' : '%Y-%m-%d';
+    $params = [':from_date' => $from, ':to_date' => $to];
+    $scope = jg_orders_report_account_scope_sql($allowedAccounts, $params);
+    $sqlite = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite';
+    $periodSql = $sqlite ? 'strftime("' . ($grain === 'hour' ? '%Y-%m-%d %H:00' : '%Y-%m-%d') . '", order_create_time, "+7 hours")' : 'DATE_FORMAT(DATE_ADD(order_create_time, INTERVAL 7 HOUR), "' . $periodFormat . '")';
+    $orderKeySql = $sqlite ? 'platform || "|" || account_key || "|" || CASE WHEN order_id = "" THEN order_item_hash ELSE order_id END' : 'CONCAT_WS("|", platform, account_key, CASE WHEN order_id = "" THEN order_item_hash ELSE order_id END)';
     $stmt = $pdo->prepare(
         'SELECT CASE WHEN sku <> "" THEN sku ELSE item_key END AS sku,
                 "" AS item_key,
@@ -2398,19 +2402,31 @@ function jg_orders_product_analytics_payload(
                 account_key,
                 SUM(CASE WHEN is_free_gift = 1 THEN 0 ELSE quantity END) AS quantity,
                 SUM(CASE WHEN is_free_gift = 1 THEN 0 ELSE revenue END) AS revenue,
-                COUNT(DISTINCT CONCAT_WS("|", platform, account_key, CASE WHEN order_id = "" THEN order_item_hash ELSE order_id END)) AS transactions,
+                COUNT(DISTINCT ' . $orderKeySql . ') AS transactions,
                 0 AS is_free_gift
          FROM dashboard_order_mirror
          WHERE deleted_at IS NULL
            AND order_create_time >= :from_date
-           AND order_create_time < :to_date
+           AND order_create_time < :to_date' . $scope . '
          GROUP BY CASE WHEN sku <> "" THEN sku ELSE item_key END,
-                  DATE_FORMAT(DATE_ADD(order_create_time, INTERVAL 7 HOUR), "' . $periodFormat . '"),
+                  ' . $periodSql . ',
                   platform, account_key
          ORDER BY order_create_time ASC'
     );
-    $stmt->execute([':from_date' => $from, ':to_date' => $to]);
-    $rows = array_values(array_filter($stmt->fetchAll(), 'is_array'));
+    $stmt->execute($params);
+    return array_values(array_filter($stmt->fetchAll(), 'is_array'));
+
+}
+
+function jg_orders_product_analytics_payload(
+    PDO $pdo,
+    string $startDate,
+    string $endDate,
+    string $product,
+    string $grain,
+    array $selection
+): array {
+    $rows = jg_orders_product_analytics_marketplace_rows($pdo, $startDate, $endDate, $grain);
 
     try {
         $rows = array_merge($rows, jg_website_paid_order_rows($pdo, $startDate, $endDate));
@@ -2570,13 +2586,62 @@ function jg_orders_daily_add_order_rows(array &$days, array &$accounts, array $r
     return $added;
 }
 
-function jg_orders_daily_summary_payload(PDO $pdo, string $startDate, string $endDate, bool $forceRepair = false): array
+/** Optional scope belongs to trusted server code; browser default remains unchanged. */
+function jg_orders_report_account_scope_sql(?array $accounts, array &$params): string
 {
-    $repair = ['attempted' => false, 'fetched' => 0, 'upserted' => 0];
-    if ($forceRepair) {
-        $repair = jg_orders_repair_mirror_range_from_api($pdo, $startDate, $endDate, null);
+    if ($accounts === null) return '';
+    if ($accounts === []) return ' AND 1=0';
+    if (count($accounts) > 100) throw new InvalidArgumentException('Account scope too large.');
+    $keys = [];
+    foreach (array_values(array_unique($accounts)) as $index => $account) {
+        if (!is_string($account) || !preg_match('/^[a-z0-9][a-z0-9_-]{0,99}$/D', $account)) throw new InvalidArgumentException('Invalid account scope.');
+        $key = ':report_account_' . $index;
+        $keys[] = $key;
+        $params[$key] = $account;
     }
+    return ' AND platform IN ("shopee","tiktok","tokopedia") AND account_key IN (' . implode(',', $keys) . ')';
+}
 
+function jg_orders_daily_marketplace_rows(PDO $pdo, string $startDate, string $endDate, ?array $allowedAccounts = null): array
+{
+    [$from, $to] = jg_orders_range_bounds($startDate, $endDate);
+    $freeGiftSql = jg_orders_free_gift_sql('dashboard_order_mirror');
+    $activeSaleSql = jg_orders_included_sale_status_sql('dashboard_order_mirror.status')
+        . ' AND ' . jg_orders_active_sale_status_sql('dashboard_order_mirror.funds_release_status');
+    $params = [':from_date' => $from, ':to_date' => $to];
+    $scope = jg_orders_report_account_scope_sql($allowedAccounts, $params);
+    $daySql = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite' ? 'COALESCE(NULLIF(CAST(order_create_date AS TEXT), ""), DATE(order_create_time, "+7 hours"))' : 'COALESCE(NULLIF(CAST(order_create_date AS CHAR), ""), DATE(DATE_ADD(order_create_time, INTERVAL 7 HOUR)))';
+    $stmt = $pdo->prepare(
+        'SELECT daily_date, platform, account_key,
+                COUNT(*) AS orders,
+                COALESCE(SUM(order_qty), 0) AS qty,
+                COALESCE(SUM(order_revenue), 0) AS revenue
+         FROM (
+             SELECT ' . $daySql . ' AS daily_date,
+                    platform,
+                    account_key,
+                    CASE WHEN order_id <> "" THEN order_id ELSE order_item_hash END AS daily_order_key,
+                    SUM(CASE WHEN ' . $freeGiftSql . ' THEN 0 ELSE quantity END) AS order_qty,
+                    CASE
+                        WHEN MAX(order_net_revenue) <> 0 THEN MAX(order_net_revenue)
+                        ELSE SUM(revenue)
+                    END AS order_revenue
+             FROM dashboard_order_mirror
+             WHERE deleted_at IS NULL
+               AND ' . $activeSaleSql . '
+               AND order_create_time >= :from_date
+               AND order_create_time < :to_date' . $scope . '
+             GROUP BY daily_date, platform, account_key, daily_order_key
+         ) order_rollup
+         GROUP BY daily_date, platform, account_key
+         ORDER BY daily_date, platform, account_key'
+    );
+    $stmt->execute($params);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+function jg_orders_daily_summary_from_inputs(string $startDate, string $endDate, array $marketplaceRows, array $websiteRows, array $directRows, array $partnerRows, array $mirrorSummary): array
+{
     $timezone = new DateTimeZone('Asia/Jakarta');
     $start = new DateTimeImmutable($startDate . ' 00:00:00', $timezone);
     $end = new DateTimeImmutable($endDate . ' 00:00:00', $timezone);
@@ -2597,40 +2662,7 @@ function jg_orders_daily_summary_payload(PDO $pdo, string $startDate, string $en
     }
 
     $accounts = [];
-    [$from, $to] = jg_orders_range_bounds($startDate, $endDate);
-    $freeGiftSql = jg_orders_free_gift_sql('dashboard_order_mirror');
-    $activeSaleSql = jg_orders_included_sale_status_sql('dashboard_order_mirror.status')
-        . ' AND ' . jg_orders_active_sale_status_sql('dashboard_order_mirror.funds_release_status');
-    $stmt = $pdo->prepare(
-        'SELECT daily_date, platform, account_key,
-                COUNT(*) AS orders,
-                COALESCE(SUM(order_qty), 0) AS qty,
-                COALESCE(SUM(order_revenue), 0) AS revenue
-         FROM (
-             SELECT COALESCE(NULLIF(CAST(order_create_date AS CHAR), ""), DATE(DATE_ADD(order_create_time, INTERVAL 7 HOUR))) AS daily_date,
-                    platform,
-                    account_key,
-                    CASE WHEN order_id <> "" THEN order_id ELSE order_item_hash END AS daily_order_key,
-                    SUM(CASE WHEN ' . $freeGiftSql . ' THEN 0 ELSE quantity END) AS order_qty,
-                    CASE
-                        WHEN MAX(order_net_revenue) <> 0 THEN MAX(order_net_revenue)
-                        ELSE SUM(revenue)
-                    END AS order_revenue
-             FROM dashboard_order_mirror
-             WHERE deleted_at IS NULL
-               AND ' . $activeSaleSql . '
-               AND order_create_time >= :from_date
-               AND order_create_time < :to_date
-             GROUP BY daily_date, platform, account_key, daily_order_key
-         ) order_rollup
-         GROUP BY daily_date, platform, account_key
-         ORDER BY daily_date, platform, account_key'
-    );
-    $stmt->execute([
-        ':from_date' => $from,
-        ':to_date' => $to,
-    ]);
-    foreach ($stmt->fetchAll() as $row) {
+    foreach ($marketplaceRows as $row) {
         jg_orders_daily_add_summary_row(
             $days,
             $accounts,
@@ -2643,38 +2675,9 @@ function jg_orders_daily_summary_payload(PDO $pdo, string $startDate, string $en
         );
     }
 
-    $websiteRows = [];
-    try {
-        $websiteRows = jg_orders_lightweight_rows(jg_website_paid_order_rows($pdo, $startDate, $endDate));
-    } catch (Throwable $websiteOrdersError) {
-        error_log('Website paid orders unavailable in daily summary: ' . $websiteOrdersError->getMessage());
-    }
     $websiteOrderCount = jg_orders_daily_add_order_rows($days, $accounts, $websiteRows);
-
-    $directRows = [];
-    try {
-        $directRows = jg_whatsapp_metric_order_rows($pdo, $startDate, $endDate);
-    } catch (Throwable $directOrdersError) {
-        error_log('WhatsApp and walk-in orders unavailable in daily summary: ' . $directOrdersError->getMessage());
-    }
     $directOrderCount = jg_orders_daily_add_order_rows($days, $accounts, $directRows);
-
-    $partnerRows = [];
-    try {
-        $partnerPdo = jg_partner_db();
-        $partnerProfiles = jg_orders_partner_profiles($partnerPdo);
-        $partnerRows = jg_orders_partner_order_rows(
-            $partnerPdo,
-            $startDate,
-            $endDate,
-            $partnerProfiles,
-            $pdo
-        );
-    } catch (Throwable $partnerOrdersError) {
-        error_log('Partner orders unavailable in daily summary: ' . $partnerOrdersError->getMessage());
-    }
     $partnerOrderCount = jg_orders_daily_add_order_rows($days, $accounts, $partnerRows);
-
     uasort($accounts, static function (array $left, array $right): int {
         return strcmp((string) ($left['platform_label'] ?? $left['platform'] ?? ''), (string) ($right['platform_label'] ?? $right['platform'] ?? ''))
             ?: strcmp((string) ($left['label'] ?? ''), (string) ($right['label'] ?? ''));
@@ -2725,8 +2728,6 @@ function jg_orders_daily_summary_payload(PDO $pdo, string $startDate, string $en
         return $account;
     }, $accounts));
 
-    $mirrorSummary = jg_orders_mirror_range_summary_raw($pdo, $startDate, $endDate);
-
     $response = [
         'ok' => true,
         'source' => 'dashboard_order_mirror_daily_summary',
@@ -2751,6 +2752,49 @@ function jg_orders_daily_summary_payload(PDO $pdo, string $startDate, string $en
         'mirror' => jg_orders_public_mirror_range_summary($mirrorSummary),
         'generated_at' => gmdate(DATE_ATOM),
     ];
+    return $response;
+}
+
+function jg_orders_daily_summary_payload(PDO $pdo, string $startDate, string $endDate, bool $forceRepair = false): array
+{
+    $repair = ['attempted' => false, 'fetched' => 0, 'upserted' => 0];
+    if ($forceRepair) {
+        $repair = jg_orders_repair_mirror_range_from_api($pdo, $startDate, $endDate, null);
+    }
+
+    $marketplaceRows = jg_orders_daily_marketplace_rows($pdo, $startDate, $endDate);
+
+    $websiteRows = [];
+    try {
+        $websiteRows = jg_orders_lightweight_rows(jg_website_paid_order_rows($pdo, $startDate, $endDate));
+    } catch (Throwable $websiteOrdersError) {
+        error_log('Website paid orders unavailable in daily summary: ' . $websiteOrdersError->getMessage());
+    }
+
+    $directRows = [];
+    try {
+        $directRows = jg_whatsapp_metric_order_rows($pdo, $startDate, $endDate);
+    } catch (Throwable $directOrdersError) {
+        error_log('WhatsApp and walk-in orders unavailable in daily summary: ' . $directOrdersError->getMessage());
+    }
+
+    $partnerRows = [];
+    try {
+        $partnerPdo = jg_partner_db();
+        $partnerProfiles = jg_orders_partner_profiles($partnerPdo);
+        $partnerRows = jg_orders_partner_order_rows(
+            $partnerPdo,
+            $startDate,
+            $endDate,
+            $partnerProfiles,
+            $pdo
+        );
+    } catch (Throwable $partnerOrdersError) {
+        error_log('Partner orders unavailable in daily summary: ' . $partnerOrdersError->getMessage());
+    }
+
+    $mirrorSummary = jg_orders_mirror_range_summary_raw($pdo, $startDate, $endDate);
+    $response = jg_orders_daily_summary_from_inputs($startDate, $endDate, $marketplaceRows, $websiteRows, $directRows, $partnerRows, $mirrorSummary);
     if (!empty($repair['attempted'])) {
         $response['mirror_repair'] = $repair;
     }
@@ -2799,11 +2843,29 @@ function jg_orders_location_summary_payload(PDO $pdo, string $startDate, string 
         ':to_date' => $to,
     ]);
 
+    $aggregate = jg_orders_location_aggregate_rows($stmt->fetchAll(), $summary);
+    jg_orders_write_location_cache($pdo, $rangeKey, $version, $startDate, $endDate, $summary, $aggregate);
+    $aggregate['cached'] = false;
+
+    return [
+        'ok' => true,
+        'source' => 'dashboard_order_mirror_location_aggregate',
+        'start_date' => $startDate,
+        'end_date' => $endDate,
+        'geocoder_version' => $version,
+        'mirror' => jg_orders_public_mirror_range_summary($summary),
+        'aggregate' => $aggregate,
+    ];
+}
+
+/** Pure stored-row projection shared by the dashboard and passive reporting. */
+function jg_orders_location_aggregate_rows(iterable $rows, array $summary): array
+{
     $seen = [];
     $provinceCounts = [];
     $totalOrders = 0;
     $unmatchedOrders = 0;
-    foreach ($stmt->fetchAll() as $row) {
+    foreach ($rows as $row) {
         $key = jg_orders_location_order_key($row);
         if ($key === '' || isset($seen[$key])) {
             continue;
@@ -2818,19 +2880,7 @@ function jg_orders_location_summary_payload(PDO $pdo, string $startDate, string 
         $provinceCounts[$province] = ($provinceCounts[$province] ?? 0) + 1;
     }
 
-    $aggregate = jg_orders_location_aggregate_payload($provinceCounts, $totalOrders, $unmatchedOrders, $summary);
-    jg_orders_write_location_cache($pdo, $rangeKey, $version, $startDate, $endDate, $summary, $aggregate);
-    $aggregate['cached'] = false;
-
-    return [
-        'ok' => true,
-        'source' => 'dashboard_order_mirror_location_aggregate',
-        'start_date' => $startDate,
-        'end_date' => $endDate,
-        'geocoder_version' => $version,
-        'mirror' => jg_orders_public_mirror_range_summary($summary),
-        'aggregate' => $aggregate,
-    ];
+    return jg_orders_location_aggregate_payload($provinceCounts, $totalOrders, $unmatchedOrders, $summary);
 }
 
 function jg_orders_location_aggregate_payload(array $provinceCounts, int $totalOrders, int $unmatchedOrders, array $summary): array
@@ -3632,9 +3682,9 @@ function jg_orders_ensure_opening_lots(PDO $pdo): void
     }
 }
 
-function jg_orders_sku_lookup(PDO $pdo): array
+function jg_orders_sku_lookup(PDO $pdo, ?array $productNameMap = null, bool $includeCosts = true): array
 {
-    $productNameMap = jg_orders_product_name_map();
+    $productNameMap ??= jg_orders_product_name_map();
     $stmt = $pdo->query(
         'SELECT s.sku, s.tag, s.brand_id, s.unit_id, s.product_id, s.flavor_id, s.volume, s.astra, s.current_stock, s.cogs, s.packing_required,
                 b.name AS brand_name, u.name AS unit_name, p.name AS product_name, f.name AS flavor_name
@@ -3647,33 +3697,35 @@ function jg_orders_sku_lookup(PDO $pdo): array
     $lookup = [];
     $skuRows = array_values(array_filter($stmt->fetchAll(), 'is_array'));
     $historyBySku = [];
-    $historyStmt = $pdo->query(
-        'SELECT id, sku, old_price, new_price, change_mode, effective_at, effective_until, recorded_at
-         FROM sku_cogs_history ORDER BY sku, recorded_at, id'
-    );
-    foreach (($historyStmt !== false ? $historyStmt->fetchAll() : []) as $historyRow) {
-        $historySku = (string) ($historyRow['sku'] ?? '');
-        $historyBySku[$historySku][] = [
-            'id' => (int) ($historyRow['id'] ?? 0),
-            'old_price' => $historyRow['old_price'] === null ? null : (float) $historyRow['old_price'],
-            'new_price' => (float) ($historyRow['new_price'] ?? 0),
-            'change_mode' => (string) ($historyRow['change_mode'] ?? 'legacy'),
-            'effective_at' => $historyRow['effective_at'] === null ? null : (string) $historyRow['effective_at'],
-            'effective_until' => $historyRow['effective_until'] === null ? null : (string) $historyRow['effective_until'],
-            'recorded_at' => (string) ($historyRow['recorded_at'] ?? ''),
-        ];
-    }
     $packingBySku = [];
-    $packingStmt = $pdo->query('SELECT year, month, sku, packing_per_item FROM sku_packing_costs ORDER BY sku, year, month');
-    foreach (($packingStmt !== false ? $packingStmt->fetchAll() : []) as $packingRow) {
-        $packingSku = (string) ($packingRow['sku'] ?? '');
-        $packingYear = (int) ($packingRow['year'] ?? 0);
-        $packingMonth = (int) ($packingRow['month'] ?? 0);
-        if ($packingSku !== '' && $packingYear >= 2025 && $packingMonth >= 1 && $packingMonth <= 12) {
-            $packingBySku[$packingSku][sprintf('%04d-%02d', $packingYear, $packingMonth)] = (float) ($packingRow['packing_per_item'] ?? 0);
+    if ($includeCosts) {
+        $historyStmt = $pdo->query(
+            'SELECT id, sku, old_price, new_price, change_mode, effective_at, effective_until, recorded_at
+             FROM sku_cogs_history ORDER BY sku, recorded_at, id'
+        );
+        foreach (($historyStmt !== false ? $historyStmt->fetchAll() : []) as $historyRow) {
+            $historySku = (string) ($historyRow['sku'] ?? '');
+            $historyBySku[$historySku][] = [
+                'id' => (int) ($historyRow['id'] ?? 0),
+                'old_price' => $historyRow['old_price'] === null ? null : (float) $historyRow['old_price'],
+                'new_price' => (float) ($historyRow['new_price'] ?? 0),
+                'change_mode' => (string) ($historyRow['change_mode'] ?? 'legacy'),
+                'effective_at' => $historyRow['effective_at'] === null ? null : (string) $historyRow['effective_at'],
+                'effective_until' => $historyRow['effective_until'] === null ? null : (string) $historyRow['effective_until'],
+                'recorded_at' => (string) ($historyRow['recorded_at'] ?? ''),
+            ];
+        }
+        $packingStmt = $pdo->query('SELECT year, month, sku, packing_per_item FROM sku_packing_costs ORDER BY sku, year, month');
+        foreach (($packingStmt !== false ? $packingStmt->fetchAll() : []) as $packingRow) {
+            $packingSku = (string) ($packingRow['sku'] ?? '');
+            $packingYear = (int) ($packingRow['year'] ?? 0);
+            $packingMonth = (int) ($packingRow['month'] ?? 0);
+            if ($packingSku !== '' && $packingYear >= 2025 && $packingMonth >= 1 && $packingMonth <= 12) {
+                $packingBySku[$packingSku][sprintf('%04d-%02d', $packingYear, $packingMonth)] = (float) ($packingRow['packing_per_item'] ?? 0);
+            }
         }
     }
-    $stockMap = jg_astra_stock_map($skuRows);
+    $stockMap = $includeCosts ? jg_astra_stock_map($skuRows) : [];
     foreach ($skuRows as $row) {
         $sku = (string) $row['sku'];
         $stockTarget = $stockMap[$sku] ?? [

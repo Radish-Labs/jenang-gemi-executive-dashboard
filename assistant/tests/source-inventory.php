@@ -30,10 +30,12 @@ $localEntries=array_values(array_filter($matrix['database_sources'],fn($d)=>$d['
 inventorySameSet(array_keys($local['tables']),array_column($localEntries,'physical_source'),'Actual dashboard database source inventory');
 inventorySameSet($local['files'],$matrix['scan_files']['dashboard'],'Application source file review');
 inventorySameSet($local['readsites'],array_column($matrix['file_readsites'],'id'),'Persisted-file and remote transport readsite review');
-$views=JenangMcp\tableRegistry();$fileViews=JenangMcp\fileSourceDefinitions();$reports=JenangMcp\businessReportRegistry();
+$views=JenangMcp\tableRegistry();$fileViews=JenangMcp\fileSourceDefinitions();$reports=JenangMcp\businessReportRegistry();$finance=JenangMcp\financeParityRegistry();
 inventorySameSet(array_keys($views),$matrix['reviewed_database_view_names'],'Reviewed typed database catalog');
 inventorySameSet(array_keys($fileViews),$matrix['reviewed_file_view_names'],'Reviewed typed file catalog');
 inventorySameSet(array_keys($reports),array_column($matrix['canonical_reports'],'id'),'Canonical report registration');
+inventorySameSet(array_keys($finance),array_column($matrix['finance_reports'],'id'),'Separately authorized finance report registration');
+inventoryCheck(array_intersect(array_keys($finance),array_keys($reports))===[],'Finance reports cannot silently appear under dashboard authorization');
 $ids=[];$mapped=[];$classes=['mapped','projection_needs_semantic','external_reader_blocked','intentionally_excluded'];
 foreach($matrix['database_sources'] as $source){
     inventoryCheck(!isset($ids[$source['id']]),'Unique source identity');$ids[$source['id']]=true;
@@ -49,17 +51,34 @@ foreach($matrix['database_sources'] as $source){
         $mapped[]=$view;
     }
     if($source['classification']!=='mapped')inventoryCheck(!empty($source['reason']),'Excluded/unavailable sources need a concrete reason');
+    if($source['classification']==='intentionally_excluded'){
+        inventoryCheck(in_array($source['exclusion_category']??null,['security_secrets','mixed_business_payload','internal_presentation'],true),'Excluded source category is explicit');
+        inventoryCheck(!empty($source['future_projection_review'])&&($source['future_projection_implemented']??null)===false,'Potential safe subset is review only, not implemented access');
+    }
 }
 inventorySameSet($mapped,array_keys($views),'Every typed view maps to actual storage evidence');
 foreach($matrix['canonical_reports'] as $report){$live=$reports[$report['id']];inventoryCheck($live['status']===$report['implementation_status'],'Report implementation status drift: '.$report['id']);inventoryCheck(($live['canonical']??null)===$report['canonical'],'Canonical helper drift: '.$report['id']);inventoryCheck(($live['input_schema']??null)===$report['input_schema'],'Report argument contract drift: '.$report['id']);}
+foreach($matrix['finance_reports'] as $report){$live=$finance[$report['id']];inventoryCheck($live['status']===$report['implementation_status'],'Finance implementation status drift: '.$report['id']);inventoryCheck(($live['canonical']??null)===$report['canonical'],'Finance canonical helper drift: '.$report['id']);inventoryCheck(($live['input_schema']??null)===$report['input_schema'],'Finance argument contract drift: '.$report['id']);inventoryCheck($live['scope']===JenangMcp\FINANCE_SCOPE&&$report['scope']===JenangMcp\FINANCE_SCOPE,'Finance report retains existing finance scope');inventoryCheck(($live['recipient_required']??false)===$report['recipient_required'],'Named-recipient requirement recorded accurately');}
+foreach([['definitions'=>$reports,'reviewed'=>$matrix['canonical_reports']],['definitions'=>$finance,'reviewed'=>$matrix['finance_reports']]]as $group)foreach($group['reviewed']as $report)foreach(['source','scope','date_basis','limitations']as $field)inventoryCheck(($group['definitions'][$report['id']][$field]??null)===($report[$field]??null),'Report scope/source/date/limitations drift: '.$report['id'].':'.$field);
 $apis=[];foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root.'/api',FilesystemIterator::SKIP_DOTS))as $f)if($f->isFile()&&$f->getFilename()==='index.php')$apis[]=substr($f->getPathname(),strlen($root)+1);
 inventorySameSet($apis,array_column($matrix['api_sources'],'file'),'Dashboard API consumers');
-foreach($matrix['api_sources'] as $api){inventoryCheck(in_array($api['classification'],$classes,true)&&!empty($api['reason']),'API coverage decision is explicit');foreach($api['implemented_reports'] as $report)inventoryCheck(($reports[$report]['status']??null)==='implemented','API names only implemented reports');}
-foreach($matrix['file_sources'] as $file){inventoryCheck(in_array($file['classification'],$classes,true)&&!empty($file['reason']),'File source coverage decision is explicit');foreach($file['evidence']as $e)inventoryCheck(is_file($root.'/'.$e['file']),'File source evidence exists: '.$e['file']);}
+foreach($matrix['api_sources'] as $api){inventoryCheck(in_array($api['classification'],$classes,true)&&!empty($api['reason']),'API coverage decision is explicit');foreach($api['implemented_reports'] as $report)inventoryCheck(($reports[$report]['status']??null)==='implemented','API names only implemented reports');foreach($api['implemented_finance_reports']??[] as $report)inventoryCheck(($finance[$report]['status']??null)==='implemented','API names only implemented finance reports');}
+function inventoryInterface(string $interface,array $reports,array $finance,array $views,array $fileViews):void{
+    if(str_starts_with($interface,'jg_business_report:'))inventoryCheck(($reports[substr($interface,19)]['status']??null)==='implemented','Interface references implemented dashboard report');
+    elseif(str_starts_with($interface,'jg_finance_report:'))inventoryCheck(($finance[substr($interface,18)]['status']??null)==='implemented','Interface references separately authorized finance report');
+    elseif(str_starts_with($interface,'jg_query_table:')){$view=substr($interface,15);inventoryCheck(isset($views[$view])||isset($fileViews[$view])||in_array($view,['catalog','sales_lines','sales_orders'],true),'Interface references registered data view: '.$view);}
+    else inventoryCheck(in_array($interface,['jg_ads_history','jg_monthly_profit','jg_product_report','jg_resolve_product','jg_annualize_sales'],true),'Known standalone read interface');
+}
+foreach($matrix['file_sources'] as $file){inventoryCheck(in_array($file['classification'],$classes,true)&&!empty($file['reason']),'File source coverage decision is explicit');foreach($file['evidence']as $e)inventoryCheck(is_file($root.'/'.$e['file']),'File source evidence exists: '.$e['file']);foreach($file['interfaces']as $interface)inventoryInterface($interface,$reports,$finance,$views,$fileViews);}
+foreach($matrix['remaining_source_limitations']as $limitation){inventoryCheck(!empty($limitation['reason'])&&!empty($limitation['evidence']),'Source limitation explicit even when projection exists');foreach($limitation['evidence']as $e)inventoryCheck(is_file($root.'/'.$e['file']),'Remaining limitation evidence exists');foreach($limitation['interfaces']as $interface)inventoryInterface($interface,$reports,$finance,$views,$fileViews);}
 $pages=[];foreach(new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root,FilesystemIterator::SKIP_DOTS))as $f){if(!$f->isFile()||$f->getFilename()!=='index.php')continue;$relative=substr($f->getPathname(),strlen($root)+1);if(!array_intersect(explode('/',$relative),['.git','tests','assistant','api','vendor']))$pages[]=$relative;}
 inventorySameSet($pages,$matrix['dashboard_page_entrypoints'],'Dashboard page entrypoints');
 $c=$matrix['counts'];inventoryCheck(count($matrix['database_sources'])===$c['database_sources'],'Database count reconciles');inventoryCheck(count($views)===$c['typed_database_views'],'View count reconciles');inventoryCheck(count($reports)===$c['canonical_reports'],'Report count reconciles');
+inventoryCheck(count($finance)===$c['finance_reports'],'Separate finance count reconciles');inventoryCheck(count($reports)+count($finance)===$c['all_fixed_reports'],'Combined fixed report count reconciles without merging scopes');
+foreach(['typed_file_views'=>count($fileViews),'api_consumers'=>count($apis),'file_snapshot_families'=>count($matrix['file_sources']),'file_readsites'=>count($local['readsites']),'ingest_api_routes'=>count($matrix['ingest_api_sources'])]as $key=>$count)inventoryCheck($c[$key]===$count,'Source/view inventory count reconciles: '.$key);
+$expected=$c['file_sources_by_classification'];ksort($expected);inventoryCheck(inventoryCounts($matrix['file_sources'],'classification')===$expected,'File source classification counts reconcile');
 foreach(['repository'=>'database_by_repository','classification'=>'database_by_classification','family'=>'database_by_family']as $field=>$key){$expected=$c[$key];ksort($expected);inventoryCheck(inventoryCounts($matrix['database_sources'],$field)===$expected,'Source count breakdown reconciles: '.$key);}
+$excluded=array_values(array_filter($matrix['database_sources'],fn($s)=>$s['classification']==='intentionally_excluded'));$expected=$c['deliberate_exclusions_by_category'];ksort($expected);inventoryCheck(inventoryCounts($excluded,'exclusion_category')===$expected,'Deliberate exclusion categories reconcile');
 foreach(['zero_store_items','zero_store_discounts','zero_store_discount_items','jenang_gemi_store_items','jenang_gemi_store_discounts','jenang_gemi_store_discount_items']as $view)inventoryCheck($views[$view]['database']==='sku','Regression: storefront source binds to actual SKU database');
 inventoryCheck(($views['customer_activity']['physical_table']??null)==='analytics_events','Regression: logical customer activity view resolves to real analytics_events');
 inventoryCheck(($views['customer_activity']['aggregate_only']??false)===true,'Customer activity remains aggregate-only');
@@ -68,18 +87,25 @@ inventoryCheck(!isset($views['zero_store_voucher']['columns']['code_hash'])&&!is
 foreach($matrix['feature_acceptance'] as $feature){
     inventoryCheck(!empty($feature['evidence']),'Feature has actual source evidence');
     foreach($feature['evidence']as $e)inventoryCheck(is_file($root.'/'.$e['file']),'Feature source evidence exists: '.$e['file']);
-    foreach($feature['interfaces']as $interface){
-        if(str_starts_with($interface,'jg_business_report:'))inventoryCheck(($reports[substr($interface,19)]['status']??null)==='implemented','Feature references implemented canonical report');
-        elseif(str_starts_with($interface,'jg_query_table:')){$view=substr($interface,15);inventoryCheck(isset($views[$view])||isset($fileViews[$view])||in_array($view,['catalog','sales_lines','sales_orders'],true),'Feature references registered data view: '.$view);}
-    }
+    foreach($feature['interfaces']as $interface)inventoryInterface($interface,$reports,$finance,$views,$fileViews);
+    if(isset($feature['implemented_canonical_helpers'])){$helpers=[];foreach($feature['interfaces']as $interface){if(str_starts_with($interface,'jg_business_report:'))$helpers[]=$reports[substr($interface,19)]['canonical'];elseif(str_starts_with($interface,'jg_finance_report:'))$helpers[]=$finance[substr($interface,18)]['canonical'];}inventoryCheck($helpers===$feature['implemented_canonical_helpers'],'Feature implementation helper evidence matches actual registry');}
     if($feature['classification']!=='mapped')inventoryCheck(!empty($feature['remaining_gap']),'Feature gap remains explicit');
 }
 inventoryCheck(count($matrix['feature_acceptance'])===$c['feature_acceptance_rows'],'Feature acceptance count reconciles');
+$expected=$c['feature_acceptance_by_classification'];ksort($expected);inventoryCheck(inventoryCounts($matrix['feature_acceptance'],'classification')===$expected,'Feature classification counts reconcile');
+foreach($c['feature_gaps_by_category']as $category=>$count)inventoryCheck(count(array_filter($matrix['feature_acceptance'],fn($f)=>($f['gap_category']??null)===$category))===$count,'Remaining feature gap category reconciles');
+$proof=array_values(array_filter($matrix['file_sources'],fn($f)=>$f['id']==='zero_sales_proof_cache'))[0];
+inventoryCheck($proof['coverage_level']==='saved_public_claim_only'&&in_array('exact_units',$proof['unavailable_components'],true)&&in_array('brand_partition',$proof['unavailable_components'],true),'Saved public proof does not imply exact units or ZERO-only partition');
 $ingestRoot=null;foreach(array_slice($argv,1)as $arg){if(!str_starts_with($arg,'--ingest-root='))throw new InvalidArgumentException('Supported option: --ingest-root=/path/to/known/ingest/repository');$ingestRoot=substr($arg,14);}
 if($ingestRoot!==null){inventoryCheck(is_dir($ingestRoot),'Known ingest checkout exists');$external=inventoryScan($ingestRoot);$ingestEntries=array_values(array_filter($matrix['database_sources'],fn($d)=>$d['repository']==='ingest'));inventorySameSet(array_keys($external['tables']),array_column($ingestEntries,'physical_source'),'Actual ingest database inventory');inventorySameSet($external['files'],$matrix['scan_files']['ingest'],'Ingest source file review');
     $routeSource=(string)file_get_contents(rtrim($ingestRoot,'/').'/public/index.php');
-    preg_match_all('~[\'"](/(?:ads|sales|fulfillment|hard-set|setup|health|shopee/auth|tiktok/auth)[a-zA-Z0-9_/-]*)[\'"]~',$routeSource,$m);$routes=$m[1];
+    preg_match_all('~[\'"](/(?:ads|sales|reports|fulfillment|hard-set|setup|health|shopee/auth|tiktok/auth)[a-zA-Z0-9_/-]*)[\'"]~',$routeSource,$m);$routes=$m[1];
     preg_match_all('~[\'"]/[\'"]\s*\.\s*\$platform\s*\.\s*[\'"](/[^\'"]+)[\'"]~',$routeSource,$m);foreach($m[1]as $suffix)$routes[]='/{platform}'.$suffix;
     inventorySameSet(array_values(array_unique($routes)),array_column($matrix['ingest_api_sources'],'id'),'Ingest HTTP route inventory');
+    $contract=json_decode((string)file_get_contents(rtrim($ingestRoot,'/').'/docs/ingest-report-sources.json'),true,32,JSON_THROW_ON_ERROR);
+    inventoryCheck(($contract['schema_version']??null)===$matrix['pending_remote_contract']['schema_version'],'Pending ingest contract version reviewed');
+    inventoryCheck(count($contract['sources'])===$c['pending_remote_contract_sources'],'Pending remote source count reconciles');
+    inventorySameSet(array_column($contract['sources'],'source'),array_column($matrix['pending_remote_contract']['sources'],'source'),'Pending ingest contract covers exact remote sources');
+    foreach($contract['sources']as $source){$reviewed=array_values(array_filter($matrix['pending_remote_contract']['sources'],fn($s)=>$s['source']===$source['source']))[0];inventoryCheck($reviewed===$source,'Remote safe projection contract drift: '.$source['source']);}
 }
-echo json_encode(['checks'=>$checks,'database_sources'=>$c['database_sources'],'typed_database_views'=>count($views),'api_consumers'=>count($apis),'canonical_reports'=>count($reports),'external_ingest_scan_performed'=>$ingestRoot!==null,'fixture_and_source_only'=>true]).PHP_EOL;
+echo json_encode(['checks'=>$checks,'database_sources'=>$c['database_sources'],'typed_database_views'=>count($views),'api_consumers'=>count($apis),'canonical_reports'=>count($reports),'finance_reports'=>count($finance),'external_ingest_scan_performed'=>$ingestRoot!==null,'fixture_and_source_only'=>true]).PHP_EOL;

@@ -18,6 +18,7 @@ require_once __DIR__.'/read-services/accounting-overview-metrics.php';
 require_once __DIR__.'/read-services/stock-metrics.php';
 require_once __DIR__.'/read-services/cash-flow-metrics.php';
 require_once __DIR__.'/read-services/inventory-forecast-metrics.php';
+require_once __DIR__.'/local-parity-reports.php';
 
 /** Fixed report metadata is also suitable for the capability catalog. */
 function businessReportRegistry(): array {
@@ -39,6 +40,7 @@ function businessReportRegistry(): array {
     $r+=reviewMetricRegistry();
     $r+=purchaseMetricRegistry();
     $r+=stockMetricRegistry();$r+=accountingOverviewMetricRegistry();$r+=cashFlowMetricRegistry();$r+=inventoryForecastMetricRegistry();$r+=commerceDerivedMetricRegistry();
+    $r+=localParityRegistry();
     foreach($r as $id=>&$d)if(isset($d['input_schema']))$d['input_schema']['properties']['report']['enum']=[$id];unset($d);
     return $r;
 }
@@ -51,7 +53,9 @@ function businessReportArguments(array $a,?\DateTimeImmutable $now=null): array 
     foreach($a as $key=>$value){$schema=$d['input_schema']['properties'][$key] ?? [];if(isset($schema['enum'])&&!in_array($value,$schema['enum'],true))throw new \InvalidArgumentException('Unsupported report argument.');}
     if(isset($d['input_schema']['properties']['year'])){
         $max=(int)($now ?? new \DateTimeImmutable('now'))->setTimezone(new \DateTimeZone('Asia/Jakarta'))->format('Y');
-        if(!is_int($a['year'] ?? null)||$a['year']<2025||$a['year']>min(2100,$max))throw new \InvalidArgumentException('Supported past/current year required.');
+        $yearSchema=$d['input_schema']['properties']['year'];
+        $ceiling=!empty($d['allow_future_year'])?($yearSchema['maximum'] ?? 2100):min($yearSchema['maximum'] ?? 2100,$max);
+        if(!is_int($a['year'] ?? null)||$a['year']<($yearSchema['minimum'] ?? 2025)||$a['year']>$ceiling)throw new \InvalidArgumentException('Supported report year required.');
     }
     if(isset(cashMetricRegistry()[$id]))cashMetricArguments($id,array_diff_key($a,['report'=>true]),$now);
     if(isset(purchaseMetricRegistry()[$id]))purchaseMetricArguments($id,array_diff_key($a,['report'=>true]),$now);
@@ -60,6 +64,7 @@ function businessReportArguments(array $a,?\DateTimeImmutable $now=null): array 
     if(isset(cashFlowMetricRegistry()[$id]))cashFlowMetricArguments($id,array_diff_key($a,['report'=>true]),$now);
     if(isset(inventoryForecastMetricRegistry()[$id]))inventoryForecastMetricArguments($id,array_diff_key($a,['report'=>true]));
     if(isset(commerceDerivedMetricRegistry()[$id]))commerceDerivedMetricArguments($id,array_diff_key($a,['report'=>true]),$now);
+    if(isset(localParityRegistry()[$id]))localParityArguments($id,array_diff_key($a,['report'=>true]),$now);
     return $d;
 }
 /** No runtime SQL or callbacks come from the RPC arguments. Factories are fixture-only injection. */
@@ -83,6 +88,18 @@ final class BusinessReportReader {
         return new BusinessReadPDO($p,$db);
     }
     public function read(string $report,?int $year=null,array $args=[],?\DateTimeImmutable $now=null): array {
+        if(isset(localParityRegistry()[$report])){
+            $args=localParityArguments($report,$args,$now);
+            $args=localParityScopedArguments($report,$args,$this->c);
+            $sources=[];
+            try{
+                foreach(localParitySources($report) as $source){
+                    if(!in_array($source,['analytics','sku','partner'],true)||isset($sources[$source]))throw new \LogicException('Invalid fixed report source set.');
+                    $sources[$source]=$this->connection($source);
+                }
+                return localParityRead($sources,$report,$args,$now,$this->c);
+            }finally{foreach(array_reverse($sources) as $source)if($source->inTransaction())$source->rollBack();}
+        }
         if($report==='sales_snapshot'){
             $payload=\jg_profit_share_read_sales_snapshot((int)$year);
             if(!$payload)throw new \RuntimeException('Complete sales snapshot unavailable.');
@@ -146,7 +163,7 @@ function businessReportProjection(string $id,?int $year,array $raw,\DateTimeImmu
     if(function_exists(__NAMESPACE__.'\\stockMetricRegistry')&&isset(stockMetricRegistry()[$id])){
         return ['generated_at'=>$now->format(DATE_ATOM),'business_timezone'=>'Asia/Jakarta','report'=>$id,'period'=>['basis'=>'current_stored_state'],'currency'=>$raw['currency'],'data'=>['rows'=>$raw['rows'],'row_count'=>$raw['row_count']],'provenance'=>['canonical'=>$d['canonical'],'source'=>$d['source'],'date_basis'=>$d['date_basis'],'source_row_counts'=>$raw['source_row_counts']],'freshness'=>$raw['freshness'],'completeness'=>$raw['completeness'],'limitations'=>$d['limitations']];
     }
-    if(isset(commerceMetricRegistry()[$id])||isset(cashMetricRegistry()[$id])||isset(walletMetricRegistry()[$id])||isset(reviewMetricRegistry()[$id])||isset(purchaseMetricRegistry()[$id])||isset(accountingOverviewMetricRegistry()[$id])||isset(cashFlowMetricRegistry()[$id])||isset(inventoryForecastMetricRegistry()[$id])||isset(commerceDerivedMetricRegistry()[$id])){
+    if(isset(commerceMetricRegistry()[$id])||isset(cashMetricRegistry()[$id])||isset(walletMetricRegistry()[$id])||isset(reviewMetricRegistry()[$id])||isset(purchaseMetricRegistry()[$id])||isset(accountingOverviewMetricRegistry()[$id])||isset(cashFlowMetricRegistry()[$id])||isset(inventoryForecastMetricRegistry()[$id])||isset(commerceDerivedMetricRegistry()[$id])||isset(localParityRegistry()[$id])){
         if(!is_array($raw['values'] ?? null))throw new \RuntimeException('Invalid canonical report envelope.');
         return ['generated_at'=>$raw['generated_at'],'business_timezone'=>'Asia/Jakarta','report'=>$id,'period'=>$raw['period'],'currency'=>$raw['currency'],'data'=>$raw['values'],'provenance'=>$raw['provenance'],'freshness'=>$raw['freshness'],'completeness'=>$raw['completeness'],'limitations'=>$d['limitations']]+array_intersect_key($raw,array_flip(['scope','status']));
     }
@@ -187,7 +204,7 @@ function businessReport(array $c,array $a,?BusinessReportReader $reader=null,?\D
     try {$raw=$reader->read($a['report'],$a['year'] ?? null,array_diff_key($a,['report'=>true]),$now);}
     catch(\Throwable $e){if($e instanceof ReportingSourceUnavailable)throw $e;if(in_array($d['source'],['analytics','sku','partner'],true))throw new ReportingSourceUnavailable($d['source'],sourceFailure($e));throw new \RuntimeException('Required report source unavailable. No complete total was inferred.');}
     $result=businessReportProjection($a['report'],$a['year'] ?? null,$raw,$now);
-    if(in_array($a['report'],['accounting_pnl_inputs','cash_balances','accounting_monthly_summary','accounting_overview','cash_flow'],true))$result['provenance']['account_scope']='whole_company_under_existing_dashboard_grant';
+    if(in_array($a['report'],['sales_snapshot','accounting_pnl_inputs','cash_balances','accounting_monthly_summary','accounting_overview','cash_flow'],true))$result['provenance']['account_scope']='whole_company_under_existing_dashboard_grant';
     if(strlen(json_encode($result,JSON_THROW_ON_ERROR))>2097152)throw new \RuntimeException('Report response exceeds bounded output capacity.');
     return ['data'=>$result];
 }

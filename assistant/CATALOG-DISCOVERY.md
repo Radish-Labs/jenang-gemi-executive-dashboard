@@ -31,7 +31,7 @@ Official OpenAI documentation distinguishes two paths:
 
 The generated `created-by-me-remote`/development manifest and the owner's developer-mode screenshots are consistent with the first path. Publication/review status was not inspected, so the distinction should be confirmed on the actual connection detail page rather than assumed from the plugin's displayed version.
 
-## Exact remaining UI blocker
+## Initial UI blocker — resolved by the parent refresh below
 
 This investigation has no supported browser-control tool or catalog-refresh action available. The supplied screenshots show Manage and ellipsis controls but no visible Refresh. Neither the screenshots nor the official documentation establish which of those menus contains the action in this account's current UI.
 
@@ -50,3 +50,15 @@ After the server release and an actual metadata refresh/review:
 - Preserve backward compatibility with the seven existing published schemas until the refreshed definitions are demonstrably callable.
 
 No claim of repaired discovery or full usable feature coverage is justified until these checks pass.
+
+## Post-release checkpoint, 2026-10-22
+
+Release `b282d30` is hosted as MCP 0.4.0 / exec3.98.47. Context advertises twelve tools; list/describe returns 103 views and 22 canonical reports. All seven formerly broken mappings passed both hosted aggregate and projected-column reads, and existing sales queried all four stored sources.
+
+The parent subsequently completed the actual authenticated ChatGPT **Manage → Refresh tools** action. It reports that the plugin page now lists twelve tools without permission or scope changes. This continuing execution session still has seven callable tools. A fresh-conversation invocation remains the client acceptance test; no conversation was created on the user's behalf.
+
+No safe alternative authenticated dashboard transport was found for invoking the new MCP tools. `/assistant/mcp/` deliberately requires its OAuth bearer token, while `/api/ads/` invokes schema preparation and the older summary path. Neither credential extraction nor that potentially mutating route was used. Authenticated live ads-history and generic-report responses remain unverified from this continuing session.
+
+## Local parity release refresh requirement
+
+The prepared 0.5.0 metadata adds `jg_finance_report`, `jg_ingest_report` and report-specific parameters to `jg_business_report`; the fully approved managed fixture has fourteen tools. After that release is actually deployed, repeat the already verified **Manage → Refresh tools** action and compare the fresh client's callable names/arguments with hosted metadata. The existing dashboard token must still be denied finance execution unless it already carries the separately approved finance scope. Refreshing metadata is not a scope grant and does not require changing permission mode, reconnecting, reinstalling or creating credentials. Ingestion discovery explicitly reports its unreleased gate and denied global sources; publication of its tool schema does not activate that bridge or establish hosted source availability.

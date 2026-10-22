@@ -4,6 +4,10 @@ The 0.4.0 read release adds domain catalog, generic scope, canonical report and 
 
 See `../RELEASE-0.4.0.md` for the recorded combined validation and remaining production/client acceptance boundary.
 
+The next local parity batch adds `sales-parity-metrics.php`, `partner-parity.php`, `read-services/cost-parity-metrics.php`, `health-metrics.php`, `finance-parity.php` and `local-parity-dispatch.php`. These compare extracted canonical calculations with fixtures and preserve missing-data, account/partner/recipient, privacy and passive-read boundaries. The HTTP suite also covers `jg_finance_report` with a real synthetic dashboard-only OAuth token, exact-recipient rejection, expiry and revocation. No reauthorization or production connection is needed for these tests.
+
+`editor-profit-loss.php` evaluates the actual dashboard JavaScript for separate editor parity. `ingest-reports.php` checks the twelve-source contract with injected synthetic HTTP payloads; `ingest-dispatch.php` checks discovery, scopes and the closed release gate. Neither contacts the ingestion host or loads a production credential. See `../RELEASE-0.5.0.md` for the frozen candidate and activation boundaries.
+
 Owner-managed connection and computed reporting:
 
 - `php assistant/tests/reporting-guidance.php`: metadata/empty-result regressions for ads configuration versus performance, accounting category/bill discovery, duplicate wallet representation, and unchanged scope guards. SQLite fixtures only.

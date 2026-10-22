@@ -128,6 +128,7 @@ function sourceCatalogInventory(): array {
         'schema_version'=>$matrix['schema_version'] ?? null,
         'counts'=>$matrix['counts'] ?? [],
         'sources'=>$entries,
+        'remaining_source_limitations'=>array_map(static fn(array $item):array=>array_intersect_key($item,array_flip(['id','reason','interfaces'])),$matrix['remaining_source_limitations'] ?? []),
         'ads_history_release_enabled'=>defined(__NAMESPACE__.'\\ADS_HISTORY_SOURCE_RELEASED')&&ADS_HISTORY_SOURCE_RELEASED,
         'warnings'=>['Mapped describes implemented projections, not complete fields, historical coverage, successful synchronization or live availability.','Intentionally excluded credentials, security controls, identifiable customer fields and private document contents do not become queryable.'],
     ];

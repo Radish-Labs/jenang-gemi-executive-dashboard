@@ -9,7 +9,7 @@ const SOURCE_FAILURE_REASONS=['unavailable','host_resolution_failed','connection
 final class ReportingSourceUnavailable extends \RuntimeException {
     public readonly array $diagnostics;
     public function __construct(string $source,array $diagnostics=[]) {
-        if(!in_array($source,['analytics','sku','partner','marketplace','website','direct','all_sales','catalog_names'],true))$source='analytics';
+        if(!in_array($source,['analytics','sku','partner','marketplace','website','direct','all_sales','catalog_names','legacy_pnl'],true))$source='analytics';
         $reason=in_array($diagnostics['reason'] ?? '',SOURCE_FAILURE_REASONS,true)?$diagnostics['reason']:'unavailable';
         $clean=['source'=>$source,'reason'=>$reason];
         if(is_string($diagnostics['sqlstate'] ?? null)&&preg_match('/^[A-Z0-9]{5}$/D',$diagnostics['sqlstate']))$clean['sqlstate']=$diagnostics['sqlstate'];
@@ -59,6 +59,7 @@ function listTables(array $c): array {
         $d=tableDefinition($name);$tables[]=['name'=>$name,'family'=>$d['family'],'source'=>$d['database'],'aggregate_only'=>$d['aggregate_only'] ?? false,'availability'=>'query_checks_live_source']+array_intersect_key($d,array_flip(['purpose','source_coverage','scope_requirements','date_basis']));
     }
     return ['tables'=>$tables,'business_reports'=>function_exists(__NAMESPACE__.'\\businessReportRegistry')?businessReportRegistry():[],
+        'ingestion_sources'=>function_exists(__NAMESPACE__.'\\ingestReportsCatalog')?ingestReportsCatalog($c):null,
         'source_inventory'=>sourceCatalogInventory(),
         'source_coverage'=>reportingSourceCoverage(),'accounting_guidance'=>adsAccountingGuidance(),
         'excluded'=>'Customer/contact identities, credential/auth tables, free-text notes, receipt/proof content, raw JSON/outboxes, operational migrations and writes. Safe receipt existence/size metadata is separately projected. No arbitrary SQL.',
