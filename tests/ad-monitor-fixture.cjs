@@ -13,7 +13,7 @@ let account = {account_key:'jenang-gemi-shopee',company:'Jenang Gemi',revision:7
  row(102,'paused','unselected','<img src=x onerror=alert(1)>'),
  row(103,'ongoing','running','Jenang Gemi Family Pack')
 ]};
-let offline=false;
+let offline=false, additionalAccounts=[];
 const server = http.createServer((req,res)=>{
  const u=new URL(req.url,'http://127.0.0.1');
  if(u.pathname==='/api/ad-monitor/') {
@@ -23,9 +23,21 @@ const server = http.createServer((req,res)=>{
    if(data.action==='acknowledge')c.incident.acknowledged_at=now;
    else { c.desired_state={expect_running:'running',intentional_pause:'paused',ignore:'ignore'}[data.action]; c.intent_source='executive_selection'; if(data.action!=='expect_running') c.incident=null; }
    account.revision++;res.end(JSON.stringify({ok:true,accounts:[account]}));});return;}
-  res.end(JSON.stringify({ok:true,accounts:[account]}));return;
+  res.end(JSON.stringify({ok:true,accounts:[account,...additionalAccounts]}));return;
  }
- if(u.pathname==='/fixture-new-incident'){offline=false;account.campaigns[0].incident={id:'101:new',detected_at:now,last_running_at:now-60,acknowledged_at:null};account.revision++;res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<p>New incident fixture enabled</p>');return;}
+ if(u.pathname==='/fixture-baselines'){
+  offline=false;account={...account,freshness:'fresh',sync_state:'ok',last_success_at:now-60,last_attempt_at:now-70,campaigns:[row(103,'ongoing','running','Jenang Gemi Family Pack')]};
+  additionalAccounts=[{...account,account_key:'zero-shopee',company:'ZERO',campaigns:[row(201,'ongoing','running','ZERO Fixture')]},
+   {account_key:'zfit-shopee',company:'ZFIT',revision:0,freshness:'unknown',sync_state:'unknown',last_success_at:null,last_attempt_at:null,campaigns:[]}];
+  res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<p>Independent account baselines fixture enabled</p>');return;
+ }
+ if(u.pathname==='/fixture-ignored'){
+  offline=false;additionalAccounts=[];account={...account,freshness:'fresh',sync_state:'ok',last_success_at:now-60,last_attempt_at:now-70,
+   campaigns:[row(103,'ongoing','running','Running fixture'),{...row(104,'unknown','ignore','Ignored fixture'),missing:true},{...row(105,'ended','running','Ended fixture'),missing:true}]};
+  res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<p>Ignored and ended campaign fixture enabled</p>');return;
+ }
+ if(u.pathname==='/fixture-incomplete'){account.sync_state='incomplete';account.freshness='stale';res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<p>Incomplete snapshot fixture enabled</p>');return;}
+ if(u.pathname==='/fixture-new-incident'){offline=false;account.campaigns[0].status='paused';account.campaigns[0].incident={id:account.campaigns[0].campaign_id+':new',detected_at:now,last_running_at:now-60,acknowledged_at:null};account.revision++;res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<p>New incident fixture enabled</p>');return;}
  if(u.pathname==='/fixture-offline'){offline=true;res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<p>Offline fixture enabled</p>');return;}
  if(u.pathname==='/fixture-stale'){account.freshness='stale';account.sync_state='failed';account.campaigns.forEach(c=>c.observation_current=false);res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<p>Stale fixture enabled</p>');return;}
  if(u.pathname==='/' && u.searchParams.has('mobile')) {res.setHeader('Content-Type','text/html; charset=utf-8');res.end('<!doctype html><meta charset="UTF-8"><title>Mobile alert fixture</title><iframe title="390px mobile alert" src="/?embedded=1" style="width:390px;height:844px;border:1px solid #aaa"></iframe>');return;}

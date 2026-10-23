@@ -1,11 +1,48 @@
+// Pure presentation of saved observations; never infers account authorization or triggers collection.
+function describeAdMonitorAccount(account) {
+  const campaigns = Array.isArray(account.campaigns) ? account.campaigns : [];
+  const stamp = value => Number.isInteger(value) && value > 0 ? value : null;
+  const last = stamp(account.last_success_at);
+  const monitored = campaigns.filter(row => row.incident || (row.desired_state === 'running'
+    && !['ended', 'deleted', 'closed'].includes(row.status) && (!(row.end_time > 0) || last === null || row.end_time > last)));
+  const uncertain = monitored.filter(row => row.missing || row.status === 'unknown');
+  const unmonitoredUnknown = campaigns.filter(row => (row.missing || row.status === 'unknown') && !monitored.includes(row)).length;
+  const result = (code, label, action, attention = true) => ({code, label, action, attention,
+    monitoredCount: monitored.length, uncertainCount: uncertain.length, unmonitoredUnknown});
+  if (account.sync_state === 'failed') {
+    return result('failed', 'Latest settings sync failed', 'The worker needs a successful complete settings sync. The stored monitor does not supply a failure reason; account authorization has not been diagnosed.');
+  }
+  if (account.sync_state === 'incomplete') {
+    return result('incomplete', 'Latest settings sync was incomplete', 'Some campaign settings were not verified. Existing alerts are retained; this run cannot establish or replace a complete baseline.');
+  }
+  if (account.sync_state === 'syncing') {
+    return result('syncing', 'Settings sync has no recorded completion', 'The latest worker attempt has not recorded completion. If its displayed start time is old, check for an interrupted or stalled worker. Previous observations are not yet verified by this attempt.');
+  }
+  if (last === null) {
+    return result('baseline', 'No complete monitoring baseline yet', 'This account needs its first complete settings sync. Previously paused ads cannot be classified as unexpected until a running observation or monitoring selection is available.');
+  }
+  // Freshness is computed by the ingestion server. A user's device clock must
+  // not turn a verified server snapshot into a false stale/clock warning.
+  if (account.freshness !== 'fresh' || account.sync_state !== 'ok') {
+    return result('stale', 'Saved campaign settings are stale', 'The worker needs a new complete settings sync. Existing observations and alerts remain visible, but current delivery is unverified.');
+  }
+  if (uncertain.length) {
+    return result('campaigns', `${uncertain.length} monitored ad${uncertain.length === 1 ? ' has' : 's have'} unverified status`, 'Review the missing or unknown monitored campaigns below; absence is not proof of a pause, deletion or recovery.');
+  }
+  return result('fresh', 'Campaign settings are current', `${monitored.length} ad${monitored.length === 1 ? ' is' : 's are'} watched as expected running.`, false);
+}
+if (typeof module === 'object' && module.exports) module.exports = {describeAdMonitorAccount};
+
 (() => {
   'use strict';
+  if (typeof document === 'undefined') return;
   const root = document.querySelector('[data-ad-monitor]');
   if (!root) return;
   const endpoint = root.dataset.endpoint;
   const csrf = root.dataset.csrf;
   const summary = root.querySelector('[data-monitor-summary]');
   const details = root.querySelector('[data-monitor-details]');
+  const coverage = root.querySelector('[data-monitor-account-status]');
   const error = root.querySelector('[data-monitor-error]');
   const body = root.querySelector('[data-monitor-body]');
   const compact = root.querySelector('[data-monitor-compact]');
@@ -44,11 +81,12 @@
   }
   function updatePresentation() {
     // Ignore sync timestamps, revisions and acknowledgement changes. New incident
-    // identities or newly uncertain accounts must surface even after dismissal.
+    // identities or changed account conditions must surface even after dismissal.
     signals = sourceUnavailable ? ['source-unavailable'] : [];
     for (const account of accounts) {
-      if (account.freshness !== 'fresh' || account.campaigns.some(c => c.missing || c.status === 'unknown')) {
-        signals.push(JSON.stringify(['uncertain', account.account_key]));
+      const status = describeAdMonitorAccount(account);
+      if (status.attention) {
+        signals.push(JSON.stringify(['uncertain', account.account_key, status.code]));
       }
       for (const row of account.campaigns) {
         if (row.incident) signals.push(JSON.stringify(['incident', account.account_key, String(row.campaign_id), row.incident.id]));
@@ -80,21 +118,35 @@
   }
   function render() {
     const incidents = accounts.flatMap(a => a.campaigns.filter(c => c.incident));
-    const uncertain = accounts.filter(a => a.freshness !== 'fresh' || a.campaigns.some(c => c.missing || c.status === 'unknown'));
+    const statuses = accounts.map(account => ({account, status: describeAdMonitorAccount(account)}));
+    const uncertain = statuses.filter(item => item.status.attention);
     const unselected = accounts.flatMap(a => a.campaigns.filter(c => c.desired_state === 'unselected' && c.status === 'paused'));
     root.dataset.severity = incidents.length ? 'warning' : uncertain.length ? 'unknown' : 'ok';
     const summaryText = incidents.length
       ? `${incidents.length} unexpected ad pause${incidents.length === 1 ? ' needs' : 's need'} review${uncertain.length ? ' · current status not fully verified' : ''}`
-      : uncertain.length ? 'Shopee ad status needs verification'
+      : uncertain.length === 1 ? `${uncertain[0].account.company}: ${uncertain[0].status.label}`
+      : uncertain.length ? `Ads monitoring needs attention for ${uncertain.map(item => item.account.company).join(', ')}`
       : unselected.length ? `${unselected.length} paused ad${unselected.length === 1 ? ' needs' : 's need'} a monitoring choice`
       : 'No unexpected pauses in the latest successful observations';
     if (summary.textContent !== summaryText) summary.textContent = summaryText;
+    if (coverage) {
+      coverage.replaceChildren();
+      for (const {account, status} of statuses) {
+        const item = element('li', null, 'ad-monitor-account-status');
+        item.dataset.state = status.code;
+        item.append(element('strong', `${account.company}: ${status.label}`));
+        item.append(element('p', `Last verified settings: ${time(account.last_success_at)} · Latest attempt: ${time(account.last_attempt_at)}`));
+        if (status.attention) item.append(element('p', status.action, 'ad-monitor-caution'));
+        coverage.append(item);
+      }
+    }
     details.replaceChildren();
-    for (const account of accounts) {
+    for (const {account, status} of statuses) {
       const section = element('section', null, 'ad-monitor-account');
       section.append(element('h3', account.company));
       section.append(element('p', `Status: ${account.freshness} · Last successful settings sync: ${time(account.last_success_at)} · Latest attempt: ${time(account.last_attempt_at)} (${account.sync_state})`));
-      if (account.freshness !== 'fresh') section.append(element('p', 'Current delivery cannot be confirmed. Check the ads sync worker or account authorization; Refresh status only reads stored observations.', 'ad-monitor-caution'));
+      if (status.attention) section.append(element('p', status.action, 'ad-monitor-caution'));
+      if (status.unmonitoredUnknown) section.append(element('p', `${status.unmonitoredUnknown} intentionally paused, ignored, ended or unselected campaign${status.unmonitoredUnknown === 1 ? ' has' : 's have'} missing/unknown status. They remain listed but do not create an expected-running warning.`));
       if (!account.campaigns.length) section.append(element('p', account.last_success_at ? 'No campaigns in the latest complete snapshot.' : 'No verified campaign snapshot yet.'));
       for (const row of [...account.campaigns].sort((a,b) => Number(Boolean(b.incident)) - Number(Boolean(a.incident)))) {
         const card = element('article', null, 'ad-monitor-campaign');

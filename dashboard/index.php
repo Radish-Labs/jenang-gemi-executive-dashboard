@@ -182,11 +182,12 @@ $shipmentArrangementJsVersion = $dashboardBuildVersion . '-' . (string) @filemti
                 <section class="ad-monitor" data-ad-monitor data-endpoint="../api/ad-monitor/" data-csrf="<?php echo htmlspecialchars($marketplaceAuthCsrf, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'); ?>" aria-labelledby="ad-monitor-title">
                     <div data-monitor-compact hidden><button type="button" class="admin-ghost-btn" data-monitor-reopen aria-expanded="false" aria-controls="ad-monitor-body">Show Shopee ad status</button><span class="ad-monitor-dismissed-note">Hidden in this browser · monitoring stays on</span></div>
                     <div id="ad-monitor-body" data-monitor-body>
-                    <div class="ad-monitor-header"><h2 id="ad-monitor-title" data-monitor-summary aria-live="polite">Checking Shopee ad status…</h2><div class="ad-monitor-header-actions"><button type="button" class="admin-ghost-btn" data-monitor-refresh>Refresh status</button><button type="button" class="admin-ghost-btn ad-monitor-close" data-monitor-close aria-label="Close Shopee ad status" title="Hide this notice in this browser"><span aria-hidden="true">×</span></button></div></div>
-                    <p>Unexpected pauses are checked against ads previously observed running and your monitoring selections. Resume from this dashboard is unavailable until account write eligibility is verified.</p>
+                    <div class="ad-monitor-header"><h2 id="ad-monitor-title" data-monitor-summary aria-live="polite">Checking Shopee ad status…</h2><div class="ad-monitor-header-actions"><button type="button" class="admin-ghost-btn" data-monitor-refresh>Reload saved status</button><button type="button" class="admin-ghost-btn ad-monitor-close" data-monitor-close aria-label="Close Shopee ad status" title="Hide this notice in this browser"><span aria-hidden="true">×</span></button></div></div>
+                    <p>Pause alerts watch ads previously seen running or selected as expected running. Reload reads saved observations; it does not start a Shopee sync.</p>
+                    <ul data-monitor-account-status class="ad-monitor-account-status-list" aria-label="Monitoring status by account"></ul>
                     <p>Coverage: product-level ads returned by Shopee. Shop GMV Max coverage is not yet verified.</p>
                     <p data-monitor-error hidden role="status"></p>
-                    <details><summary>Review ads and monitoring choices</summary><div data-monitor-details></div><p><a href="https://seller.shopee.co.id/" target="_blank" rel="noopener noreferrer">Open Shopee Seller Centre</a> to inspect restrictions and make any delivery changes.</p></details>
+                    <details><summary>Review ads and monitoring choices</summary><div data-monitor-details></div><p><a href="https://seller.shopee.co.id/" target="_blank" rel="noopener noreferrer">Open Shopee Seller Centre</a> to inspect restrictions and make any delivery changes. This dashboard does not resume ads.</p></details>
                     </div>
                 </section>
                 <section class="admin-overview-strip">

@@ -16,6 +16,11 @@
 .ad-monitor details > summary { cursor: pointer; padding: 12px 0 4px; font-weight: 600; }
 .ad-monitor-account { padding-top: 16px; }
 .ad-monitor-account h3 { margin: 0; font-size: 16px; }
+.ad-monitor-account-status-list { display: grid; gap: 12px; margin: 14px 0; padding: 0; list-style: none; }
+.ad-monitor-account-status { padding: 10px 12px; border-left: 3px solid #937340; overflow-wrap: anywhere; }
+.ad-monitor-account-status[data-state="fresh"] { border-color: #4c8f78; }
+.ad-monitor-account-status strong { font-size: 14px; }
+.ad-monitor-account-status p { margin: 4px 0 0; }
 .ad-monitor-campaign { margin: 12px 0; padding: 16px; border: 1px solid #586171; border-radius: 10px; overflow-wrap: anywhere; }
 .ad-monitor-campaign.has-incident { border-color: #e9a63b; }
 .ad-monitor h4 { margin: 0; font-size: 14px; }
