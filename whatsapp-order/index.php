@@ -113,14 +113,26 @@ $storeOpsBaseUrl = rtrim(
                             <section class="whatsapp-detail-panel whatsapp-detail-items-panel">
                                 <div class="whatsapp-detail-panel-head">
                                     <div><span class="admin-panel-kicker">Products</span><h3>Ordered items</h3></div>
-                                    <span data-detail-item-count>0 items</span>
+                                    <div class="whatsapp-detail-item-actions">
+                                        <span data-detail-item-count>0 items</span>
+                                        <button type="button" class="admin-ghost-btn" data-detail-edit-quantities hidden>Edit quantities</button>
+                                    </div>
                                 </div>
-                                <div class="whatsapp-detail-table-wrap">
-                                    <table class="whatsapp-detail-items-table">
-                                        <thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Gross</th><th>Discount</th><th>Net</th></tr></thead>
-                                        <tbody data-detail-items></tbody>
-                                    </table>
-                                </div>
+                                <form data-detail-quantity-form>
+                                    <p class="whatsapp-detail-quantity-note" data-detail-quantity-note hidden>Saved unit prices and effective discounts are kept. Merchandise and customer totals update when you save; shipping stays the same.</p>
+                                    <div class="whatsapp-detail-table-wrap">
+                                        <table class="whatsapp-detail-items-table">
+                                            <thead><tr><th>Product</th><th>Qty</th><th>Unit price</th><th>Gross</th><th>Discount</th><th>Net</th></tr></thead>
+                                            <tbody data-detail-items></tbody>
+                                        </table>
+                                    </div>
+                                    <p class="admin-form-error" data-detail-quantity-error role="alert" hidden></p>
+                                    <p class="whatsapp-detail-quantity-note" data-detail-quantity-status role="status"></p>
+                                    <div class="whatsapp-detail-quantity-actions" data-detail-quantity-actions hidden>
+                                        <button type="button" class="admin-ghost-btn" data-detail-quantity-cancel>Cancel</button>
+                                        <button type="submit" class="admin-primary-btn" data-detail-quantity-save>Save quantities</button>
+                                    </div>
+                                </form>
                             </section>
 
                             <aside class="whatsapp-detail-side">

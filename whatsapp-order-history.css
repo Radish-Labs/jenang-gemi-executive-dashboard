@@ -724,6 +724,47 @@
   min-width: 0;
 }
 
+.whatsapp-detail-item-actions,
+.whatsapp-detail-quantity-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.whatsapp-detail-item-actions > span,
+.whatsapp-detail-quantity-note {
+  color: var(--admin-muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.whatsapp-detail-quantity-note:empty {
+  display: none;
+}
+
+.whatsapp-detail-quantity-actions[hidden],
+.whatsapp-detail-hero-actions [hidden] {
+  display: none !important;
+}
+
+.whatsapp-detail-quantity-input {
+  width: 82px;
+  min-height: 44px;
+  padding: 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface);
+  color: var(--admin-text);
+  font: inherit;
+}
+
+.whatsapp-detail-quantity-input:focus-visible {
+  outline: 2px solid #60a5fa;
+  outline-offset: 2px;
+}
+
 .whatsapp-detail-items-table td:first-child {
   min-width: 260px;
 }
@@ -811,6 +852,24 @@
 }
 
 @media (max-width: 720px) {
+  .is-editing-quantities .whatsapp-detail-items-table {
+    table-layout: fixed;
+  }
+  .is-editing-quantities .whatsapp-detail-items-table :is(th, td):nth-child(n + 3),
+  .is-editing-quantities .ed-table-scroll-hint {
+    display: none;
+  }
+  .is-editing-quantities .whatsapp-detail-items-table th:nth-child(2) {
+    width: 110px;
+  }
+  .is-editing-quantities .whatsapp-detail-items-table td:first-child {
+    display: table-cell;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .is-editing-quantities .whatsapp-detail-items-table td:first-child :is(strong, small) {
+    display: block;
+  }
   .whatsapp-history-layout,
   .whatsapp-detail-layout {
     width: min(100% - 22px, 1540px);

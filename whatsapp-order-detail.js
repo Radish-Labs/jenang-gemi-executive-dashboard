@@ -10,6 +10,14 @@ document.addEventListener('DOMContentLoaded', () => {
     content: root.querySelector('[data-detail-content]'),
     error: root.querySelector('[data-detail-error]'),
     items: root.querySelector('[data-detail-items]'),
+    editQuantities: root.querySelector('[data-detail-edit-quantities]'),
+    quantityForm: root.querySelector('[data-detail-quantity-form]'),
+    quantityActions: root.querySelector('[data-detail-quantity-actions]'),
+    quantityNote: root.querySelector('[data-detail-quantity-note]'),
+    quantityError: root.querySelector('[data-detail-quantity-error]'),
+    quantityStatus: root.querySelector('[data-detail-quantity-status]'),
+    quantityCancel: root.querySelector('[data-detail-quantity-cancel]'),
+    quantitySave: root.querySelector('[data-detail-quantity-save]'),
     label: root.querySelector('[data-detail-label-link]'),
     invoice: root.querySelector('[data-detail-invoice-link]'),
     cancel: root.querySelector('[data-detail-cancel]'),
@@ -27,6 +35,8 @@ document.addEventListener('DOMContentLoaded', () => {
   };
   let currentOrder = null;
   let archiveSaving = false;
+  let editingQuantities = false;
+  let quantitySaving = false;
   const currency = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 });
   const integer = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 0 });
   const percentage = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 });
@@ -150,7 +160,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const itemDiscount = Number(item.discount_total || 0);
         return `<tr>
           <td><strong>${escapeHtml(item.product_name || item.sku)}</strong><small>${escapeHtml(item.sku)}${item.brand_name ? ` · ${escapeHtml(item.brand_name)}` : ''}</small></td>
-          <td>${escapeHtml(integer.format(quantity))}</td>
+          <td>${editingQuantities
+            ? `<input class="whatsapp-detail-quantity-input" type="number" min="1" max="9999" step="1" required inputmode="numeric" value="${quantity}" data-detail-quantity="${escapeHtml(item.sku)}" aria-label="Quantity for ${escapeHtml(item.product_name || item.sku)}">`
+            : escapeHtml(integer.format(quantity))}</td>
           <td>${escapeHtml(money(item.unit_price))}</td>
           <td>${escapeHtml(money(gross))}</td>
           <td>${itemDiscount > 0 ? `<strong class="is-discount">−${escapeHtml(money(itemDiscount))}</strong><small>${escapeHtml(percentage.format(item.discount_rate || 0))}% effective</small>` : '—'}</td>
@@ -159,9 +171,65 @@ document.addEventListener('DOMContentLoaded', () => {
       }).join('') : '<tr><td colspan="6" class="admin-empty">No product rows were saved for this order.</td></tr>';
     }
 
+    if (refs.editQuantities) refs.editQuantities.hidden = order.can_edit_quantities !== true || editingQuantities;
+    if (refs.quantityActions) refs.quantityActions.hidden = !editingQuantities;
+    if (refs.quantityNote) refs.quantityNote.hidden = !editingQuantities;
+    refs.quantityForm?.classList.toggle('is-editing-quantities', editingQuantities);
+    // Finish or discard the edit before another action can send this order.
+    [refs.send, refs.attach, refs.queue, refs.cancel, refs.archive].forEach((button) => {
+      if (button) button.disabled = editingQuantities;
+    });
+    if (refs.invoice) refs.invoice.hidden = editingQuantities;
     if (refs.loading) refs.loading.hidden = true;
     if (refs.content) refs.content.hidden = false;
   };
+
+  refs.editQuantities?.addEventListener('click', () => {
+    if (currentOrder?.can_edit_quantities !== true) return;
+    editingQuantities = true;
+    refs.quantityError.hidden = true;
+    refs.quantityStatus.textContent = '';
+    renderOrder(currentOrder);
+    refs.items.querySelector('input')?.focus({ preventScroll: true });
+  });
+  refs.quantityCancel?.addEventListener('click', () => {
+    if (quantitySaving) return;
+    editingQuantities = false;
+    refs.quantityError.hidden = true;
+    renderOrder(currentOrder);
+    refs.editQuantities?.focus();
+  });
+  refs.quantityForm?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!editingQuantities || quantitySaving || !refs.quantityForm.reportValidity()) return;
+    const inputs = [...refs.items.querySelectorAll('[data-detail-quantity]')];
+    const items = inputs.map((input) => ({ sku: input.dataset.detailQuantity, quantity: Number(input.value) }));
+    quantitySaving = true;
+    refs.quantityError.hidden = true;
+    refs.quantitySave.textContent = 'Saving…';
+    [refs.quantitySave, refs.quantityCancel, ...inputs].forEach((control) => { control.disabled = true; });
+    try {
+      const response = await fetch(`${endpoint}?action=update_quantities`, {
+        method: 'POST', credentials: 'same-origin', cache: 'no-store',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId, updated_at: currentOrder.updated_at, items })
+      });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || !payload.ok) throw new Error(payload.error || 'Unable to save quantities.');
+      editingQuantities = false;
+      renderOrder({ ...currentOrder, ...payload.order, lifecycle_status: payload.order.status });
+      refs.quantityStatus.textContent = 'Quantities saved. Order totals updated.';
+      refs.editQuantities?.focus();
+      window.refreshDirectOrderUnpaidIndicator?.();
+    } catch (error) {
+      refs.quantityError.textContent = error instanceof Error ? error.message : 'Unable to save quantities.';
+      refs.quantityError.hidden = false;
+    } finally {
+      quantitySaving = false;
+      refs.quantitySave.textContent = 'Save quantities';
+      [refs.quantitySave, refs.quantityCancel, ...inputs].forEach((control) => { control.disabled = false; });
+    }
+  });
 
   const loadOrder = async () => {
     if (!orderId) throw new Error('No WhatsApp order was selected. Return to history and choose an order.');

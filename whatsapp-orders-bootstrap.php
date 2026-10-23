@@ -508,6 +508,97 @@ function jg_whatsapp_order_items(PDO $pdo, int $id): array
     ], $stmt->fetchAll());
 }
 
+function jg_whatsapp_can_edit_quantities(array $row): bool
+{
+    // Failed sends can have reached Store Ops without an acknowledgement.
+    // Recalled orders also retain their publication history and stay locked.
+    return ($row['status'] ?? '') === 'QUEUED'
+        && ($row['sales_channel'] ?? 'whatsapp') === 'whatsapp'
+        && empty($row['archived_at'])
+        && empty($row['listed_at'])
+        && empty($row['fulfilled_at'])
+        && (int) ($row['publication_attempts'] ?? 0) === 0;
+}
+
+function jg_whatsapp_update_quantities(PDO $pdo, string $orderId, array $payload): array
+{
+    jg_whatsapp_ensure_schema($pdo);
+    $pdo->beginTransaction();
+    try {
+        // Publication takes this same lock before reading the outbound items.
+        $row = jg_whatsapp_internal_order($pdo, $orderId, true);
+        if (!jg_whatsapp_can_edit_quantities($row)) {
+            throw new RuntimeException('Quantities can only be edited before this order is sent to Store Ops.');
+        }
+        $version = jg_website_atom((string) ($row['updated_at'] ?? $row['created_at']));
+        if (($payload['updated_at'] ?? '') !== $version) {
+            throw new RuntimeException('This order has changed. Reload it before editing quantities.');
+        }
+        $requested = $payload['items'] ?? null;
+        $items = jg_whatsapp_order_items($pdo, (int) $row['id']);
+        if (!is_array($requested) || $requested === [] || count($requested) !== count($items)) {
+            throw new InvalidArgumentException('Provide a quantity for every existing product.');
+        }
+        $quantities = [];
+        foreach ($requested as $item) {
+            $sku = is_array($item) ? trim((string) ($item['sku'] ?? '')) : '';
+            $quantity = is_array($item) ? ($item['quantity'] ?? null) : null;
+            if ($sku === '' || isset($quantities[$sku])) {
+                throw new InvalidArgumentException('Each existing SKU must appear exactly once.');
+            }
+            if (!is_int($quantity) || $quantity < 1 || $quantity > 9999) {
+                throw new InvalidArgumentException('SKU quantity must be a whole number between 1 and 9,999.');
+            }
+            $quantities[$sku] = $quantity;
+        }
+
+        $subtotal = 0.0;
+        $total = 0.0;
+        $updateItem = $pdo->prepare(
+            'UPDATE whatsapp_order_items SET quantity = :quantity, discount_total = :discount_total,
+                 discount_rate = :discount_rate, line_total = :line_total
+             WHERE whatsapp_order_id = :id AND sku = :sku'
+        );
+        foreach ($items as $item) {
+            if (!isset($quantities[$item['sku']])) {
+                throw new InvalidArgumentException('Only quantities of existing products can be changed.');
+            }
+            $quantity = $quantities[$item['sku']];
+            $gross = round($quantity * $item['unit_price'], 2);
+            // Keep the saved effective unit sale price, including all allocated
+            // discounts. Do not reprice the order from today's SKU catalog.
+            $net = round($item['line_total'] * $quantity / max(1, $item['quantity']), 2);
+            $discount = round($gross - $net, 2);
+            $updateItem->execute([
+                ':quantity' => $quantity,
+                ':discount_total' => number_format($discount, 2, '.', ''),
+                ':discount_rate' => $gross > 0 ? round($discount / $gross * 100, 4) : 0,
+                ':line_total' => number_format($net, 2, '.', ''),
+                ':id' => $row['id'], ':sku' => $item['sku'],
+            ]);
+            $subtotal += $gross;
+            $total += $net;
+        }
+        $pdo->prepare(
+            'UPDATE whatsapp_orders SET merchandise_subtotal = :subtotal, merchandise_total = :total,
+                 discount_total = :discount, discount_value = :discount_value, updated_at = :updated_at
+             WHERE id = :id'
+        )->execute([
+            ':subtotal' => number_format($subtotal, 2, '.', ''),
+            ':total' => number_format($total, 2, '.', ''),
+            ':discount' => number_format($subtotal - $total, 2, '.', ''),
+            ':discount_value' => ($row['discount_type'] ?? '') === 'sale_price' ? $total : ($row['discount_value'] ?? 0),
+            ':updated_at' => jg_whatsapp_now(), ':id' => $row['id'],
+        ]);
+        $order = jg_whatsapp_format_order($pdo, jg_whatsapp_internal_order($pdo, $orderId));
+        $pdo->commit();
+        return $order;
+    } catch (Throwable $error) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $error;
+    }
+}
+
 function jg_whatsapp_format_order(PDO $pdo, array $row, bool $includeItems = true): array
 {
     $items = $includeItems ? jg_whatsapp_order_items($pdo, (int) $row['id']) : [];
@@ -534,6 +625,7 @@ function jg_whatsapp_format_order(PDO $pdo, array $row, bool $includeItems = tru
             'restore_stock' => (int) ($row['archive_restore_stock'] ?? 0) === 1,
         ],
         'can_archive' => empty($row['archived_at']),
+        'can_edit_quantities' => jg_whatsapp_can_edit_quantities($row),
         'queued' => strtoupper(trim((string) $row['status'])) === 'QUEUED',
         'can_confirm_payment' => $paymentStatus === 'unpaid' && empty($row['archived_at']),
         'merchandise_subtotal' => (float) (($row['merchandise_subtotal'] ?? 0) ?: $row['merchandise_total']),

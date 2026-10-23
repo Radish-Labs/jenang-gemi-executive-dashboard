@@ -127,6 +127,14 @@ try {
         jg_whatsapp_api_json(['ok' => false, 'error' => 'Unknown action.'], 404);
     }
 
+    if ($action === 'update_quantities') {
+        $body = jg_whatsapp_api_body();
+        jg_whatsapp_api_json(['ok' => true, 'order' => jg_whatsapp_update_quantities(
+            $pdo,
+            trim((string) ($body['order_id'] ?? '')),
+            $body
+        )]);
+    }
     if ($action === 'cancel') {
         $body = jg_whatsapp_api_body();
         jg_whatsapp_api_json(['ok' => true, 'order' => jg_whatsapp_cancel_order(
