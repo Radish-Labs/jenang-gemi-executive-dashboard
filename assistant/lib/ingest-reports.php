@@ -37,8 +37,17 @@ JSON, true, 32, JSON_THROW_ON_ERROR);
 }
 
 function ingestReportsSourceReleased(string $source): bool {
+    if($source==='raw_platform_event_metadata'){
+        require_once __DIR__.'/ingest-event-metadata.php';
+        return INGEST_EVENT_METADATA_SOURCE_RELEASED;
+    }
     $scope=ingestReportDefinitions()[$source]['scope']??null;
     return $scope==='account'?INGEST_REPORTS_SOURCE_RELEASED:($scope==='global'?INGEST_REPORTS_GLOBAL_SOURCE_RELEASED:false);
+}
+
+/** Separately reviewed extensions never mutate the original twelve-source contract pin. */
+function ingestReportSourceIds(): array {
+    return [...array_keys(ingestReportDefinitions()),'raw_platform_event_metadata'];
 }
 
 function ingestReportsCatalog(array $context): array {
@@ -58,7 +67,9 @@ function ingestReportsCatalog(array $context): array {
             'source_released'=>ingestReportsSourceReleased($id),
             'availability'=>$global?(INGEST_REPORTS_GLOBAL_SOURCE_RELEASED?'checked_on_each_query':'pending_global_authorization_and_hosted_verification'):(INGEST_REPORTS_SOURCE_RELEASED?'authenticated_contract_verified_checked_on_each_query':'pending_upstream_publication_and_verification')];
     }
-    return ['schema_version'=>1,'availability_verified'=>false,'source_released'=>INGEST_REPORTS_SOURCE_RELEASED,'global_source_released'=>INGEST_REPORTS_GLOBAL_SOURCE_RELEASED,'release_scope'=>INGEST_REPORTS_GLOBAL_SOURCE_RELEASED?'per_source':(INGEST_REPORTS_SOURCE_RELEASED?'account_sources_only':'none'),'sources'=>$sources];
+    require_once __DIR__.'/ingest-event-metadata.php';
+    $sources[]=ingestEventMetadataCatalog($context);
+    return ['schema_version'=>1,'availability_verified'=>false,'source_released'=>INGEST_REPORTS_SOURCE_RELEASED,'global_source_released'=>INGEST_REPORTS_GLOBAL_SOURCE_RELEASED,'event_metadata_source_released'=>INGEST_EVENT_METADATA_SOURCE_RELEASED,'release_scope'=>INGEST_REPORTS_GLOBAL_SOURCE_RELEASED?'per_source':(INGEST_REPORTS_SOURCE_RELEASED?'account_sources_only':'none'),'sources'=>$sources];
 }
 
 /** Validate types without coercing money/IDs through floats or passing upstream source text unchecked. */
@@ -92,6 +103,10 @@ function ingestReportsDate(mixed $value): string {
 /** Every authorization check precedes credential resolution, transport and source selection. */
 function ingestReportsArguments(array $context,array $args,?\DateTimeImmutable $now=null): array {
     tableAccess($context);
+    if(($args['source']??null)==='raw_platform_event_metadata'){
+        require_once __DIR__.'/ingest-event-metadata.php';
+        return ingestEventMetadataArguments($context,$args,$now);
+    }
     if(array_diff(array_keys($args),['source','account_key','view','start_date','end_date','start_month','end_month','limit','offset','filters','group_by']))throw new \InvalidArgumentException('Unsupported stored-report argument.');
     $id=$args['source']??null;$d=is_string($id)?(ingestReportDefinitions()[$id]??null):null;
     if(!$d)throw new \InvalidArgumentException('Choose one reviewed ingestion source.');
@@ -144,7 +159,7 @@ function ingestReportsArguments(array $context,array $args,?\DateTimeImmutable $
 function ingestReportsRequest(array $validated,?\Closure $settings=null,?\Closure $transport=null): array {
     if(($settings===null)!==($transport===null))throw new IngestReportsUnavailable('configuration_unavailable');
     $source=$validated['source']??null;
-    if(!is_string($source)||($validated['query']['source']??null)!==$source)throw new IngestReportsUnavailable('source_contract_mismatch');
+    if(!is_string($source)||!in_array($source,ingestReportSourceIds(),true)||($validated['query']['source']??null)!==$source)throw new IngestReportsUnavailable('source_contract_mismatch');
     if(!ingestReportsSourceReleased($source)&&$settings===null)throw new IngestReportsUnavailable('source_not_released');
     try{$s=$settings?($settings)():adsHistoryServiceSettings();}catch(\Throwable){throw new IngestReportsUnavailable('configuration_unavailable');}
     if(($s['base_url']??null)!==ADS_HISTORY_ORIGIN||!is_string($s['token']??null)||!preg_match('/^[\x21-\x7e]{1,4096}$/D',$s['token']))throw new IngestReportsUnavailable('configuration_unavailable');
@@ -224,6 +239,10 @@ function ingestReportsHeartbeat(mixed $input,int $generated,int $now,int $stored
 
 /** Validate one returned scope, exact query echo and bounded projection before returning any business data. */
 function ingestReportsProject(array $payload,array $args,?\DateTimeImmutable $now=null,?array $context=null): array {
+    if(($args['source']??null)==='raw_platform_event_metadata'){
+        require_once __DIR__.'/ingest-event-metadata.php';
+        return ingestEventMetadataProject($payload,$args,$now);
+    }
     $d=ingestReportDefinitions()[$args['source']]??throw new IngestReportsUnavailable('source_contract_mismatch');
     $global=$d['scope']==='global';
     // A caller-supplied validation marker is never authority, including for direct projection.
@@ -327,6 +346,10 @@ function ingestReportsProject(array $payload,array $args,?\DateTimeImmutable $no
 }
 
 function ingestReports(array $context,array $args,?\Closure $settings=null,?\Closure $transport=null,?\DateTimeImmutable $now=null): array {
+    if(($args['source']??null)==='raw_platform_event_metadata'){
+        require_once __DIR__.'/ingest-event-metadata.php';
+        return ingestEventMetadata($context,$args,$settings,$transport,$now);
+    }
     $query=ingestReportsArguments($context,$args,$now);
     $read=static function()use($context,$query,$settings,$transport,$now):array{
         $payload=ingestReportsRequest($query,$settings,$transport);

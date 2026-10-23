@@ -4,8 +4,8 @@ namespace JenangMcp;
 
 require_once __DIR__.'/ingest-reports.php';
 
-// Proposed upstream aggregate contract only. The original 12-source candidate is unchanged.
-const INGEST_EVENT_METADATA_SOURCE_RELEASED = false;
+// Separately pinned aggregate reader; authenticated catalog and 16 scoped projections verified 2026-10-23.
+const INGEST_EVENT_METADATA_SOURCE_RELEASED = true;
 
 function ingestEventMetadataDefinition(): array {
     return [
@@ -31,9 +31,11 @@ function ingestEventMetadataCatalog(array $context): array {
     return ingestEventMetadataDefinition()+[
         'authorized_accounts'=>$accounts,
         'access_status'=>$accounts===[]?'denied_no_authorized_source_account':'existing_account_scope_required',
-        'availability'=>'proposed_upstream_reader_not_verified',
+        'availability'=>INGEST_EVENT_METADATA_SOURCE_RELEASED?'authenticated_contract_verified_checked_on_each_query':'pending_event_hosted_verification',
         'source_released'=>INGEST_EVENT_METADATA_SOURCE_RELEASED,
         'availability_verified'=>false,
+        'required_account_key'=>null,
+        'reviewed_filter_values'=>['status'=>['received','processed','failed','unknown']],
     ];
 }
 
@@ -122,7 +124,7 @@ function ingestEventMetadataProject(array $payload,array $args,?\DateTimeImmutab
 
 function ingestEventMetadata(array $context,array $args,?\Closure $settings=null,?\Closure $transport=null,?\DateTimeImmutable $now=null): array {
     $q=ingestEventMetadataArguments($context,$args,$now);
-    if(!INGEST_EVENT_METADATA_SOURCE_RELEASED&&($settings===null||$transport===null))throw new IngestReportsUnavailable('source_not_released');
+    // The shared transport consults this source's own release flag and requires paired fixture closures.
     $payload=ingestReportsRequest($q,$settings,$transport);
     try{return ingestEventMetadataProject($payload,$q,$now);}catch(IngestReportsUnavailable $e){throw $e;}catch(\Throwable){throw new IngestReportsUnavailable('invalid_response');}
 }

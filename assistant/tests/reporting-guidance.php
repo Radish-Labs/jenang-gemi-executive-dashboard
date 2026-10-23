@@ -15,7 +15,7 @@ checkGuidance($context['current_table_tool_descriptions']===array_column(JenangM
 checkGuidance($context['scopes']===[JenangMcp\TABLE_SCOPE]&&!$context['writes_enabled'],'Guidance does not expand access');
 $intro=substr($init['instructions'],0,512);
 foreach(['Empty settings are not zero ads','category names AND IDs','bill-payment','VAT','double count']as $text)checkGuidance(str_contains($intro,$text),'Critical warning stays in first 512 characters: '.$text);
-foreach(['paused/ended/deleted','latest metric update','manual exports','transaction business_month','unusual classifications','never request all owner-approved']as $text)checkGuidance(str_contains($init['instructions'],$text),'Required reporting behavior: '.$text);
+foreach(['paused/ended/deleted','latest metric update','manual exports','transaction business_month','unusual classifications','never request all owner-approved','raw_platform_event_metadata','Duplicate receipts are not unique orders','Empty attributed account partitions']as $text)checkGuidance(str_contains($init['instructions'],$text),'Required reporting behavior: '.$text);
 $listed=$call('jg_list_tables')['structuredContent']['data'];
 checkGuidance(count($listed['tables'])===count(JenangMcp\tableRegistry())+4,'Every reviewed source is discoverable under the existing scope');
 checkGuidance($listed['source_coverage']['ads_performance']['status']==='read_bridge_available_source_checked_on_call','Released bridge checks source contract on every call');

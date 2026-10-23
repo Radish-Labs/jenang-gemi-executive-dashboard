@@ -17,10 +17,13 @@ function emFixture(array $q):array{
 }
 $now=new DateTimeImmutable('2026-10-21 00:02:00 UTC');$c=emContext();$d=ingestEventMetadataDefinition();
 emCheck($output==='','Definition import has no output or dispatch');
-emCheck(!JenangMcp\INGEST_EVENT_METADATA_SOURCE_RELEASED,'Separate metadata gate false');
+emCheck(JenangMcp\INGEST_EVENT_METADATA_SOURCE_RELEASED&&!JenangMcp\INGEST_REPORTS_GLOBAL_SOURCE_RELEASED,'Verified event gate enabled without global release');
 emCheck($d['views']===['summary','groups']&&$d['columns']===['status'=>'text','received_date'=>'text'],'Only count dimensions exposed, never event rows');
 emCheck(!isset(JenangMcp\ingestReportDefinitions()['raw_platform_event_metadata']),'Original twelve-source pin remains unchanged');
-$catalog=ingestEventMetadataCatalog($c);emCheck($catalog['authorized_accounts']===['zero-shopee']&&!$catalog['availability_verified']&&$catalog['availability']==='proposed_upstream_reader_not_verified','Discovery labels proposed source and exact authorized accounts');
+$catalog=ingestEventMetadataCatalog($c);emCheck($catalog['authorized_accounts']===['zero-shopee']&&!$catalog['availability_verified']&&$catalog['availability']==='authenticated_contract_verified_checked_on_each_query','Discovery labels verified contract and exact authorized accounts without claiming current response availability');
+$registered=JenangMcp\ingestReportsCatalog($c);$mapped=array_column($registered['sources'],null,'source');
+emCheck(count(JenangMcp\ingestReportDefinitions())===12&&count($registered['sources'])===13&&$mapped[$d['source']]===$catalog,'Existing source discovery includes separate event definition without changing original pin');
+emCheck(JenangMcp\ingestReportsSourceReleased($d['source'])&&$registered['event_metadata_source_released']&&!JenangMcp\ingestReportsSourceReleased('raw_platform_events'),'Independent event readiness and raw-event source denial');
 $settingsReads=0;$requests=0;
 $settings=function()use(&$settingsReads){$settingsReads++;return ['base_url'=>JenangMcp\ADS_HISTORY_ORIGIN,'token'=>'fixture_PRIVATE_SECRET_BEARER'];};
 $transport=function($url,$options,$max)use(&$requests,$now):array{
@@ -39,7 +42,11 @@ foreach([[],['view'=>'groups','group_by'=>['status']],['view'=>'groups','group_b
     emCheck(!$data['freshness']['upstream_sync_verified']&&$data['freshness']['state']==='unknown','Stored processing is never sync health');
     emCheck($data['coverage_limits']['missing_or_invalid_receipt_timestamp_count']===null&&$data['coverage_limits']['unassigned_or_other_account_rows']==='not_read_or_counted','Unknown legacy timestamp gaps and unassigned scope explicit');
 }
+$throughDispatcher=JenangMcp\ingestReports($c,emArgs(['view'=>'groups','group_by'=>['status']]),$settings,$transport,$now)['data'];
+emCheck($throughDispatcher['source']===$d['source']&&count($throughDispatcher['rows'])===2,'Existing ingestion entry point dispatches to aggregate-only event projector');
+emCheck(JenangMcp\ingestReportsArguments($c,emArgs(),$now)===ingestEventMetadataArguments($c,emArgs(),$now),'Existing ingestion argument dispatch uses exact event contract');
 $q=ingestEventMetadataArguments($c,emArgs(),$now);
+emCheck(JenangMcp\ingestReportsProject(emFixture($q),$q,$now)===ingestEventMetadataProject(emFixture($q),$q,$now),'Shared projector dispatch preserves dedicated event projection');
 emCheck($q['view']==='summary'&&$q['group_by']===[]&&$q['period']['from']==='2026-09-30 17:00:00'&&$q['period']['to_exclusive']==='2026-10-21 17:00:00','Default summary and exact Jakarta boundary');
 $tiktok=ingestEventMetadata(emContext(['zero-tiktok']),emArgs(['account_key'=>'zero-tiktok']),$settings,$transport,$now)['data'];emCheck($tiktok['scope']['platform']==='tiktok','Reviewed TikTok account can access its metadata only');
 $qTail=ingestEventMetadataArguments($c,emArgs(['view'=>'groups','group_by'=>['status'],'limit'=>1,'offset'=>1]),$now);$tail=ingestEventMetadataProject(emFixture($qTail),$qTail,$now)['data'];emCheck(count($tail['rows'])===1&&$tail['rows'][0]['stored_rows']===3&&$tail['pagination']['next_offset']===null&&!$tail['pagination']['stable_snapshot_across_pages'],'Bounded later page retains total coverage');
@@ -55,8 +62,14 @@ emReject(fn()=>ingestEventMetadata(array_replace($c,['_actor_scope'=>'jg:sales:r
 emReject(fn()=>ingestEventMetadata(array_replace($c,['table_access_approved'=>false]),emArgs(),$settings,$transport,$now),'Unapproved table grant denied');
 emReject(fn()=>ingestEventMetadata(emContext(array_keys(JenangMcp\INGEST_REPORTS_ACCOUNTS)),emArgs(['account_key'=>'global']),$settings,$transport,$now),'Full current account list never authorizes global metadata');
 emCheck([$settingsReads,$requests]===$before,'Denied validation precedes credential resolution and transport');
-emReject(fn()=>ingestEventMetadata($c,emArgs(),$settings,null,$now),'No live request while event source gate false','source_not_released');
-emReject(fn()=>ingestEventMetadata($c,emArgs(),null,$transport,$now),'Fixture requires both internal closures','source_not_released');
+emReject(fn()=>ingestEventMetadata($c,emArgs(),$settings,null,$now),'Fixture settings cannot fall through to production transport','configuration_unavailable');
+emReject(fn()=>ingestEventMetadata($c,emArgs(),null,$transport,$now),'Fixture transport cannot load production settings','configuration_unavailable');
+// Released default transport intentionally is never called in fixtures: only the paired seam is used.
+emReject(fn()=>JenangMcp\ingestReports($c,emArgs(),$settings,null,$now),'Generic dispatcher also rejects partial fixture settings','configuration_unavailable');
+emReject(fn()=>JenangMcp\ingestReportsRequest($q,null,$transport),'Shared event transport rejects partial fixture transport before default credentials','configuration_unavailable');
+foreach([['view'=>'rows'],['account_key'=>'global'],['account_key'=>'zfit-shopee'],['filters'=>['event_type'=>'PRIVATE_SECRET']],['filters'=>['processing_error'=>'PRIVATE_SECRET']],['view'=>'groups','group_by'=>['external_event_id']]] as $change)emReject(fn()=>JenangMcp\ingestReports($c,emArgs($change),$settings,$transport,$now),'Generic dispatch cannot bypass event privacy or account guards');
+$unknown=$q;$unknown['source']='not_a_reviewed_source';$unknown['query']['source']='not_a_reviewed_source';
+emReject(fn()=>JenangMcp\ingestReportsRequest($unknown,$settings,$transport),'Even fixture transport rejects unknown source aliases','source_contract_mismatch');
 emCheck([$settingsReads,$requests]===$before,'Gate does not read credential or contact production');
 $fixture=emFixture($q);
 foreach([

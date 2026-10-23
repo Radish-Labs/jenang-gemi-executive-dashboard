@@ -30,7 +30,7 @@ $resolved=0;$requests=0;$settings=function()use(&$resolved){$resolved++;return [
 try{
     $a=$reset();$catalog=ingestReportsCatalog($a);
     foreach($catalog['sources'] as $d)if($d['scope']==='global')ioCheck($d['access_status']==='denied_no_explicit_organizational_source_authorization'&&$d['required_account_key']==='global'&&!isset($d['columns']['id']),'Unapproved global discovery denies and excludes IDs');
-    ioCheck(count($catalog['sources'])===12&&$catalog['source_released']&&!$catalog['global_source_released']&&$catalog['release_scope']==='account_sources_only','Exactly twelve sources, only account readiness enabled');
+    ioCheck(count(ingestReportDefinitions())===12&&count($catalog['sources'])===13&&$catalog['source_released']&&!$catalog['global_source_released']&&$catalog['event_metadata_source_released']&&$catalog['release_scope']==='account_sources_only','Original twelve plus independently verified event source, global remains disabled');
     $transport=function($url,$options,$max)use(&$requests,&$a,$now):array{
         $requests++;parse_str(parse_url($url,PHP_URL_QUERY),$args);foreach(['limit','offset'] as $key)$args[$key]=(int)$args[$key];if(isset($args['group_by']))$args['group_by']=explode(',',$args['group_by']);if(isset($args['filters']))$args['filters']=json_decode($args['filters'],true);
         ioCheck($args['account_key']==='global'&&str_starts_with($url,'https://api.jenanggemi.com/reports/query?')&&!str_contains($url,'PRIVATE_SECRET'),'Fixed target and explicit global parameter');

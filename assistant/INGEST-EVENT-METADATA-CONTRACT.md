@@ -1,6 +1,10 @@
-# Proposed passive webhook receipt metadata
+# Passive webhook receipt metadata
 
-This is a **local contract proposal and disabled consumer**, not an implemented or published upstream source. The frozen `edbb85a` candidate and its twelve-source contract remain unchanged. The new `assistant/lib/ingest-event-metadata.php` has a separate `INGEST_EVENT_METADATA_SOURCE_RELEASED=false` gate; neither publication of the original bridge nor authorization of either global worker source enables this source.
+Release 0.5.3 registers the separately pinned aggregate source through the existing `jg_ingest_report` tool after authenticated hosted acceptance. The original twelve-source definitions remain unchanged. Its independent `INGEST_EVENT_METADATA_SOURCE_RELEASED` gate is enabled; both global source gates remain closed. No new credential, OAuth scope, organizational grant or business-write capability is created.
+
+At 2026-10-23 04:22:44–04:22:47 UTC, the application's existing service-auth helper verified the exact hosted producer definition and sixteen strict consumer projections across the already configured Jenang Gemi/ZERO Shopee/TikTok accounts: summary, status groups, status/date groups and a processed-status filter. Structural producer/consumer definitions match; their reviewed limitation prose differs without changing fields or semantics. Three separate requests confirmed HTTP 422 for individual rows, global partition and private event-ID filters. These were passive operator acceptance requests, not a fabricated MCP session or injected fixture transport. Only bounded aggregate acceptance evidence was retained outside the repository.
+
+The checked Shopee partitions contained no attributed receipts; TikTok partitions contained stored receipts. Empty partitions do not prove zero upstream activity. Historical attribution, timestamp quality and upstream completeness remain unverified. Connected ChatGPT invocation remains a separate acceptance step while its existing connection reports `UNAUTHORIZED`.
 
 ## Verified source evidence
 
@@ -12,9 +16,9 @@ In ingestion `src/RawEventRepository.php:18–38` and `database/schema.sql:1–2
 
 Status meaning must stay narrow: `processed` means local processing returned without throwing, including ignored/non-actionable events; it does not mean fulfillment succeeded. A saved non-JSON body can remain `received` without being queued. Duplicate webhook deliveries may create multiple stored receipts. Counts are not distinct external events, distinct orders, revenue or complete upstream coverage.
 
-## Minimum upstream implementation request
+## Implemented upstream contract
 
-The ingestion owner must add **one aggregate-only** source to the existing passive `/reports/query` handler using existing Bearer authentication, without changing credentials, account registry, scopes, migrations or business state:
+The deployed ingestion reader provides **one aggregate-only** source through the existing passive `/reports/query` handler and Bearer authentication:
 
 ```json
 {
@@ -48,7 +52,7 @@ DATE(DATE_ADD(s.received_at, INTERVAL 7 HOUR))
 MIN(s.received_at), MAX(s.received_at), MAX(COALESCE(s.processed_at,s.received_at))
 ```
 
-Summary returns one `stored_rows=COUNT(*)` row only when count is positive. Groups return selected safe dimensions plus `stored_rows`; allow at most the two distinct dimensions. Exact filters may use only finite `status` or valid `received_date`. Dates: 1–366 inclusive days, not future. Keep existing limit 1–200, offset 0–100000 and deterministic dimension ordering. Reject `view=rows` **before database access**. The current generic upstream validator accepts rows independently of catalog `views`; it needs an explicit view allowlist check for this source. Public catalog must respect the source's restricted views rather than automatically adding rows.
+Summary returns one `stored_rows=COUNT(*)` row only when count is positive. Groups return selected safe dimensions plus `stored_rows`; allow at most the two distinct dimensions. Exact filters may use only finite `status` or valid `received_date`. Dates: 1–366 inclusive days, not future. Keep existing limit 1–200, offset 0–100000 and deterministic dimension ordering. Reject `view=rows` **before database access**. The upstream validator enforces this source's view allowlist before database access. Its public catalog lists only summary/groups.
 
 Use the existing schema-version-1 envelope: exact source/scope/period/view/filter/group echoes; matching `coverage`; same-account `stored_coverage` before date/field filters; `freshness={state:unknown,basis:stored_write_only,write_timezone:UTC,latest_stored_write_at:…,upstream_sync_verified:false}`; bounded rows/pagination; no raw exception or source-provided prose with sensitive content. `latest_stored_write_at` means the fixed COALESCE expression above, not a sync completion. Missing storage is unavailable, never a successful zero. Empty aggregate results are an empty row list, not an invented zero business total.
 
@@ -60,13 +64,13 @@ Required upstream fixtures: at least two accounts and platforms with overlapping
 
 ## Consumer integration
 
-New module APIs:
+Module APIs:
 
-- `ingestEventMetadataDefinition()` — reviewed proposed definition; it does not mutate the original twelve definitions.
-- `ingestEventMetadataCatalog($context)` — scoped discovery with `proposed_upstream_reader_not_verified`, no live availability claim.
+- `ingestEventMetadataDefinition()` — separately reviewed definition; it does not mutate the original twelve definitions.
+- `ingestEventMetadataCatalog($context)` — scoped discovery with independent release status and backend contract acceptance; each query still checks actual availability.
 - `ingestEventMetadataArguments($context,$args,$now)` — validates fixed source, configured exact account/platform, date limits, summary/groups and fixed filters/dimensions. The existing account/date validator is reused internally; no orders query is sent or reinterpreted.
-- `ingestEventMetadata($context,$args,$settings=null,$transport=null,$now=null)` — separate false release gate, then existing fixed HTTPS Bearer transport; synthetic execution requires both injected closures. Responses are projected to counts, finite dimensions and timestamps only.
+- `ingestEventMetadata($context,$args,$settings=null,$transport=null,$now=null)` — independent readiness gate, then existing fixed HTTPS Bearer transport; synthetic execution requires both injected closures, including when the source is released. Responses are projected to counts, finite dimensions and timestamps only.
 
 The module checks source/account/platform/query echoes, finite statuses, real calendar dates, matching/stored counts, grouped totals, duplicate groups, maximum possible group count, exact pagination, unknown freshness and output byte bounds. Both scope and date failures precede credential resolution. It rejects direct global projection as defense in depth. Original global sync/runtime authorization remains owned by the central policy and does not cover this third source.
 
-No central registration, network call, upstream edit, deployment, grant or credential is performed by this module. The ingestion owner must accept/implement the proposed source, pass its database/permission fixtures, and publish through an approved release. Only after authenticated hosted contract verification and release approval may this source's readiness gate change. Existing business account grants remain unchanged.
+The central catalog and the existing `jg_ingest_report` dispatch register this one separate alias. Unknown source names cannot gain access through runtime catalog discovery. No additional tool, raw event-row view, scope, grant or credential is introduced. The global sync/runtime bindings remain independently required and unreleased. Backend contract acceptance does not establish that a cached ChatGPT catalog has refreshed or that its connection authentication has recovered.

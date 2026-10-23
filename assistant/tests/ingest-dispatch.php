@@ -13,7 +13,9 @@ ingestDispatchCheck($tool['name']==='jg_ingest_report'&&$tool['securitySchemes']
 ingestDispatchCheck($tool['annotations']['readOnlyHint']&&!$tool['annotations']['destructiveHint'],'Read-only tool metadata');
 ingestDispatchCheck($tool['inputSchema']['additionalProperties']===false&&!isset($tool['inputSchema']['properties']['url'],$tool['inputSchema']['properties']['token'],$tool['inputSchema']['properties']['sql']),'No transport, credential or SQL arguments');
 $catalog=$call('jg_list_tables',[],$c)['structuredContent']['data'];
-ingestDispatchCheck(count($catalog['ingestion_sources']['sources'])===12,'All twelve reviewed sources discoverable');
+ingestDispatchCheck(count($catalog['ingestion_sources']['sources'])===13&&count(JenangMcp\ingestReportDefinitions())===12,'Original twelve and separately pinned event aggregate discoverable');
+ingestDispatchCheck($tool['inputSchema']['properties']['source']['enum']===JenangMcp\ingestReportSourceIds()&&count($tool['inputSchema']['properties']['source']['enum'])===13&&!in_array('raw_platform_events',$tool['inputSchema']['properties']['source']['enum'],true),'Tool enum exposes only reviewed source aliases including safe aggregate');
+ingestDispatchCheck($catalog['ingestion_sources']['event_metadata_source_released']&&!$catalog['ingestion_sources']['global_source_released'],'Event activation does not activate globals');
 ingestDispatchCheck($catalog['ingestion_sources']['source_released']&&!$catalog['ingestion_sources']['global_source_released']&&!$catalog['ingestion_sources']['availability_verified']&&$catalog['ingestion_sources']['release_scope']==='account_sources_only','Verified account readiness does not claim global or current-query availability');
 ingestDispatchCheck(!empty($catalog['source_inventory']['remaining_source_limitations']),'Known business source limitations discoverable');
 foreach($catalog['ingestion_sources']['sources'] as $source){
@@ -36,6 +38,15 @@ ingestDispatchCheck($r['isError']&&!isset($r['_meta']['jg/source_status']),'Call
 $r=$call('jg_ingest_report',array_replace($args,['account_key'=>'jenang-gemi-shopee']),$c);
 ingestDispatchCheck($r['isError']&&!isset($r['_meta']['jg/source_status']),'Foreign account rejected before release/transport');
 $all=$c;$all['accounts']=array_keys(JenangMcp\INGEST_REPORTS_ACCOUNTS);
+$event=['source'=>'raw_platform_event_metadata','account_key'=>'zero-shopee','start_date'=>'2026-10-01','end_date'=>'2026-10-21'];
+foreach([['view'=>'rows'],['account_key'=>'global'],['account_key'=>'jenang-gemi-shopee'],['filters'=>['external_event_id'=>'fixture']],['filters'=>['processing_error'=>'fixture']],['filters'=>['event_type'=>'fixture']],['view'=>'groups','group_by'=>['external_event_id']],['source'=>'raw_platform_events']] as $change){
+    $r=$call('jg_ingest_report',array_replace($event,$change),$c);
+    ingestDispatchCheck($r['isError']&&!isset($r['_meta']['jg/source_status']),'Event RPC rejects rows, private fields and unapproved partitions before default credentials');
+}
+$r=$call('jg_ingest_report',$event,$narrow);
+ingestDispatchCheck($r['isError']&&str_contains($r['_meta']['mcp/www_authenticate'][0],'scope="jg:dashboard:read"'),'Event RPC retains existing dashboard scope gate');
+$eventCatalog=array_column($catalog['ingestion_sources']['sources'],null,'source')['raw_platform_event_metadata'];
+ingestDispatchCheck($eventCatalog['views']===['summary','groups']&&$eventCatalog['columns']===['status'=>'text','received_date'=>'text']&&$eventCatalog['group_by']===['status','received_date'],'Public event contract contains no event row or private field');
 foreach(['marketplace_sync_runs','marketplace_fulfillment_runtime'] as $source){$r=$call('jg_ingest_report',['source'=>$source,'account_key'=>'global'],$all);ingestDispatchCheck($r['isError']&&str_contains($r['content'][0]['text'],'Organizational'),'All current accounts do not imply global authority');}
 $dir=sys_get_temp_dir().'/jg-ingest-dispatch-fixture-'.bin2hex(random_bytes(6));mkdir($dir,0700);
 try{

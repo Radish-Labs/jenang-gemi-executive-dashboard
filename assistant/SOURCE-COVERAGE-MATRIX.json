@@ -2,7 +2,7 @@
   "schema_version": 1,
   "review_date": "2026-10-23",
   "title": "Jenang Gemi actual-source-to-MCP read acceptance matrix",
-  "coverage_boundary": "Canonical dashboard source declarations/readers, API consumers, file readsites, reviewed registries, known ingest/Store Ops contracts and explicitly bounded retained backend account-source acceptance evidence. Static mapping or backend acceptance does not assert connected-MCP client success, complete stored history or full screen parity.",
+  "coverage_boundary": "Canonical dashboard source declarations/readers, API consumers, file readsites, reviewed registries, known ingest/Store Ops contracts and explicitly bounded retained backend account-source and separate event-aggregate acceptance evidence. Static mapping or backend acceptance does not assert connected-MCP client success, complete stored history or full screen parity.",
   "classifications": {
     "mapped": "Safe projection or canonical adapter implemented locally, not proof of live usability.",
     "projection_needs_semantic": "Some facts may be mapped, but precise canonical calculation or bounded passive file adapter remains a concrete implementation gap.",
@@ -17,7 +17,7 @@
     "Actual client tools and parameter schemas must reflect server registry; context advertising a name is insufficient.",
     "All computed values use canonical helpers with source/date/units/freshness and limitations.",
     "Remote bridge requires verified deployed passive header-authenticated endpoint; no credential creation or scope expansion.",
-    "The original twenty sensitive sources retain protected-field exclusions even where a safe metadata subset is mapped; prepared staff/raw-event/global readers must remain explicitly unavailable until their distinct binding or upstream acceptance gates are met."
+    "The original twenty sensitive sources retain protected-field exclusions even where safe metadata is mapped. Staff remains blocked by its source/grant boundary; global diagnostics remain separately gated. The event source exposes only its reviewed account-bound aggregate; backend acceptance is distinct from connected-MCP availability."
   ],
   "authorization": {
     "dashboard": "Existing approved all-configured business dashboard read families; no new family granted by inventory.",
@@ -37,9 +37,9 @@
       "ingest": 22
     },
     "database_by_classification": {
-      "mapped": 117,
+      "mapped": 118,
       "intentionally_excluded": 14,
-      "external_reader_blocked": 3
+      "external_reader_blocked": 2
     },
     "database_by_family": {
       "accounting": 24,
@@ -105,14 +105,18 @@
       "fully_excluded": 13,
       "local_implemented": 5,
       "prepared_authorization_blocked": 1,
-      "prepared_upstream_blocked": 1
+      "remote_aggregate_implemented": 1
     },
-    "prepared_metadata_readers": 2,
-    "pending_remote_metadata_contract_sources": 1,
+    "prepared_metadata_readers": 1,
+    "pending_remote_metadata_contract_sources": 0,
     "pinned_remote_contract_sources": 12,
     "backend_verified_account_sources": 10,
     "backend_verified_account_source_projections": 32,
-    "backend_verified_accounts": 4
+    "backend_verified_accounts": 4,
+    "pinned_remote_metadata_contract_sources": 1,
+    "backend_verified_event_aggregate_sources": 1,
+    "backend_verified_event_projections": 16,
+    "backend_verified_event_rejection_checks": 3
   },
   "database_sources": [
     {
@@ -8672,16 +8676,18 @@
       "physical_source": "raw_platform_events",
       "database_binding": "external_ingest_not_local",
       "family": "sales",
-      "classification": "external_reader_blocked",
-      "coverage_level": "separate_aggregate_contract_implemented_locally_consumer_unregistered_release_false",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "partial_safe_metadata_only",
+      "interfaces": [
+        "jg_ingest_report:raw_platform_event_metadata"
+      ],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
-      "date_basis": "Proposed: received_at UTC history selected by inclusive Jakarta dates; received_date is UTC+07 calendar date. processed_at only contributes to stored write observation.",
+      "date_basis": "received_at UTC history selected by inclusive Jakarta dates; received_date is the UTC+07 calendar date. processed_at contributes only to stored write observation.",
       "freshness": "First/last receipt and latest COALESCE(processed_at,received_at) are stored observations, not sync health/completeness. Missing account/timestamp quality remains unknown.",
-      "reason": "Separate raw_platform_event_metadata consumer and upstream aggregate reader are implemented locally. This consumer remains unregistered and disabled; approved publication and authenticated hosted contract verification remain pending. Only exact platform/account receipt counts and finite status/date groups are covered. Private payloads and event identities remain excluded.",
+      "reason": "Separate authenticated backend catalog and sixteen bounded event projections passed for four JG/ZERO accounts, with three unsafe upstream request shapes rejected. The aggregate is registered through jg_ingest_report in 0.5.3 with its own released gate. Connected-MCP client acceptance remains unverified; raw event identities and private payloads remain excluded.",
       "evidence": {
         "declared_at": [
           {
@@ -8696,9 +8702,9 @@
         "read_at": []
       },
       "exclusion_category": "mixed_business_payload",
-      "future_projection_review": "Separate fixed summary/groups contract has local implementation evidence. No individual-event view, payload parsing, global account or event_type dimension. Source authorization, hosted contract/cost verification and separate readiness acceptance remain required before consumer registration/release.",
-      "future_projection_implemented": false,
-      "projection_state": "prepared_upstream_blocked",
+      "future_projection_review": "Implemented fixed summary/groups over exact platform/account only. No individual-event view, payload parsing, global partition or event_type dimension. Source authorization and schema/freshness validation remain mandatory on each read.",
+      "future_projection_implemented": true,
+      "projection_state": "remote_aggregate_implemented",
       "protected_fields": [
         "id",
         "event_type",
@@ -8713,13 +8719,41 @@
       "projection_implementation": {
         "source": "raw_platform_event_metadata",
         "module": "assistant/lib/ingest-event-metadata.php",
-        "registered": false,
+        "registered": true,
         "production_verified": false,
-        "source_released": false,
+        "source_released": true,
         "upstream_local_commit": "24e45caadbf927b245dbfb4e3126fe27d012ec7a",
-        "upstream_implemented": true
+        "upstream_implemented": true,
+        "backend_verified": true,
+        "connected_mcp_client_verified": false
       },
-      "exposed_metadata": []
+      "exposed_metadata": [
+        "matching and stored receipt counts",
+        "finite processing status",
+        "Jakarta receipt date",
+        "validated UTC receipt and stored-write coverage timestamps"
+      ],
+      "backend_verification": {
+        "verified": true,
+        "evidence": "backend_event_acceptance",
+        "account_keys": [
+          "jenang-gemi-shopee",
+          "zero-shopee",
+          "jenang-gemi-tiktok",
+          "zero-tiktok"
+        ],
+        "connected_mcp_client_verified": false
+      },
+      "contract_reference": {
+        "schema_version": 1,
+        "source": "raw_platform_event_metadata",
+        "scope": "account",
+        "date_mode": "utc_history",
+        "views": [
+          "summary",
+          "groups"
+        ]
+      }
     },
     {
       "id": "ingest:shopee_account_tokens",
@@ -10241,7 +10275,7 @@
         }
       ],
       "interfaces": [],
-      "reason": "Authenticated bounded backend projections passed 32 source/account checks across ten account sources and four eligible JG/ZERO accounts. Account readiness is enabled in 0.5.2. No global or event rows were requested, global readiness remains false, and connected-MCP calls remain unverified."
+      "reason": "Existing account-source acceptance passed 32 projections across ten account sources; separate 0.5.3 event acceptance passed sixteen summary/group projections across four JG/ZERO accounts and three unsafe request shapes returned 422. Global rows were not read, global readiness remains false, and connected-MCP calls remain unverified."
     },
     {
       "id": "/reports/sources",
@@ -10253,7 +10287,7 @@
         }
       ],
       "interfaces": [],
-      "reason": "Authenticated hosted discovery passed for every original twelve-source definition and observed thirteen hosted entries. The extra entry name/schema is not retained by this receipt and does not expand the runtime allowlist. The separate raw-event consumer remains disabled/unregistered."
+      "reason": "Earlier authenticated discovery accepted the original twelve pinned definitions. Separate event acceptance verified the thirteenth raw_platform_event_metadata producer contract; structural consumer fields match and limitation wording is separately reviewed. Only explicitly reviewed definitions enter the runtime catalog; discovery never automatically expands the allowlist."
     },
     {
       "id": "/sales/order",
@@ -14983,9 +15017,11 @@
     },
     {
       "id": "raw_event_metadata_upstream",
-      "kind": "external_passive_reader_blocked",
-      "interfaces": [],
-      "reason": "Separate raw_platform_event_metadata consumer and upstream aggregate reader are implemented locally. This consumer remains unregistered and disabled; approved publication and authenticated hosted contract verification remain pending. Only exact platform/account receipt counts and finite status/date groups are covered. Private payloads and event identities remain excluded.",
+      "kind": "bounded_aggregate_semantics_and_client_verification",
+      "interfaces": [
+        "jg_ingest_report:raw_platform_event_metadata"
+      ],
+      "reason": "Authenticated backend event acceptance passed and the aggregate consumer is registered. Raw event identities and private payloads remain excluded; receipt counts are not unique events/orders or successful jobs. Historical attribution, missing timestamp counts and upstream completeness remain unknown. Connected-MCP client authentication/discovery/query acceptance remains unverified.",
       "evidence": [
         {
           "file": "assistant/lib/ingest-event-metadata.php"
@@ -15028,7 +15064,7 @@
       "interfaces": [
         "jg_ingest_report"
       ],
-      "reason": "Authenticated existing-backend account-source acceptance passed, but the connected Primary MCP client currently reports UNAUTHORIZED during release preparation. Token refresh/authentication and actual client-callable tool verification are separate; no successful MCP client read is claimed.",
+      "reason": "Authenticated existing-backend original account-source and separate event-aggregate acceptance passed. Primary reported UNAUTHORIZED during 0.5.3 preparation. Separate Settings audit confirmed the previous refresh-token family revoked after rotation/replay handling while the owner grant remained active. Normal OAuth sign-in may reuse that grant; connected-client authentication, discovery and queries remain unverified. No actor or motive is inferred.",
       "evidence": [
         {
           "file": "assistant/lib/ingest-report-tools.php"
@@ -15671,8 +15707,8 @@
           "Payload-derived event types, external/internal event IDs, customer/order identifiers, headers, IPs, raw bodies, JSON payloads and processing error text are excluded. No private payload is parsed."
         ]
       },
-      "registered": false,
-      "source_released": false,
+      "registered": true,
+      "source_released": true,
       "upstream_implemented": true,
       "availability_verified": false,
       "target_endpoint": "https://api.jenanggemi.com/reports/query",
@@ -15684,7 +15720,7 @@
           "file": "assistant/lib/ingest-event-metadata.php"
         }
       ],
-      "upstream_implementation_basis": "Reviewed local source code only; authenticated hosted availability and acceptance are unverified.",
+      "upstream_implementation_basis": "Pinned producer implementation plus separate authenticated hosted catalog and sixteen bounded projections; connected-MCP client acceptance remains unverified.",
       "upstream_implementation_commit": "24e45caadbf927b245dbfb4e3126fe27d012ec7a",
       "upstream_contract": {
         "source": "raw_platform_event_metadata",
@@ -15725,7 +15761,10 @@
           "repository": "ingest",
           "file": "src/IngestStoredReports.php"
         }
-      ]
+      ],
+      "backend_verified": true,
+      "backend_acceptance_reference": "backend_event_acceptance",
+      "state": "registered_remote_aggregate"
     },
     "organizational_binding": {
       "sources": {
@@ -15982,6 +16021,234 @@
       "Empty stored monitor/audit results passed schema validation; they do not establish zero ads, spend or business activity.",
       "Hosted discovery observed thirteen entries but the receipt validates only the original twelve pinned definitions and does not retain the extra entry name/schema. The separate event consumer remains unregistered and disabled.",
       "Backend acceptance does not verify current connected-MCP authentication, tool discovery or successful client calls."
+    ]
+  },
+  "backend_event_acceptance": {
+    "basis": "Authenticated existing server-side service helper, strict event projector and hosted producer catalog; no fixture transport or synthetic actor. Backend acceptance is not connected-MCP client acceptance.",
+    "artifact_name": "jg-authenticated-event-acceptance.json",
+    "artifact_sha256": "dd63c8a598bd8afd4dd3cc648cef3b899048023f308f138115b54a322cafce1c",
+    "catalog_check_passed": true,
+    "schema_version": 1,
+    "source": "raw_platform_event_metadata",
+    "query_projections_passed": 16,
+    "account_keys": [
+      "jenang-gemi-shopee",
+      "zero-shopee",
+      "jenang-gemi-tiktok",
+      "zero-tiktok"
+    ],
+    "response_generated_at_utc_from": "2026-10-23T04:22:44+00:00",
+    "response_generated_at_utc_to": "2026-10-23T04:22:47+00:00",
+    "checks": [
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "jenang-gemi-shopee",
+        "view": "summary",
+        "group_by": [],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:44+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "jenang-gemi-shopee",
+        "view": "groups",
+        "group_by": [
+          "status"
+        ],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:44+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "jenang-gemi-shopee",
+        "view": "groups",
+        "group_by": [
+          "status",
+          "received_date"
+        ],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:44+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "jenang-gemi-shopee",
+        "view": "summary",
+        "group_by": [],
+        "filters": {
+          "status": "processed"
+        },
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:44+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "zero-shopee",
+        "view": "summary",
+        "group_by": [],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:44+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "zero-shopee",
+        "view": "groups",
+        "group_by": [
+          "status"
+        ],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:44+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "zero-shopee",
+        "view": "groups",
+        "group_by": [
+          "status",
+          "received_date"
+        ],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:44+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "zero-shopee",
+        "view": "summary",
+        "group_by": [],
+        "filters": {
+          "status": "processed"
+        },
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:45+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "jenang-gemi-tiktok",
+        "view": "summary",
+        "group_by": [],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:45+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "jenang-gemi-tiktok",
+        "view": "groups",
+        "group_by": [
+          "status"
+        ],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:45+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "jenang-gemi-tiktok",
+        "view": "groups",
+        "group_by": [
+          "status",
+          "received_date"
+        ],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:46+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "jenang-gemi-tiktok",
+        "view": "summary",
+        "group_by": [],
+        "filters": {
+          "status": "processed"
+        },
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:46+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "zero-tiktok",
+        "view": "summary",
+        "group_by": [],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:47+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "zero-tiktok",
+        "view": "groups",
+        "group_by": [
+          "status"
+        ],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:47+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "zero-tiktok",
+        "view": "groups",
+        "group_by": [
+          "status",
+          "received_date"
+        ],
+        "filters": [],
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:47+00:00"
+      },
+      {
+        "source": "raw_platform_event_metadata",
+        "account_key": "zero-tiktok",
+        "view": "summary",
+        "group_by": [],
+        "filters": {
+          "status": "processed"
+        },
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:22:47+00:00"
+      }
+    ],
+    "hosted_definition_matches_producer_contract": true,
+    "consumer_structure_matches_producer_contract": true,
+    "limitations_wording": "Producer and consumer limitation text is separately reviewed; exact structural keys match while explanatory wording differs.",
+    "upstream_rejection_evidence": {
+      "artifact_name": "jg-event-upstream-rejections.json",
+      "artifact_sha256": "6ffffcbbd7d3086fcc5f1a7dd80b6b8ddabccceaa690c525a4ba59f48f5f8574",
+      "checks": [
+        {
+          "case": "individual_rows",
+          "passed": true,
+          "status": 422
+        },
+        {
+          "case": "global_partition",
+          "passed": true,
+          "status": 422
+        },
+        {
+          "case": "private_filter",
+          "passed": true,
+          "status": 422
+        }
+      ],
+      "private_filter_field": "external_event_id"
+    },
+    "upstream_sync_verified": false,
+    "individual_event_rows_requested": false,
+    "global_rows_requested": false,
+    "owner_binding_created": false,
+    "connected_mcp_client_verified": false,
+    "connected_mcp_client_status": "Primary reported UNAUTHORIZED during 0.5.3 preparation. Separate Settings audit confirmed the previous refresh-token family revoked after rotation/replay handling while the owner grant remained active. Normal OAuth sign-in may reuse that grant; connected-client authentication, discovery and queries remain unverified. No actor or motive is inferred.",
+    "limitations": [
+      "Only the four listed JG/ZERO accounts and four specified projection shapes were accepted. Other accounts and every possible filter/date/view combination are not certified.",
+      "Response generation time is not source freshness. Stored webhook receipt counts may include duplicates, ignored events and invalid-body receipts; they do not prove unique events, sales or successful fulfillment.",
+      "No business receipt totals, payloads, event identities, credentials or raw error text are retained in this matrix. Empty valid projections do not establish absent marketplace activity or complete ingestion.",
+      "The original twelve-source contract and earlier account acceptance receipt remain unchanged. This separate source uses its own reviewed aggregate contract and readiness gate."
     ]
   }
 }

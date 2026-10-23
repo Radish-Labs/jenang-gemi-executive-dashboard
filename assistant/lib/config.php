@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 namespace JenangMcp;
-const VERSION = '0.5.2';
+const VERSION = '0.5.3';
 const SCOPE = 'jg:sales:read';
 const TABLE_SCOPE = 'jg:dashboard:read';
 const TABLE_FAMILIES = ['catalog','sales','stock','purchasing','accounting','wallets','partners','ads','customer_aggregates','website'];
