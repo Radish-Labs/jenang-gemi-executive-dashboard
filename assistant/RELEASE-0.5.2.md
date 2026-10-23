@@ -23,3 +23,16 @@ This is a confirmed local defect and a plausible explanation for the live timeou
 The reported Primary connection `UNAUTHORIZED` occurs before report dispatch. Review found no OAuth lifecycle change from the prior 0.4.0 release, and disposable-state tests show context/discovery preserve valid tokens and owner grants. Existing expiry, exact refresh-scope checks and replay protection remain enforced. The exact production cause requires timestamp/status-only token/MCP request logs or already-visible Settings audit entries; no new reconnect loop or credential change is implemented here.
 
 The original task required personal approval in the app before persistent access. The new diagnostic ACL uses the existing owner-password/CSRF/confirmation flow, so chat authorization permits the release but does not submit that protected form. An ordinary OAuth sign-in can reuse an existing valid owner grant; it must not silently enlarge scopes or replace the base grant merely to refresh metadata. The exact two diagnostic selections remain in `/assistant/settings/` under **Organization-wide diagnostics**. No app security check was bypassed and no persistent diagnostic permission was activated by this release.
+
+## Per-account ad-monitor presentation
+
+Integrated monitor commit `1ea217b91a8499879ca998299be7943b93bf8dbc` into this same exec3.98.50 release. The homepage names each account's saved condition and observation timestamps. Intentional paused/ignored/unselected or terminal campaigns no longer create an expected-running warning; existing incidents remain visible. Server freshness stays authoritative. Reload only reads stored observations; resume remains unavailable. This change does not diagnose the production collector or change any account selection, monitoring choice or ad state.
+
+## Combined validation
+
+- All 38 assistant PHP entrypoints passed: 13,074 assertion executions, with URL file access disabled. The source inventory also checked the exact retained backend acceptance receipt and current ingestion source inventory. An initial runner argument named the summary wrapper instead of the exact receipt; correcting that argument resolved the evidence-hash failure without changing code or tests.
+- 37 owner HTTP and 18 organizational Settings HTTP checks passed on localhost with synthetic state.
+- Monitor status tests, PHP auth/CSRF and passive-read contracts, and HTTP 401/405/403/422 permission cases passed. The source worker separately verified the component at desktop and mobile sizes.
+- All 94 assistant/dashboard PHP files passed syntax checks; monitor JavaScript syntax and whitespace checks passed.
+
+No test created production grants, changed credentials, collected marketplace data or changed business records. Connected-client authentication, live accounting-overview results and both organizational readers remain independent acceptance items.
