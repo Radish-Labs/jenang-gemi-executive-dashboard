@@ -78,7 +78,8 @@ function inventoryInterface(string $interface,array $reports,array $finance,arra
     if(str_starts_with($interface,'jg_business_report:'))inventoryCheck(($reports[substr($interface,19)]['status']??null)==='implemented','Interface references implemented dashboard report');
     elseif(str_starts_with($interface,'jg_finance_report:'))inventoryCheck(($finance[substr($interface,18)]['status']??null)==='implemented','Interface references separately authorized finance report');
     elseif(str_starts_with($interface,'jg_query_table:')){$view=substr($interface,15);inventoryCheck(isset($views[$view])||isset($fileViews[$view])||in_array($view,['catalog','sales_lines','sales_orders'],true),'Interface references registered data view: '.$view);}
-    else inventoryCheck(in_array($interface,['jg_ads_history','jg_monthly_profit','jg_product_report','jg_resolve_product','jg_annualize_sales'],true),'Known standalone read interface');
+    elseif(str_starts_with($interface,'jg_ingest_report:'))inventoryCheck(isset(JenangMcp\ingestReportDefinitions()[substr($interface,17)]),'Ingestion interface references a pinned source only');
+    else inventoryCheck(in_array($interface,['jg_ads_history','jg_monthly_profit','jg_product_report','jg_resolve_product','jg_annualize_sales','jg_ingest_report'],true),'Known standalone read interface');
 }
 foreach($matrix['file_sources'] as $file){inventoryCheck(in_array($file['classification'],$classes,true)&&!empty($file['reason']),'File source coverage decision is explicit');foreach($file['evidence']as $e)inventoryCheck(is_file($root.'/'.$e['file']),'File source evidence exists: '.$e['file']);foreach($file['interfaces']as $interface)inventoryInterface($interface,$reports,$finance,$views,$fileViews);}
 foreach($matrix['remaining_source_limitations']as $limitation){inventoryCheck(!empty($limitation['reason'])&&!empty($limitation['evidence']),'Source limitation explicit even when projection exists');foreach($limitation['evidence']as $e)inventoryCheck(is_file($root.'/'.$e['file']),'Remaining limitation evidence exists');foreach($limitation['interfaces']as $interface)inventoryInterface($interface,$reports,$finance,$views,$fileViews);}
@@ -111,7 +112,8 @@ inventoryCheck($prepared['raw_events']['registered']===false&&$prepared['raw_eve
 inventoryCheck($prepared['raw_events']['upstream_implementation_commit']==='24e45caadbf927b245dbfb4e3126fe27d012ec7a'&&!empty($prepared['raw_events']['upstream_implementation_basis']),'Separate upstream event source has exact local implementation evidence');
 inventoryCheck(!in_array('raw_platform_event_metadata',array_column($matrix['pending_remote_contract']['sources'],'source'),true),'Separate event proposal does not alter the frozen original twelve-source contract');
 inventoryCheck($prepared['raw_events']['definition']['views']===['summary','groups']&&!isset($prepared['raw_events']['definition']['columns']['event_type']),'Event metadata excludes per-event rows and payload-derived event types');
-inventoryCheck($matrix['pending_remote_contract']['source_released']===false&&JenangMcp\INGEST_REPORTS_SOURCE_RELEASED===false,'Original ingestion bridge release gate remains false');
+inventoryCheck($matrix['pending_remote_contract']['source_released']===true&&JenangMcp\INGEST_REPORTS_SOURCE_RELEASED===true&&$matrix['pending_remote_contract']['release_scope']==='account_sources_only','Account readiness matches the verified backend release');
+inventoryCheck($matrix['pending_remote_contract']['global_source_released']===false&&JenangMcp\INGEST_REPORTS_GLOBAL_SOURCE_RELEASED===false,'Account acceptance cannot release global sources');
 inventoryCheck($prepared['organizational_binding']['sources']===JenangMcp\organizationalSourceDefinitions(),'Organizational source preparation covers exact two diagnostic sources');
 inventoryCheck($prepared['organizational_binding']['enabled_by_default']===false&&$prepared['organizational_binding']['active_permission_created']===false&&JenangMcp\organizationalSourceApprovalEnabled([])===false,'Organizational binding preparation is not active permission');
 $globalContract=$matrix['pending_remote_contract']['global_transport_contract'];
@@ -127,8 +129,26 @@ foreach($globalContract['public_definitions']as $definition){
     $actualProjection=array_intersect_key($actual,$definition);ksort($actualProjection);$expectedProjection=$definition;ksort($expectedProjection);
     inventoryCheck($expectedProjection===$actualProjection,'Exact public diagnostic projection drift: '.$id);
     inventoryCheck(!isset($actual['columns']['id'])&&$actual['required_account_key']==='global','Diagnostic IDs stay private and explicit global selection is required');
-    inventoryCheck($actual['access_status']==='denied_no_explicit_organizational_source_authorization'&&$actual['availability']==='pending_upstream_publication_and_verification','Disabled source authority remains denied and hosted availability unverified');
+    inventoryCheck($actual['access_status']==='denied_no_explicit_organizational_source_authorization'&&$actual['availability']==='pending_global_authorization_and_hosted_verification'&&$actual['source_released']===false,'Disabled global source authority remains denied and hosted query availability unverified');
 }
+$acceptance=$matrix['backend_account_acceptance'];$ingestionDefinitions=JenangMcp\ingestReportDefinitions();
+$accountDefinitions=array_filter($ingestionDefinitions,fn($d)=>$d['scope']==='account');
+inventorySameSet($acceptance['source_ids'],array_keys($accountDefinitions),'Backend acceptance covers exact ten account source definitions');
+inventorySameSet($acceptance['account_keys'],['jenang-gemi-shopee','zero-shopee','jenang-gemi-tiktok','zero-tiktok'],'Recorded backend acceptance is bounded to four tested accounts');
+inventoryCheck($acceptance['catalog_check_passed']===true&&$acceptance['pinned_catalog_sources']===12&&$acceptance['hosted_catalog_sources_observed']===13,'Hosted discovery evidence does not silently expand the twelve-source pin');
+inventoryCheck($acceptance['global_rows_requested']===false&&$acceptance['owner_binding_created']===false&&$acceptance['event_rows_requested']===false&&$acceptance['connected_mcp_client_verified']===false&&$acceptance['upstream_sync_verified']===false,'Backend acceptance does not imply global/event reads, grants, client success or complete synchronization');
+$expectedPairs=[];foreach($accountDefinitions as $id=>$definition)foreach($acceptance['account_keys']as $account)if(!str_starts_with($id,'shopee_')||str_ends_with($account,'-shopee'))$expectedPairs[]=$id.':'.$account;
+$actualPairs=[];foreach($acceptance['checks']as $check){$actualPairs[]=$check['source'].':'.$check['account_key'];inventoryCheck($check['passed']===true&&$check['generated_at_utc']>=$acceptance['response_generated_at_utc_from']&&$check['generated_at_utc']<=$acceptance['response_generated_at_utc_to'],'Recorded projection result and response time stay within bounded acceptance');}
+inventorySameSet($actualPairs,$expectedPairs,'Acceptance receipt covers all and only thirty-two eligible source/account pairs');
+inventoryCheck(count($actualPairs)===32&&$acceptance['query_projections_passed']===32&&$c['backend_verified_account_source_projections']===32&&$c['backend_verified_account_sources']===10&&$c['backend_verified_accounts']===4,'Backend acceptance counts reconcile');
+foreach($accountDefinitions as $id=>$definition){
+    $actual=$diagnosticSources[$id];inventoryCheck($actual['source_released']===true&&$actual['availability']==='authenticated_contract_verified_checked_on_each_query'&&$actual['access_status']==='denied_no_authorized_source_account','Source readiness does not grant an unconfigured account');
+    $source=array_values(array_filter($matrix['database_sources'],fn($d)=>$d['id']==='ingest:'.$id))[0];
+    inventoryCheck($source['classification']==='mapped'&&($source['backend_verification']['verified']??false)===true&&($source['backend_verification']['connected_mcp_client_verified']??null)===false&&$source['database_binding']==='external_ingest_not_local','Backend-verified projection remains remote and is not claimed as connected-client success');
+    inventoryCheck($source['interfaces']===['jg_ingest_report:'.$id],'Verified remote projection uses exact pinned ingestion source');
+    inventorySameSet($source['backend_verification']['account_keys'],array_values(array_unique(array_column(array_filter($acceptance['checks'],fn($q)=>$q['source']===$id),'account_key'))),'Source-specific account acceptance is exact');
+}
+inventoryCheck($diagnosticCatalog['release_scope']==='account_sources_only'&&$diagnosticCatalog['global_source_released']===false&&$diagnosticCatalog['availability_verified']===false,'Discovery retains account-only readiness and per-query availability semantics');
 inventoryCheck($c['prepared_metadata_readers']===2&&$c['pending_remote_metadata_contract_sources']===1,'Prepared metadata counts exclude organizational authorization code');
 foreach(['zero_store_items','zero_store_discounts','zero_store_discount_items','jenang_gemi_store_items','jenang_gemi_store_discounts','jenang_gemi_store_discount_items']as $view)inventoryCheck($views[$view]['database']==='sku','Regression: storefront source binds to actual SKU database');
 inventoryCheck(($views['customer_activity']['physical_table']??null)==='analytics_events','Regression: logical customer activity view resolves to real analytics_events');
@@ -147,7 +167,7 @@ $expected=$c['feature_acceptance_by_classification'];ksort($expected);inventoryC
 foreach($c['feature_gaps_by_category']as $category=>$count)inventoryCheck(count(array_filter($matrix['feature_acceptance'],fn($f)=>($f['gap_category']??null)===$category))===$count,'Remaining feature gap category reconciles');
 $proof=array_values(array_filter($matrix['file_sources'],fn($f)=>$f['id']==='zero_sales_proof_cache'))[0];
 inventoryCheck($proof['coverage_level']==='saved_public_claim_only'&&in_array('exact_units',$proof['unavailable_components'],true)&&in_array('brand_partition',$proof['unavailable_components'],true),'Saved public proof does not imply exact units or ZERO-only partition');
-$ingestRoot=null;foreach(array_slice($argv,1)as $arg){if(!str_starts_with($arg,'--ingest-root='))throw new InvalidArgumentException('Supported option: --ingest-root=/path/to/known/ingest/repository');$ingestRoot=substr($arg,14);}
+$ingestRoot=null;$backendAcceptancePath=null;foreach(array_slice($argv,1)as $arg){if(str_starts_with($arg,'--ingest-root='))$ingestRoot=substr($arg,14);elseif(str_starts_with($arg,'--backend-acceptance='))$backendAcceptancePath=substr($arg,21);else throw new InvalidArgumentException('Supported options: --ingest-root=/path/to/known/ingest/repository and --backend-acceptance=/path/to/sanitized/acceptance-receipt.json');}
 if($ingestRoot!==null){inventoryCheck(is_dir($ingestRoot),'Known ingest checkout exists');$external=inventoryScan($ingestRoot);$ingestEntries=array_values(array_filter($matrix['database_sources'],fn($d)=>$d['repository']==='ingest'));inventorySameSet(array_keys($external['tables']),array_column($ingestEntries,'physical_source'),'Actual ingest database inventory');inventorySameSet($external['files'],$matrix['scan_files']['ingest'],'Ingest source file review');
     $routeSource=(string)file_get_contents(rtrim($ingestRoot,'/').'/public/index.php');
     preg_match_all('~[\'"](/(?:ads|sales|reports|fulfillment|hard-set|setup|health|shopee/auth|tiktok/auth)[a-zA-Z0-9_/-]*)[\'"]~',$routeSource,$m);$routes=$m[1];
@@ -155,10 +175,19 @@ if($ingestRoot!==null){inventoryCheck(is_dir($ingestRoot),'Known ingest checkout
     inventorySameSet(array_values(array_unique($routes)),array_column($matrix['ingest_api_sources'],'id'),'Ingest HTTP route inventory');
     $contract=json_decode((string)file_get_contents(rtrim($ingestRoot,'/').'/docs/ingest-report-sources.json'),true,32,JSON_THROW_ON_ERROR);
     inventoryCheck(($contract['schema_version']??null)===$matrix['pending_remote_contract']['schema_version'],'Pending ingest contract version reviewed');
-    inventoryCheck(count($matrix['pending_remote_contract']['sources'])===$c['pending_remote_contract_sources'],'Original twelve-source pin remains unchanged in size');
+    inventoryCheck(count($matrix['pending_remote_contract']['sources'])===$c['pinned_remote_contract_sources']&&$c['pending_remote_contract_sources']===2,'Original twelve-source pin remains intact with two unverified global queries');
     $reviewedExternal=[...$matrix['pending_remote_contract']['sources'],$prepared['raw_events']['upstream_contract']];
-    inventoryCheck(count($contract['sources'])===$c['pending_remote_contract_sources']+$c['pending_remote_metadata_contract_sources'],'Upstream manifest counts original twelve plus one separately reviewed event contract');
+    inventoryCheck(count($contract['sources'])===$c['pinned_remote_contract_sources']+$c['pending_remote_metadata_contract_sources'],'Upstream manifest counts original twelve plus one separately reviewed event contract');
     inventorySameSet(array_column($contract['sources'],'source'),array_column($reviewedExternal,'source'),'Upstream contract cannot silently add unreviewed sources');
     foreach($contract['sources']as $source){$reviewed=array_values(array_filter($reviewedExternal,fn($s)=>$s['source']===$source['source']))[0];inventoryCheck($reviewed===$source,'Remote safe projection contract drift: '.$source['source']);}
 }
-echo json_encode(['checks'=>$checks,'database_sources'=>$c['database_sources'],'typed_database_views'=>count($views),'api_consumers'=>count($apis),'canonical_reports'=>count($reports),'finance_reports'=>count($finance),'external_ingest_scan_performed'=>$ingestRoot!==null,'fixture_and_source_only'=>true]).PHP_EOL;
+if($backendAcceptancePath!==null){
+    inventoryCheck(is_file($backendAcceptancePath)&&filesize($backendAcceptancePath)<=262144,'Sanitized acceptance receipt is a bounded existing file');
+    inventoryCheck(hash_file('sha256',$backendAcceptancePath)===$acceptance['artifact_sha256'],'Recorded backend evidence matches exact acceptance receipt');
+    $receipt=json_decode((string)file_get_contents($backendAcceptancePath),true,16,JSON_THROW_ON_ERROR);
+    $catalogChecks=array_values(array_filter($receipt,fn($q)=>$q['check']==='authenticated_catalog'));$sourceChecks=array_values(array_filter($receipt,fn($q)=>$q['check']==='authenticated_source'));
+    inventoryCheck(count($receipt)===33&&count($catalogChecks)===1&&$catalogChecks[0]===['check'=>'authenticated_catalog','passed'=>true,'pinned_sources'=>12,'hosted_sources'=>13],'Receipt catalog acceptance remains exact');
+    $retainedChecks=[];foreach($sourceChecks as $q){inventoryCheck($q['passed']===true&&$q['upstream_sync_verified']===false,'Receipt success is not complete synchronization');$retainedChecks[]=['source'=>$q['source'],'account_key'=>$q['account'],'passed'=>true,'generated_at_utc'=>$q['generated_at_utc']];}
+    inventoryCheck($retainedChecks===$acceptance['checks'],'Recorded backend projections match sanitized receipt without copying business row totals');
+}
+echo json_encode(['checks'=>$checks,'database_sources'=>$c['database_sources'],'typed_database_views'=>count($views),'api_consumers'=>count($apis),'canonical_reports'=>count($reports),'finance_reports'=>count($finance),'external_ingest_scan_performed'=>$ingestRoot!==null,'backend_acceptance_receipt_verified'=>$backendAcceptancePath!==null,'fixture_and_source_only'=>true]).PHP_EOL;

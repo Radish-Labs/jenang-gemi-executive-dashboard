@@ -32,10 +32,12 @@ function irFixture(array $q):array {
 }
 $now=new DateTimeImmutable('2026-10-21 00:02:00 UTC');$c=irContext();
 irCheck($included==='','Definitions perform no dispatch/output');
-irCheck(!JenangMcp\INGEST_REPORTS_SOURCE_RELEASED,'Bridge release remains disabled');
+irCheck(JenangMcp\INGEST_REPORTS_SOURCE_RELEASED&&!JenangMcp\INGEST_REPORTS_GLOBAL_SOURCE_RELEASED,'Verified account sources released; globals remain disabled');
 $defs=ingestReportDefinitions();irCheck(count($defs)===12,'All twelve pinned source definitions');
 $catalog=ingestReportsCatalog(irContext(array_keys(JenangMcp\INGEST_REPORTS_ACCOUNTS)));
-irCheck(!$catalog['availability_verified']&&!$catalog['source_released'],'Local catalog is not deployment proof');
+irCheck(!$catalog['availability_verified']&&$catalog['source_released']&&!$catalog['global_source_released']&&$catalog['release_scope']==='account_sources_only','Split readiness is not current-query or global deployment proof');
+foreach($catalog['sources'] as $d)irCheck($d['source_released']===($d['scope']==='account')&&$d['availability']===($d['scope']==='account'?'authenticated_contract_verified_checked_on_each_query':'pending_global_authorization_and_hosted_verification'),'Per-source readiness '.$d['source']);
+foreach(['raw_platform_event_metadata','unknown'] as $id)irCheck(!JenangMcp\ingestReportsSourceReleased($id),'Account release cannot activate another source');
 $global=[];
 foreach($catalog['sources'] as $d){if($d['scope']==='global'){$global[]=$d['source'];irCheck($d['authorized_accounts']===[]&&$d['access_status']==='denied_no_explicit_organizational_source_authorization','Global source explicitly denied in discovery');}elseif(str_starts_with($d['source'],'shopee_'))irCheck(count($d['authorized_accounts'])===3,'Shopee catalog excludes TikTok');}
 irCheck($global===['marketplace_sync_runs','marketplace_fulfillment_runtime'],'Only reviewed global definitions');
@@ -70,9 +72,11 @@ irReject(fn()=>ingestReports(array_replace($c,['_actor_scope'=>'jg:sales:read'])
 irReject(fn()=>ingestReports(array_replace($c,['table_access_approved'=>false]),irArgs('marketplace_orders'),$settings,$transport,$now),'Unapproved/revoked table grant denied');
 foreach($global as $source)irReject(fn()=>ingestReports(irContext(array_keys(JenangMcp\INGEST_REPORTS_ACCOUNTS)),irArgs($source,['account_key'=>'global']),$settings,$transport,$now),'Even all six accounts and internal dashboard mode never grant global source');
 irCheck([$resolved,$requests]===$before,'Invalid authorization never loads service credential or transport');
-irReject(fn()=>ingestReports($c,irArgs('marketplace_orders'),$settings,null,$now),'Release gate precedes credential resolution','source_not_released');
-irReject(fn()=>ingestReports($c,irArgs('marketplace_orders'),null,$transport,$now),'Both closures required for fixture seam','source_not_released');
-irCheck([$resolved,$requests]===$before,'Disabled release cannot contact live service');
+irReject(fn()=>ingestReports($c,irArgs('marketplace_orders'),$settings,null,$now),'Released source refuses fixture settings without fixture transport','configuration_unavailable');
+irReject(fn()=>ingestReports($c,irArgs('marketplace_orders'),null,$transport,$now),'Released source refuses fixture transport without fixture settings','configuration_unavailable');
+irCheck([$resolved,$requests]===$before,'An incomplete fixture pair cannot load service settings or contact live service');
+foreach(['marketplace_sync_runs','marketplace_fulfillment_runtime','raw_platform_event_metadata','unknown'] as $id){$blocked=$q;$blocked['source']=$id;$blocked['query']['source']=$id;irReject(fn()=>ingestReportsRequest($blocked),'Unreleased direct transport blocked before default settings','source_not_released');}
+$mismatch=$q;$mismatch['query']['source']='marketplace_sync_runs';irReject(fn()=>ingestReportsRequest($mismatch,$settings,$transport),'Released source marker cannot select unreleased query target','source_contract_mismatch');
 foreach([
  ['base_url'=>'http://api.jenanggemi.com','token'=>'fixture'],['base_url'=>'https://evil.invalid','token'=>'fixture'],['base_url'=>JenangMcp\ADS_HISTORY_ORIGIN.'/other','token'=>'fixture'],['base_url'=>JenangMcp\ADS_HISTORY_ORIGIN,'token'=>"PRIVATE_SECRET\r\nInjected: value"],['base_url'=>JenangMcp\ADS_HISTORY_ORIGIN,'token'=>'']
 ] as $settingsValue)irReject(fn()=>ingestReportsRequest($q,fn()=>$settingsValue,$transport),'Unsafe service configuration rejected','configuration_unavailable');

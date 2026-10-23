@@ -54,7 +54,8 @@ function accountingOverviewMetricRead(\PDO $analytics,\PDO $sku,\PDO $partner,st
         [$sku,'SELECT COALESCE(SUM(LENGTH(line_note)+LENGTH(product_name)),0), COALESCE(MAX(LENGTH(line_note)+LENGTH(product_name)),0) FROM purchase_order_items'],
         [$sku,'SELECT COALESCE(SUM(LENGTH(item_ids_json)+LENGTH(proof_original_name)),0), COALESCE(MAX(LENGTH(item_ids_json)+LENGTH(proof_original_name)),0) FROM purchase_order_payments'],
     ] as [$pdo,$sql]){ $sizes=$pdo->query($sql)->fetch(\PDO::FETCH_NUM);if((int)$sizes[0]>8388608||(int)$sizes[1]>65536)throw new \RuntimeException('Accounting overview source payload capacity exceeded.'); }
-    cashSourcePayloadBudget($analytics,array_keys($sources['analytics'][1]),$sku,array_keys($sources['sku'][1]));
+    // The marketplace context reads only settlement/status fields, never mirror raw JSON or customer text.
+    cashSourcePayloadBudget($analytics,array_keys($sources['analytics'][1]),$sku,array_keys($sources['sku'][1]),true);
     $marketplace=\jg_accounting_marketplace_outstanding_context($analytics,true);
     $wallets=\jg_accounting_wallet_breakdown($analytics,$marketplace,true);
     if(count($wallets)>200)throw new \RuntimeException('Accounting overview wallet capacity exceeded.');

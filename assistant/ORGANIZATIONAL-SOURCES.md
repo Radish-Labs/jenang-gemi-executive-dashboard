@@ -1,6 +1,6 @@
 # Organizational diagnostic approval and passive transport
 
-Release 0.5.1 implements the two bounded global diagnostic readers and their separate owner approval. Code deployment does not activate a production grant, create credentials or change OAuth scopes. The ingestion source-release gate remains closed pending authenticated hosted contract acceptance. The saved candidates `edbb85ae6fcc723d4b5eb85da29b3aaf567079db` and `4c0eb2d151efbbf899971beb6475e64907882021` remain intact in history.
+Release 0.5.1 implements the two bounded global diagnostic readers and their separate owner approval. Code deployment does not activate a production grant, create credentials or change OAuth scopes. Release 0.5.2 opens only the ten account-source readers after authenticated hosted contract acceptance; the separate organizational source-release gate remains closed. The saved candidates `edbb85ae6fcc723d4b5eb85da29b3aaf567079db` and `4c0eb2d151efbbf899971beb6475e64907882021` remain intact in history.
 
 ## Exact boundary
 

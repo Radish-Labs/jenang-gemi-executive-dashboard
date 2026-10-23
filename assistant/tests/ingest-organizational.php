@@ -30,7 +30,7 @@ $resolved=0;$requests=0;$settings=function()use(&$resolved){$resolved++;return [
 try{
     $a=$reset();$catalog=ingestReportsCatalog($a);
     foreach($catalog['sources'] as $d)if($d['scope']==='global')ioCheck($d['access_status']==='denied_no_explicit_organizational_source_authorization'&&$d['required_account_key']==='global'&&!isset($d['columns']['id']),'Unapproved global discovery denies and excludes IDs');
-    ioCheck(count($catalog['sources'])===12&&!$catalog['source_released'],'Exactly twelve sources, disabled readiness');
+    ioCheck(count($catalog['sources'])===12&&$catalog['source_released']&&!$catalog['global_source_released']&&$catalog['release_scope']==='account_sources_only','Exactly twelve sources, only account readiness enabled');
     $transport=function($url,$options,$max)use(&$requests,&$a,$now):array{
         $requests++;parse_str(parse_url($url,PHP_URL_QUERY),$args);foreach(['limit','offset'] as $key)$args[$key]=(int)$args[$key];if(isset($args['group_by']))$args['group_by']=explode(',',$args['group_by']);if(isset($args['filters']))$args['filters']=json_decode($args['filters'],true);
         ioCheck($args['account_key']==='global'&&str_starts_with($url,'https://api.jenanggemi.com/reports/query?')&&!str_contains($url,'PRIVATE_SECRET'),'Fixed target and explicit global parameter');
@@ -52,8 +52,9 @@ try{
     }
     $before=[$resolved,$requests];
     foreach([$sync,$worker] as $id){
-        ioReject(fn()=>ingestReports($a,ioArgs($id),$settings,null,$now),'Readiness gate before credential lookup','source_not_released');
-        ioReject(fn()=>ingestReports($a,ioArgs($id),null,$transport,$now),'One fixture closure cannot bypass readiness','source_not_released');
+        ioReject(fn()=>ingestReports($a,ioArgs($id),null,null,$now),'Separate global readiness gate before default credential lookup','source_not_released');
+        ioReject(fn()=>ingestReports($a,ioArgs($id),$settings,null,$now),'Fixture settings require paired fixture transport','configuration_unavailable');
+        ioReject(fn()=>ingestReports($a,ioArgs($id),null,$transport,$now),'Fixture transport requires paired fixture settings','configuration_unavailable');
         foreach(['zero-shopee','all','GLOBAL',null] as $account)ioReject(fn()=>ingestReports($a,ioArgs($id,['account_key'=>$account]),$settings,$transport,$now),'Global selection must be exact');
         ioReject(fn()=>ingestReports($a,ioArgs($id,['filters'=>['id'=>'1']]),$settings,$transport,$now),'No internal identity filters');
     }
@@ -102,7 +103,7 @@ try{
     }
     $a=$reset();updateOrganizationalSources($c,[$sync,$worker]);updateOrganizationalSources($c,[$worker]);
     ioReject(fn()=>ingestReports($a,ioArgs($sync),$settings,$transport,$now),'Source revoke immediate');ioCheck(ingestReports($a,ioArgs($worker),$settings,$transport,$now)['data']['source']===$worker,'Other approved source survives source-only revoke');
-    ioCheck(!JenangMcp\INGEST_REPORTS_SOURCE_RELEASED,'Release remains disabled at suite completion');
+    ioCheck(JenangMcp\INGEST_REPORTS_SOURCE_RELEASED&&!JenangMcp\INGEST_REPORTS_GLOBAL_SOURCE_RELEASED,'Global release remains disabled independently at suite completion');
     echo "ingest-organizational: $checks checks passed\n";
 }finally{foreach(glob($dir.'/*') as $f)unlink($f);rmdir($dir);}
 function unsetScope(array &$p):void{unset($p['scope']['platform']);}

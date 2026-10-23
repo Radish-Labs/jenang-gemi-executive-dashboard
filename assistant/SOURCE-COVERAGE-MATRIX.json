@@ -2,7 +2,7 @@
   "schema_version": 1,
   "review_date": "2026-10-23",
   "title": "Jenang Gemi actual-source-to-MCP read acceptance matrix",
-  "coverage_boundary": "Static canonical dashboard PHP/SQL declarations and readers, all API index consumers, file readsites, current reviewed projection/report registries, known ingest repository and pinned Store Ops source contracts. This does not assert production availability, complete stored history, full screen parity or callable client catalog.",
+  "coverage_boundary": "Canonical dashboard source declarations/readers, API consumers, file readsites, reviewed registries, known ingest/Store Ops contracts and explicitly bounded retained backend account-source acceptance evidence. Static mapping or backend acceptance does not assert connected-MCP client success, complete stored history or full screen parity.",
   "classifications": {
     "mapped": "Safe projection or canonical adapter implemented locally, not proof of live usability.",
     "projection_needs_semantic": "Some facts may be mapped, but precise canonical calculation or bounded passive file adapter remains a concrete implementation gap.",
@@ -26,8 +26,8 @@
     "recipients": "Named allocation tool still requires finance scope and saved recipient allowlist. Branch and Brent remain distinct.",
     "excluded": "Credentials, security state, identifiable customer/employee contacts, private document contents, arbitrary raw payloads, and unrestricted SQL/writes.",
     "finance_reports": "jg_finance_report retains jg:finance:read independently of dashboard access. allocation_statement additionally requires the exact saved recipient allowlist; legacy/current editor statements do not broaden named-recipient access.",
-    "metadata": "Proof/label and local nonsecurity observation reports use existing dashboard authorization plus source-specific company/partner guards. Protected fields remain excluded. Staff roster totals, global ingest diagnostics and new upstream sources are not enabled by this batch.",
-    "organizational_sources": "Only marketplace_sync_runs and marketplace_fulfillment_runtime accept account_key=global. Each requires the current owner-confirmed source binding to this exact client/subject/grant plus a valid dashboard-read token and enabled deployment policy. Personal approval remains in /assistant/settings/. Authorization is rechecked before and after reads, including approval revision; no automatic grant is created. The source-release gate is false and hosted availability remains unverified."
+    "metadata": "Proof/label and local nonsecurity observation reports use existing dashboard authorization plus source-specific company/partner guards. Protected fields remain excluded. The ten original account-source readers are release-enabled after bounded backend acceptance without changing their account grants. Staff roster totals, global diagnostics and the event consumer remain separately blocked/gated.",
+    "organizational_sources": "Only marketplace_sync_runs and marketplace_fulfillment_runtime accept account_key=global. Each requires the current owner-confirmed source binding to this exact client/subject/grant plus a valid dashboard-read token and enabled deployment policy. Personal approval remains in /assistant/settings/. Authorization is rechecked before and after reads, including approval revision; no automatic grant is created. The separate global-source release gate is false; no global row was requested and hosted global-query availability remains unverified. Account-source release does not enable these diagnostics."
   },
   "counts": {
     "database_sources": 134,
@@ -37,9 +37,9 @@
       "ingest": 22
     },
     "database_by_classification": {
-      "mapped": 107,
+      "mapped": 117,
       "intentionally_excluded": 14,
-      "external_reader_blocked": 13
+      "external_reader_blocked": 3
     },
     "database_by_family": {
       "accounting": 24,
@@ -76,7 +76,8 @@
     },
     "feature_gaps_by_category": {
       "implementable": 0,
-      "external_passive_reader_blocked": 6,
+      "external_passive_reader_blocked": 4,
+      "canonical_composition_and_client_verification_pending": 2,
       "intentionally_excluded": 1
     },
     "finance_reports": 3,
@@ -88,7 +89,7 @@
       "mapped": 9,
       "intentionally_excluded": 5
     },
-    "pending_remote_contract_sources": 12,
+    "pending_remote_contract_sources": 2,
     "deliberate_exclusions_by_category": {
       "internal_presentation": 4,
       "security_secrets": 6,
@@ -107,7 +108,11 @@
       "prepared_upstream_blocked": 1
     },
     "prepared_metadata_readers": 2,
-    "pending_remote_metadata_contract_sources": 1
+    "pending_remote_metadata_contract_sources": 1,
+    "pinned_remote_contract_sources": 12,
+    "backend_verified_account_sources": 10,
+    "backend_verified_account_source_projections": 32,
+    "backend_verified_accounts": 4
   },
   "database_sources": [
     {
@@ -8017,16 +8022,18 @@
       "physical_source": "marketplace_fulfillment_jobs",
       "database_binding": "external_ingest_not_local",
       "family": "sales",
-      "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "account_backend_contract_verified_client_verification_pending",
+      "interfaces": [
+        "jg_ingest_report:marketplace_fulfillment_jobs"
+      ],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
       "date_basis": "utc_history; one stored fulfillment job",
-      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "freshness": "Backend query projection verified at the recorded response times; source-specific physical write times differ and every response retained upstream_sync_verified=false. No current or complete-source freshness claim.",
+      "reason": "Authenticated existing-backend catalog and bounded query projections passed for this account source on 2026-10-23. The account-source readiness gate is enabled in 0.5.2 while existing account authorization remains mandatory. Connected-MCP client success, full history and upstream synchronization are not established.",
       "evidence": {
         "declared_at": [
           {
@@ -8098,6 +8105,17 @@
         "source": "marketplace_fulfillment_jobs",
         "scope": "account",
         "date_mode": "utc_history"
+      },
+      "backend_verification": {
+        "verified": true,
+        "evidence": "backend_account_acceptance",
+        "account_keys": [
+          "jenang-gemi-shopee",
+          "jenang-gemi-tiktok",
+          "zero-shopee",
+          "zero-tiktok"
+        ],
+        "connected_mcp_client_verified": false
       }
     },
     {
@@ -8107,16 +8125,18 @@
       "physical_source": "marketplace_fulfillment_orders",
       "database_binding": "external_ingest_not_local",
       "family": "sales",
-      "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "account_backend_contract_verified_client_verification_pending",
+      "interfaces": [
+        "jg_ingest_report:marketplace_fulfillment_orders"
+      ],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
       "date_basis": "utc_history; one current fulfillment order/package state",
-      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "freshness": "Backend query projection verified at the recorded response times; source-specific physical write times differ and every response retained upstream_sync_verified=false. No current or complete-source freshness claim.",
+      "reason": "Authenticated existing-backend catalog and bounded query projections passed for this account source on 2026-10-23. The account-source readiness gate is enabled in 0.5.2 while existing account authorization remains mandatory. Connected-MCP client success, full history and upstream synchronization are not established.",
       "evidence": {
         "declared_at": [
           {
@@ -8200,6 +8220,17 @@
         "source": "marketplace_fulfillment_orders",
         "scope": "account",
         "date_mode": "utc_history"
+      },
+      "backend_verification": {
+        "verified": true,
+        "evidence": "backend_account_acceptance",
+        "account_keys": [
+          "jenang-gemi-shopee",
+          "jenang-gemi-tiktok",
+          "zero-shopee",
+          "zero-tiktok"
+        ],
+        "connected_mcp_client_verified": false
       }
     },
     {
@@ -8222,7 +8253,7 @@
       },
       "date_basis": "snapshot; global current worker heartbeat",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "reason": "The source definition matched authenticated hosted catalog discovery, but no global row was requested. Global readiness remains false independently of the account-source release. Exact personal owner/source binding, valid token/grant, checks before/after transport and separate authenticated global-query acceptance remain required.",
       "evidence": {
         "declared_at": [
           {
@@ -8261,7 +8292,14 @@
         "account identities",
         "private payloads",
         "credentials"
-      ]
+      ],
+      "backend_verification": {
+        "catalog_definition_verified": true,
+        "query_verified": false,
+        "evidence": "backend_account_acceptance",
+        "owner_binding_created": false,
+        "connected_mcp_client_verified": false
+      }
     },
     {
       "id": "ingest:marketplace_order_items",
@@ -8270,16 +8308,18 @@
       "physical_source": "marketplace_order_items",
       "database_binding": "external_ingest_not_local",
       "family": "sales",
-      "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "account_backend_contract_verified_client_verification_pending",
+      "interfaces": [
+        "jg_ingest_report:marketplace_order_items"
+      ],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
       "date_basis": "utc_history; one stored order item",
-      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "freshness": "Backend query projection verified at the recorded response times; source-specific physical write times differ and every response retained upstream_sync_verified=false. No current or complete-source freshness claim.",
+      "reason": "Authenticated existing-backend catalog and bounded query projections passed for this account source on 2026-10-23. The account-source readiness gate is enabled in 0.5.2 while existing account authorization remains mandatory. Connected-MCP client success, full history and upstream synchronization are not established.",
       "evidence": {
         "declared_at": [
           {
@@ -8323,6 +8363,17 @@
         "source": "marketplace_order_items",
         "scope": "account",
         "date_mode": "utc_history"
+      },
+      "backend_verification": {
+        "verified": true,
+        "evidence": "backend_account_acceptance",
+        "account_keys": [
+          "jenang-gemi-shopee",
+          "jenang-gemi-tiktok",
+          "zero-shopee",
+          "zero-tiktok"
+        ],
+        "connected_mcp_client_verified": false
       }
     },
     {
@@ -8332,16 +8383,18 @@
       "physical_source": "marketplace_order_monthly_rollups",
       "database_binding": "external_ingest_not_local",
       "family": "sales",
-      "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "account_backend_contract_verified_client_verification_pending",
+      "interfaces": [
+        "jg_ingest_report:marketplace_order_monthly_rollups"
+      ],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
       "date_basis": "business_month; one account/currency/Jakarta-month rollup",
-      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "freshness": "Backend query projection verified at the recorded response times; source-specific physical write times differ and every response retained upstream_sync_verified=false. No current or complete-source freshness claim.",
+      "reason": "Authenticated existing-backend catalog and bounded query projections passed for this account source on 2026-10-23. The account-source readiness gate is enabled in 0.5.2 while existing account authorization remains mandatory. Connected-MCP client success, full history and upstream synchronization are not established.",
       "evidence": {
         "declared_at": [
           {
@@ -8369,6 +8422,17 @@
         "source": "marketplace_order_monthly_rollups",
         "scope": "account",
         "date_mode": "business_month"
+      },
+      "backend_verification": {
+        "verified": true,
+        "evidence": "backend_account_acceptance",
+        "account_keys": [
+          "jenang-gemi-shopee",
+          "jenang-gemi-tiktok",
+          "zero-shopee",
+          "zero-tiktok"
+        ],
+        "connected_mcp_client_verified": false
       }
     },
     {
@@ -8378,16 +8442,18 @@
       "physical_source": "marketplace_order_product_monthly_rollups",
       "database_binding": "external_ingest_not_local",
       "family": "sales",
-      "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "account_backend_contract_verified_client_verification_pending",
+      "interfaces": [
+        "jg_ingest_report:marketplace_order_product_monthly_rollups"
+      ],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
       "date_basis": "business_month; one product/flavor/SKU/account/currency/Jakarta-month rollup",
-      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "freshness": "Backend query projection verified at the recorded response times; source-specific physical write times differ and every response retained upstream_sync_verified=false. No current or complete-source freshness claim.",
+      "reason": "Authenticated existing-backend catalog and bounded query projections passed for this account source on 2026-10-23. The account-source readiness gate is enabled in 0.5.2 while existing account authorization remains mandatory. Connected-MCP client success, full history and upstream synchronization are not established.",
       "evidence": {
         "declared_at": [
           {
@@ -8411,6 +8477,17 @@
         "source": "marketplace_order_product_monthly_rollups",
         "scope": "account",
         "date_mode": "business_month"
+      },
+      "backend_verification": {
+        "verified": true,
+        "evidence": "backend_account_acceptance",
+        "account_keys": [
+          "jenang-gemi-shopee",
+          "jenang-gemi-tiktok",
+          "zero-shopee",
+          "zero-tiktok"
+        ],
+        "connected_mcp_client_verified": false
       }
     },
     {
@@ -8420,16 +8497,18 @@
       "physical_source": "marketplace_orders",
       "database_binding": "external_ingest_not_local",
       "family": "sales",
-      "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "account_backend_contract_verified_client_verification_pending",
+      "interfaces": [
+        "jg_ingest_report:marketplace_orders"
+      ],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
       "date_basis": "utc_history; one stored marketplace order",
-      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "freshness": "Backend query projection verified at the recorded response times; source-specific physical write times differ and every response retained upstream_sync_verified=false. No current or complete-source freshness claim.",
+      "reason": "Authenticated existing-backend catalog and bounded query projections passed for this account source on 2026-10-23. The account-source readiness gate is enabled in 0.5.2 while existing account authorization remains mandatory. Connected-MCP client success, full history and upstream synchronization are not established.",
       "evidence": {
         "declared_at": [
           {
@@ -8513,6 +8592,17 @@
         "source": "marketplace_orders",
         "scope": "account",
         "date_mode": "utc_history"
+      },
+      "backend_verification": {
+        "verified": true,
+        "evidence": "backend_account_acceptance",
+        "account_keys": [
+          "jenang-gemi-shopee",
+          "jenang-gemi-tiktok",
+          "zero-shopee",
+          "zero-tiktok"
+        ],
+        "connected_mcp_client_verified": false
       }
     },
     {
@@ -8535,7 +8625,7 @@
       },
       "date_basis": "utc_history; one global marketplace sync run",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "reason": "The source definition matched authenticated hosted catalog discovery, but no global row was requested. Global readiness remains false independently of the account-source release. Exact personal owner/source binding, valid token/grant, checks before/after transport and separate authenticated global-query acceptance remain required.",
       "evidence": {
         "declared_at": [
           {
@@ -8566,7 +8656,14 @@
         "account identities",
         "private payloads",
         "credentials"
-      ]
+      ],
+      "backend_verification": {
+        "catalog_definition_verified": true,
+        "query_verified": false,
+        "evidence": "backend_account_acceptance",
+        "owner_binding_created": false,
+        "connected_mcp_client_verified": false
+      }
     },
     {
       "id": "ingest:raw_platform_events",
@@ -8681,16 +8778,18 @@
       "physical_source": "shopee_ad_balances",
       "database_binding": "external_ingest_not_local",
       "family": "ads",
-      "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "account_backend_contract_verified_client_verification_pending",
+      "interfaces": [
+        "jg_ingest_report:shopee_ad_balances"
+      ],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
       "date_basis": "snapshot; latest stored ad-credit balance per account",
-      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "freshness": "Backend query projection verified at the recorded response times; source-specific physical write times differ and every response retained upstream_sync_verified=false. No current or complete-source freshness claim.",
+      "reason": "Authenticated existing-backend catalog and bounded query projections passed for this account source on 2026-10-23. The account-source readiness gate is enabled in 0.5.2 while existing account authorization remains mandatory. Connected-MCP client success, full history and upstream synchronization are not established.",
       "evidence": {
         "declared_at": [
           {
@@ -8714,6 +8813,15 @@
         "source": "shopee_ad_balances",
         "scope": "account",
         "date_mode": "snapshot"
+      },
+      "backend_verification": {
+        "verified": true,
+        "evidence": "backend_account_acceptance",
+        "account_keys": [
+          "jenang-gemi-shopee",
+          "zero-shopee"
+        ],
+        "connected_mcp_client_verified": false
       }
     },
     {
@@ -8869,16 +8977,18 @@
       "physical_source": "shopee_ad_items",
       "database_binding": "external_ingest_not_local",
       "family": "ads",
-      "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "account_backend_contract_verified_client_verification_pending",
+      "interfaces": [
+        "jg_ingest_report:shopee_ad_items"
+      ],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
       "date_basis": "snapshot; current cached Shopee item metadata",
-      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "freshness": "Backend query projection verified at the recorded response times; source-specific physical write times differ and every response retained upstream_sync_verified=false. No current or complete-source freshness claim.",
+      "reason": "Authenticated existing-backend catalog and bounded query projections passed for this account source on 2026-10-23. The account-source readiness gate is enabled in 0.5.2 while existing account authorization remains mandatory. Connected-MCP client success, full history and upstream synchronization are not established.",
       "evidence": {
         "declared_at": [
           {
@@ -8906,6 +9016,15 @@
         "source": "shopee_ad_items",
         "scope": "account",
         "date_mode": "snapshot"
+      },
+      "backend_verification": {
+        "verified": true,
+        "evidence": "backend_account_acceptance",
+        "account_keys": [
+          "jenang-gemi-shopee",
+          "zero-shopee"
+        ],
+        "connected_mcp_client_verified": false
       }
     },
     {
@@ -8915,16 +9034,18 @@
       "physical_source": "shopee_ad_monitor",
       "database_binding": "external_ingest_not_local",
       "family": "ads",
-      "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "account_backend_contract_verified_client_verification_pending",
+      "interfaces": [
+        "jg_ingest_report:shopee_ad_monitor"
+      ],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
       "date_basis": "monitor; current campaign observations and incidents in one account state",
-      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "freshness": "Backend query projection verified at the recorded response times; source-specific physical write times differ and every response retained upstream_sync_verified=false. No current or complete-source freshness claim.",
+      "reason": "Authenticated existing-backend catalog and bounded query projections passed for this account source on 2026-10-23. The account-source readiness gate is enabled in 0.5.2 while existing account authorization remains mandatory. Connected-MCP client success, full history and upstream synchronization are not established.",
       "evidence": {
         "declared_at": [
           {
@@ -8952,6 +9073,15 @@
         "source": "shopee_ad_monitor",
         "scope": "account",
         "date_mode": "monitor"
+      },
+      "backend_verification": {
+        "verified": true,
+        "evidence": "backend_account_acceptance",
+        "account_keys": [
+          "jenang-gemi-shopee",
+          "zero-shopee"
+        ],
+        "connected_mcp_client_verified": false
       }
     },
     {
@@ -8961,16 +9091,18 @@
       "physical_source": "shopee_ad_monitor_audit",
       "database_binding": "external_ingest_not_local",
       "family": "ads",
-      "classification": "external_reader_blocked",
-      "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
-      "interfaces": [],
+      "classification": "mapped",
+      "coverage_level": "account_backend_contract_verified_client_verification_pending",
+      "interfaces": [
+        "jg_ingest_report:shopee_ad_monitor_audit"
+      ],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
         "new_credentials_allowed": false
       },
       "date_basis": "stored_calendar_history; one local monitoring intent/acknowledgement audit event",
-      "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
+      "freshness": "Backend query projection verified at the recorded response times; source-specific physical write times differ and every response retained upstream_sync_verified=false. No current or complete-source freshness claim.",
+      "reason": "Authenticated existing-backend catalog and bounded query projections passed for this account source on 2026-10-23. The account-source readiness gate is enabled in 0.5.2 while existing account authorization remains mandatory. Connected-MCP client success, full history and upstream synchronization are not established.",
       "evidence": {
         "declared_at": [
           {
@@ -8990,6 +9122,15 @@
         "source": "shopee_ad_monitor_audit",
         "scope": "account",
         "date_mode": "stored_calendar_history"
+      },
+      "backend_verification": {
+        "verified": true,
+        "evidence": "backend_account_acceptance",
+        "account_keys": [
+          "jenang-gemi-shopee",
+          "zero-shopee"
+        ],
+        "connected_mcp_client_verified": false
       }
     },
     {
@@ -10093,26 +10234,26 @@
     {
       "id": "/reports/query",
       "source_kind": "remote_api",
-      "classification": "external_reader_blocked",
+      "classification": "mapped",
       "evidence": [
         {
           "file": "public/index.php"
         }
       ],
       "interfaces": [],
-      "reason": "Original passive twelve-source contract and local MCP bridge are prepared; source readiness is false and actual hosted verification is pending. The two global diagnostics require current exact owner/source authorization before/after reads. Separate raw-event aggregate proposal is not part of this source contract."
+      "reason": "Authenticated bounded backend projections passed 32 source/account checks across ten account sources and four eligible JG/ZERO accounts. Account readiness is enabled in 0.5.2. No global or event rows were requested, global readiness remains false, and connected-MCP calls remain unverified."
     },
     {
       "id": "/reports/sources",
       "source_kind": "remote_api",
-      "classification": "external_reader_blocked",
+      "classification": "mapped",
       "evidence": [
         {
           "file": "public/index.php"
         }
       ],
       "interfaces": [],
-      "reason": "Original passive twelve-source contract and local MCP bridge are prepared; source readiness is false and actual hosted verification is pending. The two global diagnostics require current exact owner/source authorization before/after reads. Separate raw-event aggregate proposal is not part of this source contract."
+      "reason": "Authenticated hosted discovery passed for every original twelve-source definition and observed thirteen hosted entries. The extra entry name/schema is not retained by this receipt and does not expand the runtime allowlist. The separate raw-event consumer remains disabled/unregistered."
     },
     {
       "id": "/sales/order",
@@ -14353,7 +14494,7 @@
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     },
     {
-      "gap_category": "external_passive_reader_blocked",
+      "gap_category": "canonical_composition_and_client_verification_pending",
       "id": "feature_37",
       "family": "ads",
       "feature": "Ads performance, spend, impressions/clicks/orders, attribution/economics, budget progress; /api/ads/",
@@ -14369,12 +14510,12 @@
           "file": "ads-bootstrap.php"
         }
       ],
-      "remaining_gap": "All-status stored history bridge exists. The twelve-source passive contract now includes item mapping, stored balances and monitor observations; bridge integration and hosted verification remain pending. Full canonical ad economics must compose these verified inputs rather than infer spend from bills/topups.",
+      "remaining_gap": "Stored all-status ads history is separate. Account-source item mapping, balances and monitor projections now passed authenticated backend acceptance for JG/ZERO Shopee. Full canonical ad economics/budget composition and connected-MCP client acceptance remain unverified; bills/topups cannot substitute for consumed spend.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     },
     {
-      "gap_category": "external_passive_reader_blocked",
+      "gap_category": "canonical_composition_and_client_verification_pending",
       "id": "feature_38",
       "family": "ads",
       "feature": "Credit balance threshold alerts",
@@ -14391,7 +14532,7 @@
           "file": "ad-monitor-bootstrap.php"
         }
       ],
-      "remaining_gap": "Local thresholds are mapped. The passive stored-balance contract is implemented locally; MCP bridge, actual hosted balance/observation verification and approved account scope remain pending.",
+      "remaining_gap": "Local thresholds are mapped and the stored balance/monitor account-source backend projections passed for JG/ZERO Shopee. This is not complete canonical threshold-alert composition or connected-MCP client acceptance; balance observation age and missing/empty monitor state remain explicit.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     },
@@ -14582,7 +14723,7 @@
           "file": "api-health-log-read.php"
         }
       ],
-      "remaining_gap": "Passive local failure history is implemented. The marketplace_sync_runs contract/bridge is prepared with source release false. Its global transport requires exact owner-confirmed source binding, valid token/grant and checks before/after the read; actual hosted verification remains pending. Empty failures never prove ingestion completeness.",
+      "remaining_gap": "Passive local failure history is implemented. Authenticated account-source backend acceptance does not test the global marketplace_sync_runs ledger. Its separate release is false, no global rows were requested and personal owner/source approval plus global-query verification remain required. Empty failures do not prove ingestion completeness.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate",
       "implemented_canonical_helpers": [
@@ -14607,7 +14748,7 @@
           "file": "website-commerce-bootstrap.php"
         }
       ],
-      "remaining_gap": "Local nonsecurity flags and selected audit/delivery observations are implemented, but they do not prove readiness or source permissions. The named global diagnostics have owner-bound transport with source release false and hosted verification pending; additional remote control observations still need separate passive contracts.",
+      "remaining_gap": "Local nonsecurity observations and bounded account-source fulfillment order/job backend projections are implemented and verified within their sample. They do not prove current readiness or complete delivery. Global runtime readiness remains false without a global query; exact owner binding and separate hosted verification are required. Additional remote control observations remain outside this release.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     }
@@ -14871,10 +15012,26 @@
       "id": "global_ingest_source_authority",
       "kind": "authorization_binding_blocked",
       "interfaces": [],
-      "reason": "marketplace_sync_runs and marketplace_fulfillment_runtime require personal owner confirmation of each exact source for the current client/subject/grant, plus a valid dashboard-read token. Gated global transport now enforces those bindings before/after reads; revocation or reapproval during a read discards it. No grant is created automatically, source readiness is false and hosted verification remains pending.",
+      "reason": "marketplace_sync_runs and marketplace_fulfillment_runtime require personal owner confirmation of each exact source for the current client/subject/grant, plus a valid dashboard-read token. Gated global transport now enforces those bindings before/after reads; revocation or reapproval during a read discards it. No grant is created automatically, the separate global-source readiness remains false and authenticated global-query verification remains pending; account-source acceptance does not satisfy it.",
       "evidence": [
         {
           "file": "assistant/lib/organizational-sources.php"
+        },
+        {
+          "file": "assistant/lib/ingest-reports.php"
+        }
+      ]
+    },
+    {
+      "id": "connected_mcp_client_acceptance",
+      "kind": "client_authentication_and_discovery_unverified",
+      "interfaces": [
+        "jg_ingest_report"
+      ],
+      "reason": "Authenticated existing-backend account-source acceptance passed, but the connected Primary MCP client currently reports UNAUTHORIZED during release preparation. Token refresh/authentication and actual client-callable tool verification are separate; no successful MCP client read is claimed.",
+      "evidence": [
+        {
+          "file": "assistant/lib/ingest-report-tools.php"
         },
         {
           "file": "assistant/lib/ingest-reports.php"
@@ -14885,7 +15042,7 @@
   "pending_remote_contract": {
     "schema_version": 1,
     "availability_verified": false,
-    "implementation_state": "local_source_contract_and_mcp_bridge_prepared_source_release_false_hosted_verification_pending",
+    "implementation_state": "account_backend_contract_verified_account_release_enabled_global_release_false_client_verification_pending",
     "sources": [
       {
         "source": "marketplace_orders",
@@ -15350,8 +15507,8 @@
         "file": "docs/ingest-report-sources.json"
       }
     ],
-    "authorization": "Ten account sources require exact configured accounts. Only marketplace_sync_runs and marketplace_fulfillment_runtime accept account_key=global with personal owner approval for that exact source and current client/subject/grant. Fresh authoritative token/grant/source checks occur before and after reads; the false source-release gate still prevents live transport. Account membership never substitutes for global authority.",
-    "source_released": false,
+    "authorization": "Ten account sources are release-enabled after authenticated bounded backend acceptance; each still requires an exact already-configured account and current dashboard grant. Only the two named diagnostics may use account_key=global with personal owner/source binding, but their separate release gate remains false and no global rows were queried. Account membership never substitutes for global authority. Connected-MCP client authentication remains a separate verification step.",
+    "source_released": true,
     "transport_endpoint": "https://api.jenanggemi.com/reports/query",
     "discovery_endpoint": "https://api.jenanggemi.com/reports/sources",
     "global_transport_contract": {
@@ -15441,7 +15598,10 @@
         "Unknown producer mode/status fails closed; no raw diagnostic text is forwarded.",
         "Staff/raw-event readers and other remote control sources are not enabled or authorized by either binding."
       ]
-    }
+    },
+    "global_source_released": false,
+    "release_scope": "account_sources_only",
+    "backend_acceptance_reference": "backend_account_acceptance"
   },
   "prepared_metadata_readers": {
     "staff": {
@@ -15575,7 +15735,7 @@
       "enabled_by_default": false,
       "active_permission_created": false,
       "ingest_global_reads": "exact_source_binding_and_release_gate_required",
-      "activation_requires": "Enabled deployment policy, personal owner Settings confirmation binding each exact source to the current client/subject/grant, and authenticated hosted contract verification before source readiness is released. Authoritative token/grant/source state and approval revision are checked before and after the read. Preparation or deployment alone does not grant access.",
+      "activation_requires": "Enabled deployment policy, personal owner Settings confirmation binding each exact source to the current client/subject/grant, and authenticated hosted contract verification before the separate global-source readiness is released. Authoritative token/grant/source state and approval revision are checked before and after the read. Preparation or deployment alone does not grant access.",
       "evidence": [
         {
           "file": "assistant/lib/organizational-sources.php"
@@ -15586,5 +15746,242 @@
       ],
       "transport_implemented": true
     }
+  },
+  "backend_account_acceptance": {
+    "basis": "Authenticated existing-backend contract and bounded query projection acceptance; not a connected-MCP-client request.",
+    "artifact_name": "jg-authenticated-ingest-contract-results.json",
+    "artifact_sha256": "84b3d736ba768c8aded2f7bdaa68ce55199400a04492669301d064055b70b384",
+    "catalog_check_passed": true,
+    "pinned_catalog_sources": 12,
+    "hosted_catalog_sources_observed": 13,
+    "query_projections_passed": 32,
+    "source_ids": [
+      "marketplace_fulfillment_jobs",
+      "marketplace_fulfillment_orders",
+      "marketplace_order_items",
+      "marketplace_order_monthly_rollups",
+      "marketplace_order_product_monthly_rollups",
+      "marketplace_orders",
+      "shopee_ad_balances",
+      "shopee_ad_items",
+      "shopee_ad_monitor",
+      "shopee_ad_monitor_audit"
+    ],
+    "account_keys": [
+      "jenang-gemi-shopee",
+      "jenang-gemi-tiktok",
+      "zero-shopee",
+      "zero-tiktok"
+    ],
+    "response_generated_at_utc_from": "2026-10-23T04:03:14+00:00",
+    "response_generated_at_utc_to": "2026-10-23T04:03:20+00:00",
+    "checks": [
+      {
+        "source": "marketplace_orders",
+        "account_key": "jenang-gemi-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:14+00:00"
+      },
+      {
+        "source": "marketplace_order_items",
+        "account_key": "jenang-gemi-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:14+00:00"
+      },
+      {
+        "source": "marketplace_order_monthly_rollups",
+        "account_key": "jenang-gemi-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:14+00:00"
+      },
+      {
+        "source": "marketplace_order_product_monthly_rollups",
+        "account_key": "jenang-gemi-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:15+00:00"
+      },
+      {
+        "source": "marketplace_fulfillment_orders",
+        "account_key": "jenang-gemi-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:15+00:00"
+      },
+      {
+        "source": "marketplace_fulfillment_jobs",
+        "account_key": "jenang-gemi-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:15+00:00"
+      },
+      {
+        "source": "shopee_ad_items",
+        "account_key": "jenang-gemi-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:15+00:00"
+      },
+      {
+        "source": "shopee_ad_balances",
+        "account_key": "jenang-gemi-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:15+00:00"
+      },
+      {
+        "source": "shopee_ad_monitor",
+        "account_key": "jenang-gemi-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:15+00:00"
+      },
+      {
+        "source": "shopee_ad_monitor_audit",
+        "account_key": "jenang-gemi-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:16+00:00"
+      },
+      {
+        "source": "marketplace_orders",
+        "account_key": "zero-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:16+00:00"
+      },
+      {
+        "source": "marketplace_order_items",
+        "account_key": "zero-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:16+00:00"
+      },
+      {
+        "source": "marketplace_order_monthly_rollups",
+        "account_key": "zero-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:16+00:00"
+      },
+      {
+        "source": "marketplace_order_product_monthly_rollups",
+        "account_key": "zero-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:16+00:00"
+      },
+      {
+        "source": "marketplace_fulfillment_orders",
+        "account_key": "zero-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:16+00:00"
+      },
+      {
+        "source": "marketplace_fulfillment_jobs",
+        "account_key": "zero-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:17+00:00"
+      },
+      {
+        "source": "shopee_ad_items",
+        "account_key": "zero-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:17+00:00"
+      },
+      {
+        "source": "shopee_ad_balances",
+        "account_key": "zero-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:17+00:00"
+      },
+      {
+        "source": "shopee_ad_monitor",
+        "account_key": "zero-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:17+00:00"
+      },
+      {
+        "source": "shopee_ad_monitor_audit",
+        "account_key": "zero-shopee",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:18+00:00"
+      },
+      {
+        "source": "marketplace_orders",
+        "account_key": "jenang-gemi-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:18+00:00"
+      },
+      {
+        "source": "marketplace_order_items",
+        "account_key": "jenang-gemi-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:18+00:00"
+      },
+      {
+        "source": "marketplace_order_monthly_rollups",
+        "account_key": "jenang-gemi-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:18+00:00"
+      },
+      {
+        "source": "marketplace_order_product_monthly_rollups",
+        "account_key": "jenang-gemi-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:18+00:00"
+      },
+      {
+        "source": "marketplace_fulfillment_orders",
+        "account_key": "jenang-gemi-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:19+00:00"
+      },
+      {
+        "source": "marketplace_fulfillment_jobs",
+        "account_key": "jenang-gemi-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:19+00:00"
+      },
+      {
+        "source": "marketplace_orders",
+        "account_key": "zero-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:19+00:00"
+      },
+      {
+        "source": "marketplace_order_items",
+        "account_key": "zero-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:19+00:00"
+      },
+      {
+        "source": "marketplace_order_monthly_rollups",
+        "account_key": "zero-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:19+00:00"
+      },
+      {
+        "source": "marketplace_order_product_monthly_rollups",
+        "account_key": "zero-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:19+00:00"
+      },
+      {
+        "source": "marketplace_fulfillment_orders",
+        "account_key": "zero-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:20+00:00"
+      },
+      {
+        "source": "marketplace_fulfillment_jobs",
+        "account_key": "zero-tiktok",
+        "passed": true,
+        "generated_at_utc": "2026-10-23T04:03:20+00:00"
+      }
+    ],
+    "upstream_sync_verified": false,
+    "global_rows_requested": false,
+    "owner_binding_created": false,
+    "event_rows_requested": false,
+    "connected_mcp_client_verified": false,
+    "connected_mcp_client_status": "UNAUTHORIZED reported during release preparation; refresh diagnosis is separate.",
+    "limitations": [
+      "Acceptance is bounded to the recorded ten account sources and four JG/ZERO Shopee/TikTok accounts; ZFIT and other unlisted account combinations were not tested.",
+      "The safe receipt records source/account projection success and response generation times, not complete request date/view coverage or every supported filter/group variant.",
+      "Physical stored write timestamps vary by source; generated response time is not source freshness. Every query retained upstream_sync_verified=false.",
+      "Empty stored monitor/audit results passed schema validation; they do not establish zero ads, spend or business activity.",
+      "Hosted discovery observed thirteen entries but the receipt validates only the original twelve pinned definitions and does not retain the extra entry name/schema. The separate event consumer remains unregistered and disabled.",
+      "Backend acceptance does not verify current connected-MCP authentication, tool discovery or successful client calls."
+    ]
   }
 }

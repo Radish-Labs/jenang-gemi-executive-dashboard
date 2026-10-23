@@ -77,4 +77,40 @@ $wrapped=accountingOverviewMetricRead($a,$s,$partner,'accounting_overview',['mon
 foreach([fn()=>$a->exec('DELETE FROM accounting_accounts'),fn()=>$a->commit(),fn()=>$a->setAttribute(PDO::ATTR_ERRMODE,PDO::ERRMODE_SILENT)] as $mutation)derivedDeny($mutation,'Read wrapper rejects mutation/session changes');$p->rollBack();
 $a=derivedFixture();$s=derivedFixture();$s->exec('DROP TABLE store_ops_walkin_invoices');foreach([$a,$s] as $pdo){$pdo->exec('PRAGMA query_only=ON');$pdo->beginTransaction();}
 try{cashFlowMetricRead(new JenangMcp\BusinessReadPDO($a,'analytics'),new JenangMcp\BusinessReadPDO($s,'sku'),'cash_flow',['month'=>'2026-10'],$now);throw new RuntimeException('Missing SKU source accepted');}catch(JenangMcp\ReportingSourceUnavailable $e){derivedCheck($e->diagnostics['source']==='sku','Mixed-source failure retains actual SKU database');derivedCheck(!str_contains($e->getMessage(),'store_ops_walkin_invoices')&&!str_contains($e->getMessage(),'SELECT'),'No SQL or raw table error leaks');}foreach([$a,$s] as $pdo)$pdo->rollBack();
+// A production-shaped mirror carries large raw order/customer payloads that this calculation never selects.
+// The overview-only budget must measure its canonical settlement projection, while all default guards remain intact.
+final class OverviewBudgetTracePDO extends PDO {
+ public array $queries=[];
+ public function __construct(private PDO $inner){}
+ public function getAttribute(int $attribute):mixed{return $this->inner->getAttribute($attribute);}
+ public function inTransaction():bool{return $this->inner->inTransaction();}
+ public function query(string $sql,?int $fetchMode=null,mixed ...$args):PDOStatement|false {
+  $this->queries[]=$sql;
+  if(str_contains($sql,'dashboard_order_mirror')&&(str_contains($sql,'raw_json')||str_contains($sql,'customer_payload')||str_contains($sql,'table_info')||str_contains($sql,'SHOW COLUMNS')))throw new RuntimeException('Overview inspected an excluded mirror payload/schema.');
+  return $fetchMode===null?$this->inner->query($sql):$this->inner->query($sql,$fetchMode,...$args);
+ }
+ public function prepare(string $sql,array $options=[]):PDOStatement|false{return $this->inner->prepare($sql,$options);}
+}
+$p=derivedFixture();$p->exec('ALTER TABLE dashboard_order_mirror ADD COLUMN raw_json TEXT');$p->exec('ALTER TABLE dashboard_order_mirror ADD COLUMN customer_payload TEXT');
+$insert=$p->prepare('INSERT INTO dashboard_order_mirror (platform,account_key,order_id,order_item_hash,status,funds_release_status,funds_release_source,funds_released,funds_released_amount,order_net_revenue,raw_json,customer_payload) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)');
+for($i=1;$i<=1000;$i++)$insert->execute(['shopee','fixture-shopee','FIXTURE_ORDER_'.$i,'FIXTURE_HASH_'.$i,'COMPLETED','COMPLETED','order_status=COMPLETED',1,50,50,'{}','']);
+$p->exec('PRAGMA query_only=ON');$p->beginTransaction();$trace=new OverviewBudgetTracePDO($p);$before=accountingOverviewMetricRead($trace,$p,$p,'accounting_overview',['month'=>'2026-10'],$now);$p->rollBack();$p->exec('PRAGMA query_only=OFF');
+$p->prepare('UPDATE dashboard_order_mirror SET raw_json=?, customer_payload=?')->execute([str_repeat('excluded',2600),'PRIVATE_CUSTOMER_NOT_READ']);
+$p->prepare('UPDATE dashboard_order_mirror SET raw_json=? WHERE order_id=?')->execute([str_repeat('excluded',10000),'FIXTURE_ORDER_1']);
+$p->exec('PRAGMA query_only=ON');$p->beginTransaction();$trace=new OverviewBudgetTracePDO($p);$after=accountingOverviewMetricRead($trace,$p,$p,'accounting_overview',['month'=>'2026-10'],$now);
+derivedCheck($after['values']===$before['values'],'Large excluded mirror payloads leave exact canonical overview values unchanged');
+derivedCheck($after['provenance']['source_row_counts']['analytics.dashboard_order_mirror']===1000,'Populated marketplace source retained, not skipped');
+derivedCheck(!str_contains(json_encode($after),'PRIVATE_CUSTOMER_NOT_READ')&&!str_contains(json_encode($after),'excluded'),'Excluded raw/customer data not returned');
+$mirrorQueries=array_values(array_filter($trace->queries,fn($sql)=>str_contains($sql,'dashboard_order_mirror')));
+derivedCheck(count($mirrorQueries)===3,'Mirror has only bounded count, selected-field byte budget, and canonical settlement query');
+derivedCheck(count(array_filter($mirrorQueries,fn($sql)=>str_contains($sql,'LENGTH')&&str_contains($sql,'funds_release_source')&&str_contains($sql,'deleted_at IS NULL')&&str_contains($sql,'platform IN ("shopee", "tiktok")')))===1,'Byte guard uses exactly the canonical nondeleted Shopee/TikTok source predicate');
+try{JenangMcp\cashSourcePayloadBudget($p,['dashboard_order_mirror'],$p,[]);throw new RuntimeException('Default guard accepted excluded payload');}catch(RuntimeException $e){derivedCheck(str_contains($e->getMessage(),'payload capacity exceeded'),'Default shared budget retains full-row protection for every other caller');}
+$p->rollBack();$p->exec('PRAGMA query_only=OFF');$p->exec("UPDATE dashboard_order_mirror SET raw_json='{}',customer_payload=''");
+$p->prepare('UPDATE dashboard_order_mirror SET funds_release_source=? WHERE order_id=?')->execute([str_repeat('x',65537),'FIXTURE_ORDER_1']);$p->exec('PRAGMA query_only=ON');$p->beginTransaction();
+try{accountingOverviewMetricRead(new OverviewBudgetTracePDO($p),$p,$p,'accounting_overview',['month'=>'2026-10'],$now);throw new RuntimeException('Relevant row overflow accepted');}catch(RuntimeException $e){derivedCheck(str_contains($e->getMessage(),'payload capacity exceeded'),'Actual selected settlement field still has64KiB row cap');}
+$p->rollBack();$p->exec('PRAGMA query_only=OFF');$p->prepare('UPDATE dashboard_order_mirror SET funds_release_source=?')->execute([str_repeat('x',18000)]);$p->exec('PRAGMA query_only=ON');$p->beginTransaction();
+try{accountingOverviewMetricRead(new OverviewBudgetTracePDO($p),$p,$p,'accounting_overview',['month'=>'2026-10'],$now);throw new RuntimeException('Relevant aggregate overflow accepted');}catch(RuntimeException $e){derivedCheck(str_contains($e->getMessage(),'payload capacity exceeded'),'Actual selected projection retains16MiB aggregate cap');}
+$p->rollBack();$p->exec('PRAGMA query_only=OFF');$p->exec("UPDATE dashboard_order_mirror SET platform='unsupported-platform'");$p->exec('PRAGMA query_only=ON');$p->beginTransaction();
+$excluded=accountingOverviewMetricRead(new OverviewBudgetTracePDO($p),$p,$p,'accounting_overview',['month'=>'2026-10'],$now);derivedCheck($excluded['values']===$before['values'],'Unsupported platform payload is excluded by both byte budget and canonical marketplace calculation');$p->rollBack();
+
 echo "Accounting derived reports: $derivedChecks checks passed\n";

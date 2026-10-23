@@ -4,8 +4,10 @@ namespace JenangMcp;
 require_once __DIR__.'/ads-history.php';
 require_once __DIR__.'/organizational-sources.php';
 
-// Local contract preparation only: publication and authenticated hosted verification are pending.
-const INGEST_REPORTS_SOURCE_RELEASED = false;
+// Account-source catalog and 32 scoped hosted projections verified 2026-10-23.
+// Organizational data has not been queried; its separate release and owner binding remain required.
+const INGEST_REPORTS_SOURCE_RELEASED = true;
+const INGEST_REPORTS_GLOBAL_SOURCE_RELEASED = false;
 const INGEST_REPORTS_MAX_BYTES = 2097152;
 // Canonical service/CLI modes only; the legacy HTTP producer also accepts arbitrary mode text.
 const INGEST_REPORTS_SYNC_MODES = ['recent','account_recent','year','date_range','account_date_range','rolling'];
@@ -34,6 +36,11 @@ JSON, true, 32, JSON_THROW_ON_ERROR);
     return $definitions;
 }
 
+function ingestReportsSourceReleased(string $source): bool {
+    $scope=ingestReportDefinitions()[$source]['scope']??null;
+    return $scope==='account'?INGEST_REPORTS_SOURCE_RELEASED:($scope==='global'?INGEST_REPORTS_GLOBAL_SOURCE_RELEASED:false);
+}
+
 function ingestReportsCatalog(array $context): array {
     tableAccess($context);$sources=[];
     foreach(ingestReportDefinitions() as $id=>$definition){
@@ -48,9 +55,10 @@ function ingestReportsCatalog(array $context): array {
             'access_status'=>$global?($approved?'owner_approved_organizational_source':'denied_no_explicit_organizational_source_authorization'):($accounts===[]?'denied_no_authorized_source_account':'existing_account_scope_required'),
             'required_account_key'=>$global?'global':null,
             'reviewed_filter_values'=>$id==='marketplace_sync_runs'?['mode'=>INGEST_REPORTS_SYNC_MODES,'status'=>INGEST_REPORTS_SYNC_STATUSES]:[],
-            'availability'=>INGEST_REPORTS_SOURCE_RELEASED?'checked_on_each_query':'pending_upstream_publication_and_verification'];
+            'source_released'=>ingestReportsSourceReleased($id),
+            'availability'=>$global?(INGEST_REPORTS_GLOBAL_SOURCE_RELEASED?'checked_on_each_query':'pending_global_authorization_and_hosted_verification'):(INGEST_REPORTS_SOURCE_RELEASED?'authenticated_contract_verified_checked_on_each_query':'pending_upstream_publication_and_verification')];
     }
-    return ['schema_version'=>1,'availability_verified'=>false,'source_released'=>INGEST_REPORTS_SOURCE_RELEASED,'sources'=>$sources];
+    return ['schema_version'=>1,'availability_verified'=>false,'source_released'=>INGEST_REPORTS_SOURCE_RELEASED,'global_source_released'=>INGEST_REPORTS_GLOBAL_SOURCE_RELEASED,'release_scope'=>INGEST_REPORTS_GLOBAL_SOURCE_RELEASED?'per_source':(INGEST_REPORTS_SOURCE_RELEASED?'account_sources_only':'none'),'sources'=>$sources];
 }
 
 /** Validate types without coercing money/IDs through floats or passing upstream source text unchecked. */
@@ -132,9 +140,12 @@ function ingestReportsArguments(array $context,array $args,?\DateTimeImmutable $
     return ['query'=>$query,'source'=>$id,'account_key'=>$account,'platform'=>$platform,'view'=>$view,'limit'=>$limit,'offset'=>$offset,'period'=>$period,'filters'=>$filters,'group_by'=>$groups];
 }
 
-/** Fixed HTTPS GET; the only pre-release execution seam requires both injected fixture closures. */
+/** Fixed HTTPS GET. Injected settings and transport always form an inseparable fixture pair. */
 function ingestReportsRequest(array $validated,?\Closure $settings=null,?\Closure $transport=null): array {
-    if(!INGEST_REPORTS_SOURCE_RELEASED&&($settings===null||$transport===null))throw new IngestReportsUnavailable('source_not_released');
+    if(($settings===null)!==($transport===null))throw new IngestReportsUnavailable('configuration_unavailable');
+    $source=$validated['source']??null;
+    if(!is_string($source)||($validated['query']['source']??null)!==$source)throw new IngestReportsUnavailable('source_contract_mismatch');
+    if(!ingestReportsSourceReleased($source)&&$settings===null)throw new IngestReportsUnavailable('source_not_released');
     try{$s=$settings?($settings)():adsHistoryServiceSettings();}catch(\Throwable){throw new IngestReportsUnavailable('configuration_unavailable');}
     if(($s['base_url']??null)!==ADS_HISTORY_ORIGIN||!is_string($s['token']??null)||!preg_match('/^[\x21-\x7e]{1,4096}$/D',$s['token']))throw new IngestReportsUnavailable('configuration_unavailable');
     $url=ADS_HISTORY_ORIGIN.'/reports/query?'.http_build_query($validated['query'],'','&',PHP_QUERY_RFC3986);
