@@ -12,8 +12,8 @@ function financeReportTools(): array {
     foreach($variants as $key=>$schemas){$schemas=array_values($schemas);$properties[$key]=count($schemas)===1?$schemas[0]:['anyOf'=>$schemas];}
     $auth=[['type'=>'oauth2','scopes'=>[FINANCE_SCOPE]]];
     return [[
-        'name'=>'jg_finance_report','title'=>'Approved P&L and allocation statements',
-        'description'=>'Read a fixed canonical finance report: allocation_statement for one exact owner-approved recipient and selected months, legacy_profit_loss for saved historical P&L, or editor_profit_loss for the separate P&L editor calculation with saved SKU costs, monthly inputs and manual sections. Requires the existing owner-approved finance scope, independently of dashboard table reads. Discover exact schemas in jg_get_context.finance_reports. Allocation uses the same monthly calculation and saved rules as jg_monthly_profit; ambiguous/default rules remain unknown. Legacy and editor P&L are distinct implementations; neither substitutes for current monthly accounting P&L or recipient allocation. Missing/stale sources remain explicit. No refresh, credential creation, rule changes or payments. Allocation is never cash available or paid; cross-source atomicity is not claimed.',
+        'name'=>'jg_finance_report','title'=>'Approved P&L and allocation rules/statements',
+        'description'=>'Read a fixed canonical finance report: allocation_statement for one exact owner-approved recipient/category and selected months, allocation_rules for all currently approved names (or a selected subset) and their saved monthly/yearly rules without requiring sales balances, legacy_profit_loss for saved historical P&L, or editor_profit_loss for the separate P&L editor calculation with saved SKU costs, monthly inputs and manual sections. Requires the existing owner-approved finance scope, independently of dashboard table reads. Discover exact schemas in jg_get_context.finance_reports. Allocation uses the same monthly calculation and saved rules as jg_monthly_profit; ambiguous/default rules remain unknown. Reinvestment, groups and leaf recipients use the actual saved tree. An exact-name grant is a data boundary, not the complete set of business allocations; never infer that only the returned names exist. Parent approval does not approve descendants; no aliases or future names are implicitly included. Legacy and editor P&L are distinct implementations; neither substitutes for current monthly accounting P&L or recipient allocation. Missing/stale sources remain explicit. No refresh, credential creation, rule changes or payments. Allocation is never cash available or paid; cross-source atomicity is not claimed.',
         'inputSchema'=>['type'=>'object','properties'=>$properties,'required'=>['report'],'additionalProperties'=>false],
         'annotations'=>['readOnlyHint'=>true,'destructiveHint'=>false,'idempotentHint'=>true,'openWorldHint'=>false],
         'securitySchemes'=>$auth,'_meta'=>['securitySchemes'=>$auth],
@@ -27,6 +27,7 @@ function financeReport(array $c,array $a): array {
     try{
         $out=match($a['report']){
             'allocation_statement'=>financeAllocationStatement($c,$args),
+            'allocation_rules'=>allocationRules($c,$args),
             'legacy_profit_loss'=>legacyProfitLoss($c,$args),
             'editor_profit_loss'=>editorProfitLoss($c,$args),
             default=>throw new \InvalidArgumentException('Unknown fixed finance report.'),

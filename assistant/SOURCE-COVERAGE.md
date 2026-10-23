@@ -13,7 +13,7 @@ Reviewed 2026-10-23. The machine-readable acceptance record is `SOURCE-COVERAGE-
 | Local typed file views | 1 | Fixed-path SKU display-name overrides |
 | Semantic catalog/sales views | 3 | Catalog, sales lines, sales orders |
 | Canonical dashboard fixed reports | 36 | Current `businessReportRegistry`, under existing dashboard scope |
-| Separate finance fixed reports | 3 | `allocation_statement`, `legacy_profit_loss`, `editor_profit_loss`, under existing finance scope; not dashboard reports |
+| Separate finance fixed reports | 4 | `allocation_statement`, `legacy_profit_loss`, `editor_profit_loss`, under existing finance scope; not dashboard reports |
 | Dashboard API consumers | 44 | Every `api/**/index.php` |
 | Ingest route patterns | 59 | Literal business routes and platform route templates, including the two `/reports/` backend-contract routes |
 | Dashboard page entrypoints | 34 | Non-API, non-assistant `index.php` surfaces |
@@ -51,7 +51,7 @@ The safe metadata batch adds three more dashboard reports: `purchase_payment_pro
 
 The matrix records each exact canonical helper, schema, date basis and limitations. Inventory forecast uses the actual dashboard model. Missing, stale, unmatched or incomplete Store Ops commitment data suppresses procurement quantities and predicted stock; fixture support for a commitment contract is not proof that its production reader exists.
 
-`jg_finance_report` separately registers `allocation_statement`, `legacy_profit_loss`, and `editor_profit_loss`. The allocation statement reuses monthly canonical accounting allocation and exact saved recipient authorization. The historical file report and nonlegacy editor report follow their respective P&L editor calculations; neither should be substituted for the current accounting allocation formula. They require finance authorization independently of dashboard access. The matrix and drift test maintain this separate registry and scope.
+`jg_finance_report` separately registers `allocation_statement`, `allocation_rules`, `legacy_profit_loss`, and `editor_profit_loss`. The allocation-rules reader returns every explicitly approved current name (or a requested subset), including groups and reinvestment categories, with canonical monthly/yearly rule selection and effective-month provenance. It reads no sales balance and does not infer a complete tree from a restricted grant. Deployment verification and owner approval of any expansion of the exact approved name list remain separate steps; see `ALLOCATION-COVERAGE-REVIEW.md`. The allocation statement reuses monthly canonical accounting allocation and exact saved recipient authorization. The historical file report and nonlegacy editor report follow their respective P&L editor calculations; neither should be substituted for the current accounting allocation formula. They require finance authorization independently of dashboard access. The matrix and drift test maintain this separate registry and scope.
 
 `jg_monthly_profit` remains distinct. It combines the canonical complete sales snapshot, posted accounting inputs and saved recipient rule under the finance scope and recipient allowlist. The selected-month allocation statement reuses one saved sales snapshot and one accounting transaction; it does not claim an atomic snapshot across sources. Allocation is not cash available or paid. Branch and Brent are separate recipients.
 

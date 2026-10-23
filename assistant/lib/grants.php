@@ -21,9 +21,26 @@ function recordGrantValid(array $c,array $s,array $r): bool {
         && array_diff(explode(' ',$r['scope']),$grant['scopes'])===[];
 }
 function normalizeRecipient(string $name): string { return mb_strtolower(trim(preg_replace('/\s+/u',' ',$name) ?? '')); }
+// Matches the canonical allocation tree's node bound; this does not add any names to existing grants.
+const MAX_ALLOCATION_NAMES=100;
+function ownerAllocationNamesFromForm(array $form): array {
+    if(array_key_exists('allocation_recipients',$form)){
+        $text=$form['allocation_recipients'];
+        if(!is_string($text))throw new \InvalidArgumentException('Provide up to 100 exact allocation names, one per line.');
+        $text=str_replace(["\r\n","\r"],"\n",$text);
+        if(mb_strlen($text)>12099)throw new \InvalidArgumentException('Provide up to 100 exact allocation names, one per line.');
+        $names=explode("\n",$text);
+    } else {
+        // Old open Settings forms remain compatible; the new form supports commas inside a name.
+        $text=$form['recipients'] ?? '';
+        if(!is_string($text)||mb_strlen($text)>12099)throw new \InvalidArgumentException('Invalid allocation names.');
+        $names=explode(',',$text);
+    }
+    return array_values(array_filter(array_map('trim',$names),fn($v)=>$v!==''));
+}
 function validateOwnerSelection(array $c,array $scopes,array $recipients): array {
     if (!$scopes || !array_is_list($scopes) || array_filter($scopes,fn($v)=>!is_string($v)) || count($scopes)!==count(array_unique($scopes)) || array_diff($scopes,availableOwnerScopes($c))) throw new \InvalidArgumentException('Choose supported capabilities.');
-    if (!array_is_list($recipients)||count($recipients)>5||array_filter($recipients,fn($v)=>!is_string($v)||trim($v)===''||mb_strlen($v)>120)) throw new \InvalidArgumentException('Choose up to five exact recipient names.');
+    if (!array_is_list($recipients)||count($recipients)>MAX_ALLOCATION_NAMES||array_filter($recipients,fn($v)=>!is_string($v)||trim($v)===''||mb_strlen($v)>120)) throw new \InvalidArgumentException('Choose up to 100 exact allocation recipient or category names.');
     $recipients=array_values(array_unique(array_map(__NAMESPACE__.'\\normalizeRecipient',$recipients)));
     if (in_array(FINANCE_SCOPE,$scopes,true)&&!$recipients) throw new \InvalidArgumentException('An exact allocation recipient is required.');
     return [explode(' ',canonicalGrantedScope(implode(' ',$scopes))),$recipients];

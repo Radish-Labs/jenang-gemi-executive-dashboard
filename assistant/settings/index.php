@@ -34,9 +34,8 @@ try {
             if(($_POST['confirm'] ?? '')!=='yes')throw new InvalidArgumentException('Confirm the selected action.');
             if($action==='approve'){
                 $selected=$_POST['scopes'] ?? [];
-                $names=$_POST['recipients'] ?? '';
-                if(!is_array($selected)||!is_string($names))throw new InvalidArgumentException('Invalid capability selection.');
-                $recipients=array_values(array_filter(array_map('trim',explode(',',$names)),fn($v)=>$v!==''));
+                if(!is_array($selected))throw new InvalidArgumentException('Invalid capability selection.');
+                $recipients=JenangMcp\ownerAllocationNamesFromForm($_POST);
                 JenangMcp\approveOwnerGrant($c,$selected,$recipients);
                 $message='Owner approval saved. Reconnect Jenang Gemi in your assistant and complete its consent screen. Previous tokens were invalidated; no credentials were created here.';
             } elseif($action==='revoke'){
@@ -63,7 +62,7 @@ $details=$authenticated?JenangMcp\state($c,function(array &$s) use($c): array {
     return ['notes'=>array_slice($notes,0,12),'audit'=>array_slice(array_reverse($audit),0,30)];
 }):['notes'=>[],'audit'=>[]];
 if(session_status()===PHP_SESSION_ACTIVE)session_write_close();
-$labels=[JenangMcp\SCOPE=>'Read product sales within the existing configured account and brand scope',JenangMcp\TABLE_SCOPE=>'Read dashboard business tables across configured brands, accounts and partners',JenangMcp\FINANCE_SCOPE=>'Read computed business P&L and allocations for the exact recipients below',JenangMcp\NOTES_SCOPE=>'Read and write monthly report notes for this connection'];
+$labels=[JenangMcp\SCOPE=>'Read product sales within the existing configured account and brand scope',JenangMcp\TABLE_SCOPE=>'Read dashboard business tables across configured brands, accounts and partners',JenangMcp\FINANCE_SCOPE=>'Read computed business P&L and allocations for the exact recipient and category names below',JenangMcp\NOTES_SCOPE=>'Read and write monthly report notes for this connection'];
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Assistant connection · Jenang Gemi</title><link rel="stylesheet" href="connection.css"></head><body><main>
 <a href="../../dashboard/?view=settings">← Dashboard Settings</a><p class="eyebrow">Jenang Gemi · Settings</p><h1>Assistant connection</h1>
@@ -74,13 +73,13 @@ $labels=[JenangMcp\SCOPE=>'Read product sales within the existing configured acc
 <?php elseif($authenticated): ?>
 <section><h2><?= $grant?'Owner-approved connection':(!empty($c['_owner_managed'])?'Connection revoked':'Review assistant access') ?></h2><p>Assistant identity: <strong><?= $e($c['subject']) ?></strong></p><p>Client: <?= $e($c['client_id']) ?></p>
 <p><?= $grant?'Approved '.$e($grant['approved_at']).'.':(!empty($c['_owner_managed'])?'Access stays blocked until you approve again.':'Existing reporting access stays unchanged until you approve or revoke here.') ?></p>
-<?php if($grant): ?><ul><?php foreach($grant['scopes'] as $scope): ?><li><?= $e($labels[$scope] ?? $scope) ?></li><?php endforeach ?></ul><p>Approved allocation recipients: <?= $e(implode(', ',$grant['recipients'])) ?></p><?php endif ?>
+<?php if($grant): ?><ul><?php foreach($grant['scopes'] as $scope): ?><li><?= $e($labels[$scope] ?? $scope) ?></li><?php endforeach ?></ul><p>Approved allocation recipients and categories: <?= $e(implode(', ',$grant['recipients'])) ?></p><?php endif ?>
 <p>Access tokens expire after 15 minutes. Refresh tokens rotate on use and expire after 30 days without renewal. Active use can continue until you revoke; reuse of an old refresh token revokes its token family.</p>
 <p>New approval replaces previous tokens and requires reconnecting the assistant. This page does not create credentials. Grant changes and activity are recorded for up to 180 days (10,000 events).</p></section>
 <section><h2>Choose capabilities</h2><p>Only selected capabilities will be available. Report notes are annotations visible below; they cannot edit accounting entries, allocation rules, orders, or payments.</p>
 <form method="post"><input type="hidden" name="csrf" value="<?= $e($csrf) ?>">
 <?php foreach(JenangMcp\availableOwnerScopes($c) as $scope): ?><label class="check"><input type="checkbox" name="scopes[]" value="<?= $e($scope) ?>" <?= in_array($scope,$grant['scopes'] ?? [],true)?'checked':'' ?>> <span><?= $e($labels[$scope]) ?></span></label><?php endforeach ?>
-<label>Exact allocation recipients (comma-separated; up to five)<input type="text" name="recipients" maxlength="604" value="<?= $e(implode(', ',$grant['recipients'] ?? ['Branch'])) ?>"></label><p>Branch and Brent are different recipients. The report verifies the saved rule; no percentage is assumed.</p>
+<label>Exact allocation recipients and categories (one per line; up to 100)<textarea name="allocation_recipients" rows="7" maxlength="12099"><?= $e(implode("\n",$grant['recipients'] ?? ['Branch'])) ?></textarea></label><p>These names select allocation data the assistant may read; they do not give people access to the app. Copy exact names from the saved allocation tree, including any reinvestment or group categories you want included. Nicknames are not aliases. Approving a group does not approve its children, and new or renamed categories are not added automatically. The report verifies the saved rule; no percentage is assumed.</p>
 <label>Branch-tier owner password<input type="password" name="owner_password" required autocomplete="current-password"></label>
 <label class="check"><input type="checkbox" name="confirm" value="yes" required><span>I personally approve the selected capabilities until revoked, or confirm revoking this connection.</span></label>
 <div class="actions"><button name="action" value="approve">Approve selected capabilities</button><button class="danger" name="action" value="revoke">Revoke all assistant access</button></div></form></section>

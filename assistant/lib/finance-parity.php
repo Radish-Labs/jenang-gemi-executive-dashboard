@@ -4,10 +4,11 @@ namespace JenangMcp;
 require_once __DIR__.'/monthly-profit.php';
 require_once __DIR__.'/tables.php';
 require_once __DIR__.'/read-services/source-tagged-pdo.php';
+require_once __DIR__.'/allocation-rules.php';
 
 function financeAllocationStatementInputSchema(): array {
     return ['type'=>'object','properties'=>['year'=>['type'=>'integer','minimum'=>2025,'maximum'=>2100],
-        'recipient'=>['type'=>'string','minLength'=>1,'maxLength'=>120,'description'=>'Exact recipient included in the current owner-approved finance grant. Branch and Brent are distinct.'],
+        'recipient'=>['type'=>'string','minLength'=>1,'maxLength'=>120,'description'=>'Exact recipient or category name included in the current owner-approved finance grant; nicknames are not aliases.'],
         'months'=>['type'=>'array','items'=>['type'=>'integer','minimum'=>1,'maximum'=>12],'minItems'=>1,'maxItems'=>12,'uniqueItems'=>true,'description'=>'Selected months in this year; omitted means January through the current month, or all twelve for a past year. Future periods are rejected.']],
         'required'=>['year','recipient'],'additionalProperties'=>false];
 }
@@ -23,13 +24,14 @@ function financeParityRegistry(): array {
     $allocation['properties']=['report'=>['type'=>'string','enum'=>['allocation_statement']]]+$allocation['properties'];$allocation['required'][]='report';
     return ['allocation_statement'=>['status'=>'implemented','family'=>'accounting','source'=>'sales_snapshot_and_analytics','scope'=>FINANCE_SCOPE,'recipient_required'=>true,
         'canonical'=>'monthlyProfitProjection / jg_profit_share_combine / jg_profit_loss_settings','date_basis'=>'Dashboard calendar month, posted accounting business_month and that month’s saved allocation rule.',
-        'input_schema'=>$allocation,'limitations'=>['Exact owner-approved recipient only. Stored sales snapshot and accounting do not form an atomic cross-source snapshot.','Rule uncertainty makes allocated amount unknown; allocation is not cash or payment.']]]+legacyProfitLossRegistry()+editorProfitLossRegistry();
+        'input_schema'=>$allocation,'limitations'=>['Exact owner-approved recipient or category only; this is not a complete list of allocation nodes. Stored sales snapshot and accounting do not form an atomic cross-source snapshot.','Rule uncertainty makes allocated amount unknown; allocation is not cash or payment.']]]+allocationRulesRegistry()+legacyProfitLossRegistry()+editorProfitLossRegistry();
 }
 function financeParityArguments(array $a,?\DateTimeImmutable $now=null): array {
     $id=$a['report'] ?? null;$d=is_string($id)?(financeParityRegistry()[$id] ?? null):null;
     if(!$d)throw new \InvalidArgumentException('Unknown fixed finance report.');
     $args=$a;unset($args['report']);
-    if(in_array($id,['legacy_profit_loss','editor_profit_loss'],true))legacyProfitLossArguments($args,$now);
+    if($id==='allocation_rules')allocationRulesArguments($args,$now);
+    elseif(in_array($id,['legacy_profit_loss','editor_profit_loss'],true))legacyProfitLossArguments($args,$now);
     else {
         if(array_diff(array_keys($args),['year','months','recipient'])||!is_string($args['recipient'] ?? null)||trim($args['recipient'])===''||mb_strlen($args['recipient'])>120)throw new \InvalidArgumentException('Provide a year, exact approved recipient and optional months.');
         financeParityMonths($args,2025,$now ?? new \DateTimeImmutable('now',new \DateTimeZone('UTC')));

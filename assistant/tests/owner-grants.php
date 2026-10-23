@@ -74,7 +74,7 @@ try {
         $data=$context['structuredContent']['data'];
         expect($data['scopes']===explode(' ',$subset['scope']),'Context reports actual token scopes');
         expect($data['writes_enabled']===JenangMcp\hasScope($scope,JenangMcp\NOTES_SCOPE),'Optional write status follows token, not owner scope union');
-        expect(array_keys($data['finance_reports'])===['allocation_statement','legacy_profit_loss','editor_profit_loss'],'Finance metadata is discoverable without expanding actual token scopes');
+        expect(array_keys($data['finance_reports'])===['allocation_statement','allocation_rules','legacy_profit_loss','editor_profit_loss'],'Finance metadata is discoverable without expanding actual token scopes');
         if(!JenangMcp\hasScope($scope,JenangMcp\NOTES_SCOPE)) {
             $deniedNote=rpc(['jsonrpc'=>'2.0','id'=>2,'method'=>'tools/call','params'=>['name'=>'jg_save_report_note','arguments'=>['month'=>'2026-10','text'=>'must not save','expected_revision'=>1]]],$subject,$read)['result'];
             expect($deniedNote['isError'] && str_contains($deniedNote['_meta']['mcp/www_authenticate'][0],'scope="'.JenangMcp\NOTES_SCOPE.'"'),'Note write still requires its exact scope');

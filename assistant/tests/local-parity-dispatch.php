@@ -12,7 +12,7 @@ foreach(JenangMcp\localParityRegistry() as $id=>$definition){
     parityCheck($definition['scope']===JenangMcp\TABLE_SCOPE,'Existing dashboard scope: '.$id);
     foreach(JenangMcp\localParitySources($id) as $source)parityCheck(in_array($source,['analytics','sku','partner'],true),'Fixed approved source binding');
 }
-foreach(['legacy_profit_loss','editor_profit_loss','allocation_statement'] as $financeOnly)parityCheck(!isset(JenangMcp\businessReportRegistry()[$financeOnly]),'Full P&L and allocation stay outside dashboard tool: '.$financeOnly);
+foreach(['legacy_profit_loss','editor_profit_loss','allocation_statement','allocation_rules'] as $financeOnly)parityCheck(!isset(JenangMcp\businessReportRegistry()[$financeOnly]),'Full P&L and allocation stay outside dashboard tool: '.$financeOnly);
 parityCheck(JenangMcp\connectionToolScope('jg_finance_report')===JenangMcp\FINANCE_SCOPE,'Finance tool exact scope');
 $report=JenangMcp\businessReportArguments(['report'=>'sku_effective_costs','year'=>2030,'month'=>1],$now);
 parityCheck($report['allow_future_year']===true,'Future configured packing period allowed by reviewed contract');

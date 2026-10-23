@@ -70,7 +70,7 @@ require $file;
         check(status==400,'Admin login required before owner approval')
         request('/fixture-session');_,_,text=request('/assistant/settings/');token=csrf(text)
         selected=['jg:sales:read','jg:dashboard:read','jg:finance:read','jg:report-notes:write']
-        form={'csrf':token,'action':'approve','owner_password':'fixture-owner-confirmation','confirm':'yes','scopes[]':selected,'recipients':'Branch'}
+        form={'csrf':token,'action':'approve','owner_password':'fixture-owner-confirmation','confirm':'yes','scopes[]':selected,'allocation_recipients':'\n'.join(['Branch']+['Fixture category '+str(i) for i in range(1,13)])}
         check(request('/assistant/settings/',form|{'csrf':'wrong'})[0]==400,'Invalid CSRF rejected')
         check(request('/assistant/settings/',form,origin='https://evil.invalid')[0]==400,'Cross-origin rejected')
         check(request('/assistant/settings/',form|{'owner_password':'wrong'})[0]==400,'Wrong owner confirmation rejected')
@@ -79,6 +79,7 @@ require $file;
         check(status==200 and 'Owner approval saved' in text,'Owner-selected grant saved')
         state=json.loads((directory/'state.json').read_text())
         check(not state['tokens'] and not state['refresh'] and not state['codes'],'Approval itself creates no credentials')
+        check(len(next(iter(state['owner_grants'].values()))['recipients'])==13 and 'name="allocation_recipients"' in text,'Owner explicitly approves 13 fixture names through the protected new form')
         status,_,meta=request('/assistant/oauth/metadata.php')
         check(status==200 and json.loads(meta)['scopes_supported']==selected,'Metadata advertises only approved scopes')
         verifier='v'*43
@@ -121,7 +122,10 @@ require $file;
         check(status==200 and finance['isError'] and 'outside' in body and not finance.get('_meta',{}).get('mcp/www_authenticate'),'Finance read needs no note-write scope and still enforces recipient')
         status,_,body=call(readonly_tokens['access_token'],'jg_finance_report',{'report':'allocation_statement','year':2026,'months':[1],'recipient':'Brent'});statement=json.loads(body)['result']
         check(status==200 and statement['isError'] and 'outside' in body and not statement.get('_meta',{}).get('mcp/www_authenticate'),'Multi-month statement enforces exact recipient before reading sources without optional write access')
+        status,_,body=call(readonly_tokens['access_token'],'jg_finance_report',{'report':'allocation_rules','year':2026,'months':[1],'recipients':['Brent']});rules=json.loads(body)['result']
+        check(status==200 and rules['isError'] and 'outside' in body,'Rule reader enforces exact name grant before source access over HTTP')
         finance_tool=next(tool for tool in json.loads(request('/assistant/mcp/',{'jsonrpc':'2.0','id':3,'method':'tools/list'},bearer=readonly_tokens['access_token'],raw=True)[2])['result']['tools'] if tool['name']=='jg_finance_report')
+        check('recipients' in finance_tool['inputSchema']['properties'],'Generalized rule selection is in actual tools/list schema')
         check(finance_tool['securitySchemes']==[{'type':'oauth2','scopes':['jg:finance:read']}], 'Finance report advertises only its own read scope')
         # Exercise a real dashboard-only OAuth token, even though the owner grant permits finance.
         status,_,dashboard_html=request('/assistant/oauth/authorize.php?'+urllib.parse.urlencode(authorization|{'scope':'jg:dashboard:read'}))
@@ -130,7 +134,7 @@ require $file;
         dashboard_code=urllib.parse.parse_qs(urllib.parse.urlparse(headers['Location']).query)['code'][0]
         status,_,body=request('/assistant/oauth/token.php',exchange|{'code':dashboard_code});dashboard_tokens=json.loads(body)
         check(status==200 and dashboard_tokens['scope']=='jg:dashboard:read','Dashboard-only OAuth token remains a strict subset of owner approval')
-        for report in ['allocation_statement','legacy_profit_loss','editor_profit_loss']:
+        for report in ['allocation_statement','allocation_rules','legacy_profit_loss','editor_profit_loss']:
             status,_,body=call(dashboard_tokens['access_token'],'jg_finance_report',{'report':report,'year':2026,'months':[1]});denied=json.loads(body)['result']
             check(status==200 and denied['isError'] and 'scope="jg:finance:read"' in denied['_meta']['mcp/www_authenticate'][0],report+' requires finance scope before source reads')
         # Expiration is enforced by the real MCP handler even for scope-free context.

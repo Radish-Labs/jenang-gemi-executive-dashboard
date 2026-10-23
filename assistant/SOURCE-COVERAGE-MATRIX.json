@@ -25,7 +25,7 @@
     "brands": "Existing legacy product brand filter is not the same as all-configured dashboard business-source grant. Safe cross-brand dashboard definitions do not add a new credential or grant.",
     "recipients": "Named allocation tool still requires finance scope and saved recipient allowlist. Branch and Brent remain distinct.",
     "excluded": "Credentials, security state, identifiable customer/employee contacts, private document contents, arbitrary raw payloads, and unrestricted SQL/writes.",
-    "finance_reports": "jg_finance_report retains jg:finance:read independently of dashboard access. allocation_statement additionally requires the exact saved recipient allowlist; legacy/current editor statements do not broaden named-recipient access.",
+    "finance_reports": "jg_finance_report retains jg:finance:read independently of dashboard access. allocation_statement and allocation_rules additionally require exact names in the saved owner grant, including groups and categories; neither returns unapproved siblings or descendants. Existing grants are unchanged by deployment. Legacy/current editor statements do not broaden named-recipient access.",
     "metadata": "Proof/label and local nonsecurity observation reports use existing dashboard authorization plus source-specific company/partner guards. Protected fields remain excluded. The ten original account-source readers are release-enabled after bounded backend acceptance without changing their account grants. Staff roster totals, global diagnostics and the event consumer remain separately blocked/gated.",
     "organizational_sources": "Only marketplace_sync_runs and marketplace_fulfillment_runtime accept account_key=global. Each requires the current owner-confirmed source binding to this exact client/subject/grant plus a valid dashboard-read token and enabled deployment policy. Personal approval remains in /assistant/settings/. Authorization is rechecked before and after reads, including approval revision; no automatic grant is created. The separate global-source release gate is false; no global row was requested and hosted global-query availability remains unverified. Account-source release does not enable these diagnostics."
   },
@@ -80,11 +80,11 @@
       "canonical_composition_and_client_verification_pending": 2,
       "intentionally_excluded": 1
     },
-    "finance_reports": 3,
+    "finance_reports": 4,
     "finance_reports_by_status": {
-      "implemented": 3
+      "implemented": 4
     },
-    "all_fixed_reports": 39,
+    "all_fixed_reports": 40,
     "file_sources_by_classification": {
       "mapped": 9,
       "intentionally_excluded": 5
@@ -14801,7 +14801,7 @@
       "scope": "jg:finance:read",
       "recipient_required": true,
       "limitations": [
-        "Exact owner-approved recipient only. Stored sales snapshot and accounting do not form an atomic cross-source snapshot.",
+        "Exact owner-approved recipient or category only; this is not a complete list of allocation nodes. Stored sales snapshot and accounting do not form an atomic cross-source snapshot.",
         "Rule uncertainty makes allocated amount unknown; allocation is not cash or payment."
       ],
       "remaining_gap": null,
@@ -14823,7 +14823,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 120,
-            "description": "Exact recipient included in the current owner-approved finance grant. Branch and Brent are distinct."
+            "description": "Exact recipient or category name included in the current owner-approved finance grant; nicknames are not aliases."
           },
           "months": {
             "type": "array",
@@ -14846,6 +14846,71 @@
         "additionalProperties": false
       },
       "release_gate": "Fixture and authorization tests plus actual deployed/callable tool and source verification. Never expose finance calculations through the dashboard-only report tool."
+    },
+    {
+      "id": "allocation_rules",
+      "source_kind": "canonical_finance_report",
+      "interface": "jg_finance_report:allocation_rules",
+      "classification": "mapped",
+      "remaining_gap": null,
+      "release_gate": "Verify deployment, callable schema refresh and authenticated hosted behavior. Exact owner-approved data names remain enforced; publication does not expand any name list.",
+      "family": "accounting",
+      "source": "analytics_allocation_settings",
+      "canonical": "jg_profit_loss_settings / jg_profit_loss_normalize_allocation_tree / jg_profit_share_find_recipient",
+      "date_basis": "Selected Jakarta calendar month. Monthly saved tree takes precedence over the saved yearly tree, then unverified application defaults. Save time is not an intramonth effective date.",
+      "scope": "jg:finance:read",
+      "limitations": [
+        "Only exact names in the current finance grant are returned. Parent approval does not include its children. Missing/ambiguous names are unresolved, not zero or evidence that other allocations do not exist.",
+        "The application does not store immutable allocation revisions or intramonth effective dates. Earlier periods use their currently saved rules, not a reconstruction of what was known then.",
+        "Group and child percentages overlap; never sum all nodes. This is a rule report, not allocated money, cash or payments. Defaults are not a verified saved agreement."
+      ],
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "report": {
+            "type": "string",
+            "enum": [
+              "allocation_rules"
+            ]
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 2024,
+            "maximum": 2100
+          },
+          "months": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 12
+            },
+            "minItems": 1,
+            "maxItems": 12,
+            "uniqueItems": true,
+            "description": "Selected months in this year; omitted means January through the current month, or all twelve for a past year. Future periods are rejected."
+          },
+          "recipients": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120
+            },
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true,
+            "description": "Optional exact owner-approved allocation names: people, groups or categories such as reinvestment. Omitted means every name in the current grant, not unrestricted access to the tree. No aliases, wildcard, descendant expansion or implicit approval."
+          }
+        },
+        "required": [
+          "report",
+          "year"
+        ],
+        "additionalProperties": false
+      },
+      "implementation_status": "implemented",
+      "recipient_required": false
     },
     {
       "id": "legacy_profit_loss",
