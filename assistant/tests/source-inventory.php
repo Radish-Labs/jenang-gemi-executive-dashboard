@@ -107,12 +107,28 @@ $prepared=$matrix['prepared_metadata_readers'];
 inventoryCheck($prepared['staff']['definition']===JenangMcp\staffCountsMetricRegistry()['store_ops_staff_counts'],'Prepared staff aggregate contract drift');
 inventoryCheck($prepared['staff']['registered']===false&&$prepared['staff']['source_read_performed']===false&&!isset($reports['store_ops_staff_counts']),'Staff aggregate remains unregistered and blocked before source read');
 inventoryCheck($prepared['raw_events']['definition']===JenangMcp\ingestEventMetadataDefinition(),'Proposed event aggregate contract drift');
-inventoryCheck($prepared['raw_events']['registered']===false&&$prepared['raw_events']['source_released']===false&&$prepared['raw_events']['upstream_implemented']===false&&$prepared['raw_events']['availability_verified']===false&&JenangMcp\INGEST_EVENT_METADATA_SOURCE_RELEASED===false,'Event metadata proposal is not upstream implementation or live access');
+inventoryCheck($prepared['raw_events']['registered']===false&&$prepared['raw_events']['source_released']===false&&$prepared['raw_events']['upstream_implemented']===true&&$prepared['raw_events']['availability_verified']===false&&JenangMcp\INGEST_EVENT_METADATA_SOURCE_RELEASED===false,'Separate local event implementation does not register or release the consumer or assert live access');
+inventoryCheck($prepared['raw_events']['upstream_implementation_commit']==='24e45caadbf927b245dbfb4e3126fe27d012ec7a'&&!empty($prepared['raw_events']['upstream_implementation_basis']),'Separate upstream event source has exact local implementation evidence');
 inventoryCheck(!in_array('raw_platform_event_metadata',array_column($matrix['pending_remote_contract']['sources'],'source'),true),'Separate event proposal does not alter the frozen original twelve-source contract');
 inventoryCheck($prepared['raw_events']['definition']['views']===['summary','groups']&&!isset($prepared['raw_events']['definition']['columns']['event_type']),'Event metadata excludes per-event rows and payload-derived event types');
 inventoryCheck($matrix['pending_remote_contract']['source_released']===false&&JenangMcp\INGEST_REPORTS_SOURCE_RELEASED===false,'Original ingestion bridge release gate remains false');
 inventoryCheck($prepared['organizational_binding']['sources']===JenangMcp\organizationalSourceDefinitions(),'Organizational source preparation covers exact two diagnostic sources');
 inventoryCheck($prepared['organizational_binding']['enabled_by_default']===false&&$prepared['organizational_binding']['active_permission_created']===false&&JenangMcp\organizationalSourceApprovalEnabled([])===false,'Organizational binding preparation is not active permission');
+$globalContract=$matrix['pending_remote_contract']['global_transport_contract'];
+inventorySameSet($globalContract['registered_source_ids'],['marketplace_sync_runs','marketplace_fulfillment_runtime'],'Global transport remains limited to exact two source identities');
+inventoryCheck($globalContract['required_account_key']==='global'&&$globalContract['personal_owner_confirmation_required']===true&&$globalContract['owner_settings_path']==='/assistant/settings/','Global source authority requires explicit selection and personal in-app owner confirmation');
+inventoryCheck($globalContract['availability_verified']===false&&$globalContract['source_released']===false&&$prepared['organizational_binding']['transport_implemented']===true&&$prepared['organizational_binding']['ingest_global_reads']==='exact_source_binding_and_release_gate_required','Connected global transport is not hosted availability or an unconditional grant');
+inventoryCheck($globalContract['sync_modes']===JenangMcp\INGEST_REPORTS_SYNC_MODES&&$globalContract['sync_statuses']===JenangMcp\INGEST_REPORTS_SYNC_STATUSES,'Reviewed finite diagnostic modes/statuses drift');
+// A synthetic context with organizational approval disabled cannot touch token/grant storage.
+$diagnosticCatalog=JenangMcp\ingestReportsCatalog(['table_access_approved'=>true,'_actor_scope'=>JenangMcp\TABLE_SCOPE,'table_families'=>JenangMcp\TABLE_FAMILIES,'accounts'=>[],'organizational_diagnostics_approval_enabled'=>false]);
+$diagnosticSources=array_column($diagnosticCatalog['sources'],null,'source');
+foreach($globalContract['public_definitions']as $definition){
+    $id=$definition['source'];$actual=$diagnosticSources[$id];
+    $actualProjection=array_intersect_key($actual,$definition);ksort($actualProjection);$expectedProjection=$definition;ksort($expectedProjection);
+    inventoryCheck($expectedProjection===$actualProjection,'Exact public diagnostic projection drift: '.$id);
+    inventoryCheck(!isset($actual['columns']['id'])&&$actual['required_account_key']==='global','Diagnostic IDs stay private and explicit global selection is required');
+    inventoryCheck($actual['access_status']==='denied_no_explicit_organizational_source_authorization'&&$actual['availability']==='pending_upstream_publication_and_verification','Disabled source authority remains denied and hosted availability unverified');
+}
 inventoryCheck($c['prepared_metadata_readers']===2&&$c['pending_remote_metadata_contract_sources']===1,'Prepared metadata counts exclude organizational authorization code');
 foreach(['zero_store_items','zero_store_discounts','zero_store_discount_items','jenang_gemi_store_items','jenang_gemi_store_discounts','jenang_gemi_store_discount_items']as $view)inventoryCheck($views[$view]['database']==='sku','Regression: storefront source binds to actual SKU database');
 inventoryCheck(($views['customer_activity']['physical_table']??null)==='analytics_events','Regression: logical customer activity view resolves to real analytics_events');
@@ -139,8 +155,10 @@ if($ingestRoot!==null){inventoryCheck(is_dir($ingestRoot),'Known ingest checkout
     inventorySameSet(array_values(array_unique($routes)),array_column($matrix['ingest_api_sources'],'id'),'Ingest HTTP route inventory');
     $contract=json_decode((string)file_get_contents(rtrim($ingestRoot,'/').'/docs/ingest-report-sources.json'),true,32,JSON_THROW_ON_ERROR);
     inventoryCheck(($contract['schema_version']??null)===$matrix['pending_remote_contract']['schema_version'],'Pending ingest contract version reviewed');
-    inventoryCheck(count($contract['sources'])===$c['pending_remote_contract_sources'],'Pending remote source count reconciles');
-    inventorySameSet(array_column($contract['sources'],'source'),array_column($matrix['pending_remote_contract']['sources'],'source'),'Pending ingest contract covers exact remote sources');
-    foreach($contract['sources']as $source){$reviewed=array_values(array_filter($matrix['pending_remote_contract']['sources'],fn($s)=>$s['source']===$source['source']))[0];inventoryCheck($reviewed===$source,'Remote safe projection contract drift: '.$source['source']);}
+    inventoryCheck(count($matrix['pending_remote_contract']['sources'])===$c['pending_remote_contract_sources'],'Original twelve-source pin remains unchanged in size');
+    $reviewedExternal=[...$matrix['pending_remote_contract']['sources'],$prepared['raw_events']['upstream_contract']];
+    inventoryCheck(count($contract['sources'])===$c['pending_remote_contract_sources']+$c['pending_remote_metadata_contract_sources'],'Upstream manifest counts original twelve plus one separately reviewed event contract');
+    inventorySameSet(array_column($contract['sources'],'source'),array_column($reviewedExternal,'source'),'Upstream contract cannot silently add unreviewed sources');
+    foreach($contract['sources']as $source){$reviewed=array_values(array_filter($reviewedExternal,fn($s)=>$s['source']===$source['source']))[0];inventoryCheck($reviewed===$source,'Remote safe projection contract drift: '.$source['source']);}
 }
 echo json_encode(['checks'=>$checks,'database_sources'=>$c['database_sources'],'typed_database_views'=>count($views),'api_consumers'=>count($apis),'canonical_reports'=>count($reports),'finance_reports'=>count($finance),'external_ingest_scan_performed'=>$ingestRoot!==null,'fixture_and_source_only'=>true]).PHP_EOL;

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "review_date": "2026-10-22",
+  "review_date": "2026-10-23",
   "title": "Jenang Gemi actual-source-to-MCP read acceptance matrix",
   "coverage_boundary": "Static canonical dashboard PHP/SQL declarations and readers, all API index consumers, file readsites, current reviewed projection/report registries, known ingest repository and pinned Store Ops source contracts. This does not assert production availability, complete stored history, full screen parity or callable client catalog.",
   "classifications": {
@@ -27,7 +27,7 @@
     "excluded": "Credentials, security state, identifiable customer/employee contacts, private document contents, arbitrary raw payloads, and unrestricted SQL/writes.",
     "finance_reports": "jg_finance_report retains jg:finance:read independently of dashboard access. allocation_statement additionally requires the exact saved recipient allowlist; legacy/current editor statements do not broaden named-recipient access.",
     "metadata": "Proof/label and local nonsecurity observation reports use existing dashboard authorization plus source-specific company/partner guards. Protected fields remain excluded. Staff roster totals, global ingest diagnostics and new upstream sources are not enabled by this batch.",
-    "organizational_sources": "The two global ingest diagnostic sources remain hard-denied. Disabled source-specific grant-binding/Settings code is prepared only; no source grant or credential was created."
+    "organizational_sources": "Only marketplace_sync_runs and marketplace_fulfillment_runtime accept account_key=global. Each requires the current owner-confirmed source binding to this exact client/subject/grant plus a valid dashboard-read token and enabled deployment policy. Personal approval remains in /assistant/settings/. Authorization is rechecked before and after reads, including approval revision; no automatic grant is created. The source-release gate is false and hosted availability remains unverified."
   },
   "counts": {
     "database_sources": 134,
@@ -8026,7 +8026,7 @@
       },
       "date_basis": "utc_history; one stored fulfillment job",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8116,7 +8116,7 @@
       },
       "date_basis": "utc_history; one current fulfillment order/package state",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8213,12 +8213,16 @@
       "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
-        "kind": "existing_authorized_account_filter_required",
+        "kind": "exact_owner_approved_organizational_source",
+        "source": "marketplace_fulfillment_runtime",
+        "oauth_scope": "jg:dashboard:read",
+        "required_account_key": "global",
+        "personal_owner_confirmation_required": true,
         "new_credentials_allowed": false
       },
       "date_basis": "snapshot; global current worker heartbeat",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8250,7 +8254,14 @@
         "source": "marketplace_fulfillment_runtime",
         "scope": "global",
         "date_mode": "snapshot"
-      }
+      },
+      "public_field_exclusions": [
+        "id",
+        "raw error or exception text",
+        "account identities",
+        "private payloads",
+        "credentials"
+      ]
     },
     {
       "id": "ingest:marketplace_order_items",
@@ -8268,7 +8279,7 @@
       },
       "date_basis": "utc_history; one stored order item",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8330,7 +8341,7 @@
       },
       "date_basis": "business_month; one account/currency/Jakarta-month rollup",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8376,7 +8387,7 @@
       },
       "date_basis": "business_month; one product/flavor/SKU/account/currency/Jakarta-month rollup",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8418,7 +8429,7 @@
       },
       "date_basis": "utc_history; one stored marketplace order",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8515,12 +8526,16 @@
       "coverage_level": "passive_contract_and_bridge_prepared_source_release_false",
       "interfaces": [],
       "scope": {
-        "kind": "existing_authorized_account_filter_required",
+        "kind": "exact_owner_approved_organizational_source",
+        "source": "marketplace_sync_runs",
+        "oauth_scope": "jg:dashboard:read",
+        "required_account_key": "global",
+        "personal_owner_confirmation_required": true,
         "new_credentials_allowed": false
       },
       "date_basis": "utc_history; one global marketplace sync run",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8544,7 +8559,14 @@
         "source": "marketplace_sync_runs",
         "scope": "global",
         "date_mode": "utc_history"
-      }
+      },
+      "public_field_exclusions": [
+        "id",
+        "raw error or exception text",
+        "account identities",
+        "private payloads",
+        "credentials"
+      ]
     },
     {
       "id": "ingest:raw_platform_events",
@@ -8554,7 +8576,7 @@
       "database_binding": "external_ingest_not_local",
       "family": "sales",
       "classification": "external_reader_blocked",
-      "coverage_level": "aggregate_contract_proposed_upstream_not_implemented",
+      "coverage_level": "separate_aggregate_contract_implemented_locally_consumer_unregistered_release_false",
       "interfaces": [],
       "scope": {
         "kind": "existing_authorized_account_filter_required",
@@ -8562,7 +8584,7 @@
       },
       "date_basis": "Proposed: received_at UTC history selected by inclusive Jakarta dates; received_date is UTC+07 calendar date. processed_at only contributes to stored write observation.",
       "freshness": "First/last receipt and latest COALESCE(processed_at,received_at) are stored observations, not sync health/completeness. Missing account/timestamp quality remains unknown.",
-      "reason": "Separate raw_platform_event_metadata consumer/contract is prepared and disabled; the upstream aggregate reader is not implemented or verified. Only exact platform/account receipt counts and finite status/date groups are proposed. Private payloads and event identities remain excluded.",
+      "reason": "Separate raw_platform_event_metadata consumer and upstream aggregate reader are implemented locally. This consumer remains unregistered and disabled; approved publication and authenticated hosted contract verification remain pending. Only exact platform/account receipt counts and finite status/date groups are covered. Private payloads and event identities remain excluded.",
       "evidence": {
         "declared_at": [
           {
@@ -8577,7 +8599,7 @@
         "read_at": []
       },
       "exclusion_category": "mixed_business_payload",
-      "future_projection_review": "Prepared fixed summary/groups consumer; upstream owner must implement passive account-scoped source and verify hosted contract before a separate readiness gate can change. No individual-event view, payload parsing, global account or event_type dimension.",
+      "future_projection_review": "Separate fixed summary/groups contract has local implementation evidence. No individual-event view, payload parsing, global account or event_type dimension. Source authorization, hosted contract/cost verification and separate readiness acceptance remain required before consumer registration/release.",
       "future_projection_implemented": false,
       "projection_state": "prepared_upstream_blocked",
       "protected_fields": [
@@ -8596,7 +8618,9 @@
         "module": "assistant/lib/ingest-event-metadata.php",
         "registered": false,
         "production_verified": false,
-        "source_released": false
+        "source_released": false,
+        "upstream_local_commit": "24e45caadbf927b245dbfb4e3126fe27d012ec7a",
+        "upstream_implemented": true
       },
       "exposed_metadata": []
     },
@@ -8666,7 +8690,7 @@
       },
       "date_basis": "snapshot; latest stored ad-credit balance per account",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8854,7 +8878,7 @@
       },
       "date_basis": "snapshot; current cached Shopee item metadata",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8900,7 +8924,7 @@
       },
       "date_basis": "monitor; current campaign observations and incidents in one account state",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -8946,7 +8970,7 @@
       },
       "date_basis": "stored_calendar_history; one local monitoring intent/acknowledgement audit event",
       "freshness": "Stored observations do not prove upstream completeness; hosted source/contract verification pending.",
-      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies; global sync/runtime remain hard-denied. No stored-row availability is claimed.",
+      "reason": "Original twelve-source contract and local MCP bridge are prepared, but the release gate remains false and hosted verification is pending. Exact configured account scope applies to account sources. Only the two named global diagnostics may use account_key=global, with exact current owner-approved source binding and authoritative checks before/after transport. No stored-row availability is claimed.",
       "evidence": {
         "declared_at": [
           {
@@ -10076,7 +10100,7 @@
         }
       ],
       "interfaces": [],
-      "reason": "Original passive twelve-source contract and local MCP bridge are prepared but source readiness is false and actual hosted verification pending. Global sync/runtime remain hard-denied. Separate raw-event aggregate proposal is not part of this source contract."
+      "reason": "Original passive twelve-source contract and local MCP bridge are prepared; source readiness is false and actual hosted verification is pending. The two global diagnostics require current exact owner/source authorization before/after reads. Separate raw-event aggregate proposal is not part of this source contract."
     },
     {
       "id": "/reports/sources",
@@ -10088,7 +10112,7 @@
         }
       ],
       "interfaces": [],
-      "reason": "Original passive twelve-source contract and local MCP bridge are prepared but source readiness is false and actual hosted verification pending. Global sync/runtime remain hard-denied. Separate raw-event aggregate proposal is not part of this source contract."
+      "reason": "Original passive twelve-source contract and local MCP bridge are prepared; source readiness is false and actual hosted verification is pending. The two global diagnostics require current exact owner/source authorization before/after reads. Separate raw-event aggregate proposal is not part of this source contract."
     },
     {
       "id": "/sales/order",
@@ -14558,7 +14582,7 @@
           "file": "api-health-log-read.php"
         }
       ],
-      "remaining_gap": "Passive local failure history is implemented. Original marketplace_sync_runs contract/bridge is prepared and source-released=false; actual hosted verification and organizational source authorization remain pending. Global rows are hard-denied; empty failures never prove ingestion completeness.",
+      "remaining_gap": "Passive local failure history is implemented. The marketplace_sync_runs contract/bridge is prepared with source release false. Its global transport requires exact owner-confirmed source binding, valid token/grant and checks before/after the read; actual hosted verification remains pending. Empty failures never prove ingestion completeness.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate",
       "implemented_canonical_helpers": [
@@ -14583,7 +14607,7 @@
           "file": "website-commerce-bootstrap.php"
         }
       ],
-      "remaining_gap": "Local nonsecurity flags and selected audit/delivery observations are implemented, but they do not prove readiness or source permissions. Complete remote readiness/delivery observations need separate passive contracts; global sync/runtime remain hard-denied.",
+      "remaining_gap": "Local nonsecurity flags and selected audit/delivery observations are implemented, but they do not prove readiness or source permissions. The named global diagnostics have owner-bound transport with source release false and hosted verification pending; additional remote control observations still need separate passive contracts.",
       "acceptance": "Verify canonical output against dashboard fixtures and live source/callable schema; mapped facts are not unrestricted screen parity.",
       "scope": "Existing dashboard or narrower legacy product scope as appropriate"
     }
@@ -14820,7 +14844,7 @@
       "id": "raw_event_metadata_upstream",
       "kind": "external_passive_reader_blocked",
       "interfaces": [],
-      "reason": "Separate raw_platform_event_metadata consumer/contract is prepared and disabled; the upstream aggregate reader is not implemented or verified. Only exact platform/account receipt counts and finite status/date groups are proposed. Private payloads and event identities remain excluded.",
+      "reason": "Separate raw_platform_event_metadata consumer and upstream aggregate reader are implemented locally. This consumer remains unregistered and disabled; approved publication and authenticated hosted contract verification remain pending. Only exact platform/account receipt counts and finite status/date groups are covered. Private payloads and event identities remain excluded.",
       "evidence": [
         {
           "file": "assistant/lib/ingest-event-metadata.php"
@@ -14847,7 +14871,7 @@
       "id": "global_ingest_source_authority",
       "kind": "authorization_binding_blocked",
       "interfaces": [],
-      "reason": "marketplace_sync_runs and marketplace_fulfillment_runtime remain hard-denied. Disabled source-specific owner-binding preparation does not activate either source, expand account scope or verify the hosted reader.",
+      "reason": "marketplace_sync_runs and marketplace_fulfillment_runtime require personal owner confirmation of each exact source for the current client/subject/grant, plus a valid dashboard-read token. Gated global transport now enforces those bindings before/after reads; revocation or reapproval during a read discards it. No grant is created automatically, source readiness is false and hosted verification remains pending.",
       "evidence": [
         {
           "file": "assistant/lib/organizational-sources.php"
@@ -15326,10 +15350,98 @@
         "file": "docs/ingest-report-sources.json"
       }
     ],
-    "authorization": "Ten account sources require exact configured accounts. The two global sources remain hard-denied in the ingestion bridge. Disabled organizational binding/owner Settings preparation is not active access, and listing all account keys is not global authority.",
+    "authorization": "Ten account sources require exact configured accounts. Only marketplace_sync_runs and marketplace_fulfillment_runtime accept account_key=global with personal owner approval for that exact source and current client/subject/grant. Fresh authoritative token/grant/source checks occur before and after reads; the false source-release gate still prevents live transport. Account membership never substitutes for global authority.",
     "source_released": false,
     "transport_endpoint": "https://api.jenanggemi.com/reports/query",
-    "discovery_endpoint": "https://api.jenanggemi.com/reports/sources"
+    "discovery_endpoint": "https://api.jenanggemi.com/reports/sources",
+    "global_transport_contract": {
+      "implementation_state": "implemented_locally_pending_personal_source_approval_and_hosted_verification",
+      "registered_source_ids": [
+        "marketplace_sync_runs",
+        "marketplace_fulfillment_runtime"
+      ],
+      "required_account_key": "global",
+      "owner_settings_path": "/assistant/settings/",
+      "personal_owner_confirmation_required": true,
+      "authorization_checks": [
+        "current_dashboard_read_token",
+        "token_expiry_audience_revocation_epoch",
+        "current_nonrevoked_owner_grant",
+        "exact_source_client_subject_grant_binding",
+        "approval_revision_unchanged_across_read"
+      ],
+      "successful_read_audit": "Recorded under the same final state lock as authoritative authorization and approval-fingerprint comparison.",
+      "availability_verified": false,
+      "source_released": false,
+      "public_definitions": [
+        {
+          "source": "marketplace_sync_runs",
+          "scope": "global",
+          "grain": "one global marketplace sync run",
+          "date_mode": "utc_history",
+          "group_by": [
+            "mode",
+            "status"
+          ],
+          "additive_metrics": [],
+          "views": [
+            "rows",
+            "summary",
+            "groups"
+          ],
+          "columns": {
+            "mode": "text",
+            "status": "text",
+            "stored": "int",
+            "accounts_checked": "int",
+            "accounts_ok": "int",
+            "from_at": "datetime",
+            "to_at": "datetime",
+            "started_at": "datetime",
+            "finished_at": "datetime",
+            "has_error": "bool"
+          }
+        },
+        {
+          "source": "marketplace_fulfillment_runtime",
+          "scope": "global",
+          "grain": "global current worker heartbeat",
+          "date_mode": "snapshot",
+          "group_by": [],
+          "additive_metrics": [],
+          "views": [
+            "rows",
+            "summary"
+          ],
+          "columns": {
+            "last_started_at": "datetime",
+            "last_finished_at": "datetime",
+            "last_success_at": "datetime",
+            "updated_at": "datetime",
+            "has_error": "bool"
+          }
+        }
+      ],
+      "sync_modes": [
+        "recent",
+        "account_recent",
+        "year",
+        "date_range",
+        "account_date_range",
+        "rolling"
+      ],
+      "sync_statuses": [
+        "ok",
+        "partial",
+        "failed"
+      ],
+      "limitations": [
+        "Stored sync-run status and worker heartbeat do not prove complete account/date history, operational readiness or delivery.",
+        "Internal record IDs are used only for validation and omitted from public discovery/rows/filters; raw errors, account identities and private payloads remain excluded.",
+        "Unknown producer mode/status fails closed; no raw diagnostic text is forwarded.",
+        "Staff/raw-event readers and other remote control sources are not enabled or authorized by either binding."
+      ]
+    }
   },
   "prepared_metadata_readers": {
     "staff": {
@@ -15401,7 +15513,7 @@
       },
       "registered": false,
       "source_released": false,
-      "upstream_implemented": false,
+      "upstream_implemented": true,
       "availability_verified": false,
       "target_endpoint": "https://api.jenanggemi.com/reports/query",
       "evidence": [
@@ -15410,6 +15522,48 @@
         },
         {
           "file": "assistant/lib/ingest-event-metadata.php"
+        }
+      ],
+      "upstream_implementation_basis": "Reviewed local source code only; authenticated hosted availability and acceptance are unverified.",
+      "upstream_implementation_commit": "24e45caadbf927b245dbfb4e3126fe27d012ec7a",
+      "upstream_contract": {
+        "source": "raw_platform_event_metadata",
+        "scope": "account",
+        "grain": "stored webhook receipt counts without event identities",
+        "date_mode": "utc_history",
+        "columns": {
+          "status": "text",
+          "received_date": "text"
+        },
+        "group_by": [
+          "status",
+          "received_date"
+        ],
+        "additive_metrics": [],
+        "views": [
+          "summary",
+          "groups"
+        ],
+        "limitations": [
+          "Counts describe saved webhook receipts, not distinct external events, orders, revenue or completed fulfillment. Duplicate deliveries may be counted repeatedly.",
+          "Processed means local processing returned without throwing, including ignored/non-actionable events. Received may include saved non-JSON bodies, not only queued work.",
+          "Receipt and processing timestamps are stored observations, not proof of healthy ingestion, complete history or successful jobs. The current writer uses UTC; historical writer attribution and timestamp quality are unverified.",
+          "Unassigned or nonmatching platform/account rows are not read or counted. Missing/invalid receipt timestamp counts are not supplied. No private payload is parsed.",
+          "Event types, event/order/customer identities, headers, IPs, raw bodies, payloads and processing error text are excluded."
+        ]
+      },
+      "upstream_evidence": [
+        {
+          "repository": "ingest",
+          "file": "docs/ingest-event-metadata.md"
+        },
+        {
+          "repository": "ingest",
+          "file": "src/IngestReportCatalog.php"
+        },
+        {
+          "repository": "ingest",
+          "file": "src/IngestStoredReports.php"
         }
       ]
     },
@@ -15420,8 +15574,8 @@
       },
       "enabled_by_default": false,
       "active_permission_created": false,
-      "ingest_global_reads": "hard_denied",
-      "activation_requires": "Separate deployment configuration and explicit owner Settings approval binding each exact source to current client/subject/grant; authoritative token, expiry/revocation and source binding rechecked. Preparation does not grant access.",
+      "ingest_global_reads": "exact_source_binding_and_release_gate_required",
+      "activation_requires": "Enabled deployment policy, personal owner Settings confirmation binding each exact source to the current client/subject/grant, and authenticated hosted contract verification before source readiness is released. Authoritative token/grant/source state and approval revision are checked before and after the read. Preparation or deployment alone does not grant access.",
       "evidence": [
         {
           "file": "assistant/lib/organizational-sources.php"
@@ -15429,7 +15583,8 @@
         {
           "file": "assistant/settings/index.php"
         }
-      ]
+      ],
+      "transport_implemented": true
     }
   }
 }

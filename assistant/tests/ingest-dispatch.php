@@ -34,6 +34,6 @@ ingestDispatchCheck($r['isError']&&!isset($r['_meta']['jg/source_status']),'Call
 $r=$call('jg_ingest_report',array_replace($args,['account_key'=>'jenang-gemi-shopee']),$c);
 ingestDispatchCheck($r['isError']&&!isset($r['_meta']['jg/source_status']),'Foreign account rejected before release/transport');
 $all=$c;$all['accounts']=array_keys(JenangMcp\INGEST_REPORTS_ACCOUNTS);
-foreach(['marketplace_sync_runs','marketplace_fulfillment_runtime'] as $source){$r=$call('jg_ingest_report',['source'=>$source,'account_key'=>'global'],$all);ingestDispatchCheck($r['isError']&&str_contains($r['content'][0]['text'],'full-organizational'),'All current accounts do not imply global authority');}
+foreach(['marketplace_sync_runs','marketplace_fulfillment_runtime'] as $source){$r=$call('jg_ingest_report',['source'=>$source,'account_key'=>'global'],$all);ingestDispatchCheck($r['isError']&&str_contains($r['content'][0]['text'],'Organizational'),'All current accounts do not imply global authority');}
 ingestDispatchCheck($calls===0,'No production source or credential access through fixtures');
 echo json_encode(['checks'=>$checks,'fixtures_only'=>true,'source_released'=>false]).PHP_EOL;
