@@ -975,3 +975,10 @@
     transition-duration: 0.01ms !important;
   }
 }
+.admin-app[data-pnl-ready="false"] .pnl-v2-story h3 {
+  display: none;
+}
+
+.admin-app[data-pnl-ready="false"] .pnl-v2-ring-value {
+  visibility: hidden;
+}

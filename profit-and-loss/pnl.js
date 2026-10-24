@@ -74,6 +74,9 @@ if (root) {
     rows: [],
     reviewItems: 0,
     loadedAt: null,
+    loadedYear: null,
+    loading: false,
+    loadError: '',
     allocationTree: [],
     allocationDraft: [],
     allocationId: 0,
@@ -130,10 +133,39 @@ if (root) {
   const percentNumber = (numerator, denominator) => denominator ? Number(numerator || 0) / Number(denominator) * 100 : 0;
   const rupiahPerHundred = (value) => `Rp${Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 1 })}`;
   const requestJson = async (url) => {
-    const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' } });
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok || payload.ok === false) throw new Error(payload.error || `HTTP ${response.status}`);
-    return payload;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
+    try {
+      const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store', headers: { Accept: 'application/json' }, signal: controller.signal });
+      const payload = await response.json();
+      if (!response.ok || payload?.ok === false) throw new Error(payload?.error || `HTTP ${response.status}`);
+      if (!payload || typeof payload !== 'object') throw new Error('The server returned an invalid report.');
+      return payload;
+    } catch (error) {
+      if (controller.signal.aborted) throw new Error('The report took too long to load. Select Refresh to try again.');
+      if (error instanceof SyntaxError) throw new Error('The server returned an invalid report. Select Refresh to try again.');
+      throw error;
+    } finally {
+      clearTimeout(timeout);
+    }
+  };
+  // Preserve the empty HTML state so switching years cannot show the previous
+  // year's figures or turn missing responses into a zero-profit report.
+  const emptyReport = Object.fromEntries([
+    'margin', 'netMargin', 'spentRate', 'profitRate', 'hundredProfit', 'costCopy',
+    'revenueCaption', 'revenueTotal', 'costTotal', 'netProfit', 'expenseRate',
+    'expenseTotal', 'formulaRevenue', 'formulaGross', 'formulaNet', 'reviewStatus',
+    'bridge', 'expenseMix', 'months', 'trend', 'composition', 'compositionLegend',
+    'expenseComposition', 'allocationTree', 'allocationIntro'
+  ].filter((key) => refs[key]).map((key) => [key, refs[key].innerHTML]));
+  const clearReport = () => {
+    state.rows = [];
+    state.loadedAt = null;
+    state.loadedYear = null;
+    root.dataset.pnlReady = 'false';
+    Object.entries(emptyReport).forEach(([key, html]) => { refs[key].innerHTML = html; });
+    if (refs.compare) refs.compare.hidden = true;
+    if (refs.editAllocation) refs.editAllocation.disabled = true;
   };
   const postJson = async (payload) => {
     const response = await fetch(profitLossEndpoint, {
@@ -465,6 +497,8 @@ if (root) {
     );
   };
   const render = () => {
+    if (state.loadedYear !== state.year || !state.rows.length) return;
+    root.dataset.pnlReady = 'true';
     const selected = sumRows(selectedRows());
     const periodName = state.period === 'ytd' ? `${state.year} year to date` : `${monthNames[Number(state.period) - 1]} ${state.year}`;
     const periodRows = selectedRows();
@@ -609,7 +643,8 @@ if (root) {
     if (refs.reviewStatus) refs.reviewStatus.textContent = state.reviewItems > 0 ? `${state.reviewItems.toLocaleString('id-ID')} open item${state.reviewItems === 1 ? '' : 's'} should be corrected before relying on final profit.` : 'No open Accounting review items.';
     renderAllocation(selected.netProfit || 0);
     if (refs.status && state.loadedAt) {
-      refs.status.textContent = `Updated ${new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }).format(state.loadedAt)} WIB`;
+      const updated = `Updated ${new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Jakarta' }).format(state.loadedAt)} WIB`;
+      refs.status.textContent = state.loadError || (state.loading ? `Refreshing… ${updated}` : updated);
     }
   };
   const renderControls = (years = []) => {
@@ -640,9 +675,21 @@ if (root) {
     }
   };
   const load = async (force = false) => {
+    if (state.loading) return;
+    if (state.loadedYear !== state.year) clearReport();
+    state.loading = true;
+    state.loadError = '';
+    if (refs.bottomPeriod) refs.bottomPeriod.textContent = state.loadedAt ? 'Refreshing report — showing the previous update…' : 'Loading financial report…';
     if (refs.status) refs.status.textContent = 'Loading net revenue, sold-product COGS, and Accounting entries…';
     refs.refresh?.classList.add('is-loading');
     if (refs.refresh) refs.refresh.disabled = true;
+    if (refs.year) refs.year.disabled = true;
+    if (refs.period) refs.period.disabled = true;
+    const slowTimer = setTimeout(() => {
+      if (refs.bottomPeriod) refs.bottomPeriod.textContent = state.loadedAt
+        ? 'The server is taking longer than usual. Showing the previous update while waiting…'
+        : 'The server is taking longer than usual. Waiting for sales and Accounting data…';
+    }, 8000);
     try {
       const suffix = force ? `&_ts=${Date.now()}` : '';
       const month = selectedAllocationMonth();
@@ -653,20 +700,35 @@ if (root) {
           ? Promise.resolve({ settings: { allocation_tree: [] } })
           : requestJson(`${profitLossEndpoint}?year=${state.year}&month=${month}&scope=allocation_settings${suffix}`)
       ]);
-      const accounting = accountingResponse.data || {};
+      const accounting = accountingResponse.data;
+      if (!Array.isArray(sales?.months) || !sales.months.length || !Array.isArray(accounting?.months) || !accounting.months.length) {
+        throw new Error('The server returned an incomplete report. Select Refresh to try again.');
+      }
       state.rows = combine(sales, accounting);
       state.categorySettings = Array.isArray(accounting.category_settings) ? accounting.category_settings : [];
       state.allocationTree = cloneAllocations(profitLossResponse?.settings?.allocation_tree || []);
       state.reviewItems = Number(accounting.open_review_items || 0);
       state.loadedAt = new Date();
+      state.loadedYear = state.year;
+      state.loading = false;
       renderControls(Array.isArray(sales.years) ? sales.years : []);
       render();
     } catch (error) {
-      if (refs.status) refs.status.textContent = error?.message || 'Unable to load the P&L.';
-      if (refs.months) refs.months.innerHTML = `<tr><td colspan="9" class="admin-empty">${escapeHtml(error?.message || 'Unable to load the P&L.')}</td></tr>`;
+      state.loadError = `${error?.message || 'Unable to load the P&L. Select Refresh to try again.'}${state.loadedAt ? ' Showing the previous update.' : ''}`;
+      if (refs.status) refs.status.textContent = state.loadError;
+      if (refs.bottomPeriod) refs.bottomPeriod.textContent = state.loadError;
+      if (!state.loadedAt) {
+        if (refs.costCopy) refs.costCopy.textContent = 'Financial figures are unavailable until the report loads.';
+        if (refs.reviewStatus) refs.reviewStatus.textContent = 'Accounting review status is unavailable.';
+        if (refs.months) refs.months.innerHTML = `<tr><td colspan="9" class="admin-empty">${escapeHtml(state.loadError)}</td></tr>`;
+      }
     } finally {
+      clearTimeout(slowTimer);
+      state.loading = false;
       refs.refresh?.classList.remove('is-loading');
       if (refs.refresh) refs.refresh.disabled = false;
+      if (refs.year) refs.year.disabled = false;
+      if (refs.period) refs.period.disabled = false;
     }
   };
   const tabButtons = [...root.querySelectorAll('[data-pnl-tab]')];
@@ -785,6 +847,7 @@ if (root) {
   root.addEventListener('click', (event) => {
     const button = event.target instanceof Element ? event.target.closest('[data-pnl-focus-month]') : null;
     if (!(button instanceof HTMLElement)) return;
+    if (state.loading) return;
     state.period = button.dataset.pnlFocusMonth || 'ytd';
     refs.period.value = state.period;
     state.allocationTree = [];
