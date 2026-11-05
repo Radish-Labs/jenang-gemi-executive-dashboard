@@ -40981,3 +40981,63 @@ a.admin-accounting-breakdown-row:focus-visible { background: color-mix(in srgb, 
     color: #647068;
   }
 }
+
+/* No COGS: advanced option on the purchase plan and on an existing PO */
+.admin-purchase-advanced,
+.admin-po-advanced {
+  color: var(--admin-muted);
+  font-size: 0.72rem;
+}
+.admin-purchase-advanced > summary,
+.admin-po-advanced > summary {
+  width: max-content;
+  cursor: pointer;
+  font-weight: 760;
+  list-style-position: inside;
+}
+.admin-purchase-advanced > summary:focus-visible,
+.admin-po-advanced > summary:focus-visible { outline: 2px solid var(--admin-text); outline-offset: 2px; border-radius: 4px; }
+.admin-purchase-no-cogs {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+.admin-purchase-no-cogs input { width: 18px; height: 18px; margin: 1px 0 0; flex: none; accent-color: #16a34a; }
+.admin-purchase-no-cogs input:disabled { cursor: not-allowed; }
+.admin-purchase-no-cogs span { display: grid; gap: 3px; }
+.admin-purchase-no-cogs strong { color: var(--admin-text); font-size: 0.8rem; }
+.admin-purchase-no-cogs small { line-height: 1.4; }
+.admin-po-advanced { position: relative; align-self: center; }
+.admin-po-advanced > div {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  width: min(280px, 80vw);
+  padding: 6px;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-surface-strong);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, .3);
+}
+.admin-po-advanced button {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--admin-text);
+  text-align: left;
+  cursor: pointer;
+}
+.admin-po-advanced button small { color: var(--admin-muted); line-height: 1.4; }
+.admin-po-advanced button:hover,
+.admin-po-advanced button:focus-visible { background: rgba(127, 127, 127, .14); outline: none; }
+.admin-po-advanced button:disabled { opacity: .55; cursor: wait; }

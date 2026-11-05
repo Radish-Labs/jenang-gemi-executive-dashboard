@@ -2642,7 +2642,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	      planSelected: {},
 	      planSearch: '',
 	      planNote: '',
-	      purchaseMode: new URLSearchParams(window.location.search).get('purchase') === 'overflow' ? 'overflow' : 'reorder',
+	      planNoCogs: false,
+	      noCogsOrderId: 0,
+purchaseMode: new URLSearchParams(window.location.search).get('purchase') === 'overflow' ? 'overflow' : 'reorder',
 	      overflowProductSearch: '',
 	      overflowItems: {},
 	      overflowQuantities: {},
@@ -3012,7 +3014,9 @@ document.addEventListener('DOMContentLoaded', () => {
 	    place: document.querySelector('[data-purchase-plan-place]'),
 	    download: document.querySelector('[data-purchase-plan-download]'),
 	    note: document.querySelector('[data-purchase-plan-note]'),
-	    lines: document.querySelector('[data-purchase-plan-lines]'),
+	    advanced: document.querySelector('[data-purchase-plan-advanced]'),
+	    noCogs: document.querySelector('[data-purchase-plan-no-cogs]'),
+lines: document.querySelector('[data-purchase-plan-lines]'),
 	    total: document.querySelector('[data-purchase-plan-total]'),
 	    modal: document.querySelector('[data-purchase-order-modal]'),
 	    modalNumber: document.querySelector('[data-purchase-order-modal-number]'),
@@ -8895,8 +8899,8 @@ document.addEventListener('DOMContentLoaded', () => {
 	  const purchaseOrders = () => Array.isArray(state.inventoryRecap.data?.purchase_orders)
 	    ? state.inventoryRecap.data.purchase_orders : [];
 	  const purchaseOrderTypeLabel = (order) => String(order?.order_type || '') === 'overflow' ? 'Overflow stock' : 'Stock reorder';
-	  const purchaseOrderIsPaid = (order) => Boolean(order?.is_paid)
-	    || (Number(order?.paid_total || 0) > 0 && Number(order?.amount_due || 0) <= 0);
+	  const purchaseOrderIsPaid = (order) => Boolean(order?.is_paid) || Boolean(order?.no_cogs)
+|| (Number(order?.paid_total || 0) > 0 && Number(order?.amount_due || 0) <= 0);
 	  const selectedPurchaseOrder = () => purchaseOrders().find((order) => Number(order.id || 0) === Number(state.inventoryRecap.selectedOrderId || 0));
 
 	  const orderSearchText = (order) => [
@@ -8947,6 +8951,24 @@ document.addEventListener('DOMContentLoaded', () => {
 	    }
 	  };
 
+	  const markPoNoCogs = async (orderId) => {
+	    if (orderId < 1 || state.inventoryRecap.noCogsOrderId) return;
+	    const order = purchaseOrders().find((candidate) => Number(candidate.id || 0) === orderId);
+	    if (!order || order.no_cogs) return;
+	    if (!window.confirm(`Mark ${order.po_number || 'this purchase order'} as No COGS? Every product will cost Rp0 and the PO will count as paid. No Accounting expense is created.`)) return;
+	    state.inventoryRecap.noCogsOrderId = orderId;
+	    renderPoDetail();
+	    try {
+	      const data = await postPoAction({ action: 'mark_no_cogs', order_id: orderId });
+	      state.inventoryRecap.noCogsOrderId = 0;
+	      applyInventoryRecapData(data);
+	    } catch (error) {
+	      state.inventoryRecap.noCogsOrderId = 0;
+	      renderPoDetail();
+	      window.alert(error?.message || 'The purchase order could not be marked as No COGS.');
+	    }
+	  };
+
 	  const renderPoDetail = () => {
 	    if (!poRefs.detailContent) return;
 	    const order = selectedPurchaseOrder();
@@ -8956,20 +8978,24 @@ document.addEventListener('DOMContentLoaded', () => {
 	      return;
 	    }
 	    if (poRefs.detailNumber) poRefs.detailNumber.textContent = order.po_number || 'PO breakdown';
-	    if (poRefs.detailStatus) poRefs.detailStatus.textContent = `${purchaseOrderTypeLabel(order)} · ${purchaseOrderStatusLabel(order.status)} · created ${String(order.placed_at || '').slice(0, 10)}`;
+	    if (poRefs.detailStatus) poRefs.detailStatus.textContent = `${purchaseOrderTypeLabel(order)}${order.no_cogs ? ' · No COGS' : ''} · ${purchaseOrderStatusLabel(order.status)} · created ${String(order.placed_at || '').slice(0, 10)}`;
 	    const paid = Math.max(0, Number(order.paid_total || 0));
 	    const due = Math.max(0, Number(order.amount_due || 0));
 	    const draft = String(order.status || '') === 'draft';
+	    const noCogs = Boolean(order.no_cogs);
+	    const noCogsBusy = state.inventoryRecap.noCogsOrderId === Number(order.id || 0);
+	    const canMarkNoCogs = !noCogs && String(order.status || '') !== 'cancelled' && !(order.payments || []).length;
 	    if (poRefs.detailActions) poRefs.detailActions.innerHTML = `
 	      <label class="admin-po-tag"><span>Tag</span><input type="text" maxlength="120" value="${escapeHtml(order.tag || '')}" data-po-tag="${Number(order.id || 0)}" placeholder="Add tag"></label>
 	      <button type="button" class="admin-po-download-action" data-po-download="${Number(order.id || 0)}" aria-label="Download ${escapeHtml(order.po_number || 'purchase order')} PDF"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 20h14"/></svg><span><strong>Download PO</strong><small>PDF copy</small></span></button>
-	      ${draft ? `<button type="button" class="admin-po-resume-action" data-po-resume="${Number(order.id || 0)}"><span>Resume draft</span><b>Continue this purchase order</b></button>` : `<button type="button" class="admin-po-pay-action${due <= 0 ? ' is-paid' : ''}" data-po-pay="${Number(order.id || 0)}" ${due <= 0 ? 'disabled' : ''}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg><span><strong>${due <= 0 ? 'Paid' : 'Pay PO'}</strong><small>${due <= 0 ? 'Payment complete' : `${formatCurrency(paid)} paid · ${formatCurrency(due)} left`}</small></span></button>`}
+	      ${draft ? `<button type="button" class="admin-po-resume-action" data-po-resume="${Number(order.id || 0)}"><span>Resume draft</span><b>Continue this purchase order</b></button>` : `<button type="button" class="admin-po-pay-action${due <= 0 ? ' is-paid' : ''}" data-po-pay="${Number(order.id || 0)}" ${due <= 0 ? 'disabled' : ''}><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/></svg><span><strong>${due <= 0 ? 'Paid' : 'Pay PO'}</strong><small>${noCogs ? 'No COGS · Rp0' : due <= 0 ? 'Payment complete' : `${formatCurrency(paid)} paid · ${formatCurrency(due)} left`}</small></span></button>`}
+	      ${canMarkNoCogs ? `<details class="admin-po-advanced"><summary>Advanced</summary><div><button type="button" data-po-mark-no-cogs="${Number(order.id || 0)}" ${noCogsBusy ? 'disabled' : ''}><strong>${noCogsBusy ? 'Saving…' : 'Mark as No COGS'}</strong><small>Set every product to Rp0 and count this PO as paid. No Accounting expense is created.</small></button></div></details>` : ''}
 	    `;
 	    const items = Array.isArray(order.items) ? order.items : [];
 	    poRefs.detailContent.innerHTML = `
 	      <div class="admin-po-detail-summary">
-	        <div><span>Order total</span><strong>${formatCurrency(order.estimated_total || 0)}</strong><small>Ordered quantity × COGS</small></div>
-	        <div><span>Paid so far</span><strong>${formatCurrency(paid)}</strong><small>${formatRegionalInteger(order.payment_percent || 0)}% recorded in Accounting</small></div>
+	        <div><span>Order total</span><strong>${formatCurrency(order.estimated_total || 0)}</strong><small>${noCogs ? 'No COGS · every product Rp0' : 'Ordered quantity × COGS'}</small></div>
+	        <div><span>Paid so far</span><strong>${formatCurrency(paid)}</strong><small>${noCogs ? 'Settled outside Pay PO' : `${formatRegionalInteger(order.payment_percent || 0)}% recorded in Accounting`}</small></div>
 	        <div><span>Left to pay</span><strong>${formatCurrency(due)}</strong><small>${draft ? 'Available after confirmation' : 'Current balance due'}</small></div>
 	        <div><span>Stock progress</span><strong>${formatRegionalInteger(order.received_qty || 0)} / ${formatRegionalInteger(order.ordered_qty || 0)}</strong><small>${formatRegionalInteger(order.progress_percent || 0)}% added to stock</small></div>
 	      </div>
@@ -9116,6 +9142,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	      }
 	    });
 	    state.inventoryRecap.planNote = String(order.note || '');
+	    state.inventoryRecap.planNoCogs = Boolean(order.no_cogs);
 	    await switchView('purchase-order');
 	    setPurchasePlanMode(state.inventoryRecap.purchaseMode, { focus: false });
 	  };
@@ -9499,7 +9526,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	      return purchaseCatalogRows().filter((item) => Boolean(state.inventoryRecap.overflowItems[String(item.sku || '')])).map((item) => {
 	        const sku = String(item.sku || '');
 	        const quantity = Math.max(0, Math.round(Number(state.inventoryRecap.overflowQuantities[sku] || 0)));
-	        const unitCost = Math.max(0, Number(item.cogs || 0));
+	        const unitCost = state.inventoryRecap.planNoCogs ? 0 : Math.max(0, Number(item.cogs || 0));
 	        return {
 	          ...item,
 	          selected: true,
@@ -9528,7 +9555,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	      const moq = Math.max(1, Math.round(Number(item.purchase_moq || 1)));
 	      const entered = Math.max(0, Math.round(Number(state.inventoryRecap.planQuantities[sku] ?? item.recommended_order_qty ?? 0)));
 	      const quantity = entered > 0 ? Math.ceil(entered / moq) * moq : 0;
-	      const unitCost = Math.max(0, Number(item.cogs || 0));
+	      const unitCost = state.inventoryRecap.planNoCogs ? 0 : Math.max(0, Number(item.cogs || 0));
 	      return { ...item, selected: Boolean(state.inventoryRecap.planSelected[sku]), quantity, moq, unitCost, subtotal: quantity * unitCost, note: String(state.inventoryRecap.planNotes[sku] || '') };
 	    }).sort(inventoryUrgencyCompare);
 	  };
@@ -9678,7 +9705,12 @@ document.addEventListener('DOMContentLoaded', () => {
 	      purchasePlanRefs.note.value = state.inventoryRecap.planNote;
 	    }
 	    if (purchasePlanRefs.note instanceof HTMLTextAreaElement) purchasePlanRefs.note.disabled = draftLocked;
-	    if (purchasePlanRefs.search instanceof HTMLInputElement && document.activeElement !== purchasePlanRefs.search) purchasePlanRefs.search.value = state.inventoryRecap.planSearch;
+	    if (purchasePlanRefs.noCogs instanceof HTMLInputElement) {
+	      purchasePlanRefs.noCogs.checked = Boolean(state.inventoryRecap.planNoCogs);
+	      purchasePlanRefs.noCogs.disabled = draftLocked;
+	    }
+	    if (purchasePlanRefs.advanced instanceof HTMLDetailsElement && state.inventoryRecap.planNoCogs) purchasePlanRefs.advanced.open = true;
+if (purchasePlanRefs.search instanceof HTMLInputElement && document.activeElement !== purchasePlanRefs.search) purchasePlanRefs.search.value = state.inventoryRecap.planSearch;
 	    if (purchasePlanRefs.copy) {
 	      purchasePlanRefs.copy.disabled = state.inventoryRecap.loading || !rows.length;
 	      purchasePlanRefs.copy.lastChild.textContent = state.inventoryRecap.copied ? ' Copied' : ' Copy text';
@@ -11876,7 +11908,8 @@ document.addEventListener('DOMContentLoaded', () => {
 	      const data = await postPoAction({
 	        action: 'create_draft', request_key: requestKey, note: state.inventoryRecap.planNote,
 	        order_type: state.inventoryRecap.purchaseMode,
-	        items: rows.map((item) => ({ sku: item.sku, quantity: item.quantity, line_note: item.note }))
+	        no_cogs: Boolean(state.inventoryRecap.planNoCogs),
+items: rows.map((item) => ({ sku: item.sku, quantity: item.quantity, line_note: item.note }))
 	      });
 	      const draft = data.draft_order;
 	      state.inventoryRecap.activeDraftOrderId = Number(draft?.id || 0);
@@ -11909,12 +11942,14 @@ document.addEventListener('DOMContentLoaded', () => {
 	            request_key: state.inventoryRecap.placeRequestKey,
 	            note: state.inventoryRecap.planNote,
 	            order_type: state.inventoryRecap.purchaseMode,
+	            no_cogs: Boolean(state.inventoryRecap.planNoCogs),
 	            items: rows.map((item) => ({ sku: item.sku, quantity: item.quantity, line_note: item.note }))
 	          });
 	      state.inventoryRecap.placedOrder = data.updated_order || data.placed_order || null;
 	      state.inventoryRecap.placeRequestKey = '';
 	      state.inventoryRecap.activeDraftOrderId = 0;
 	      state.inventoryRecap.resumedDraftItems = [];
+	      state.inventoryRecap.planNoCogs = false;
 	      state.inventoryRecap.planEdited = {};
 	      state.inventoryRecap.planQuantities = {};
 	      state.inventoryRecap.planSelected = {};
@@ -14776,6 +14811,13 @@ document.addEventListener('DOMContentLoaded', () => {
 	    }
 	  });
 
+	  purchasePlanRefs.noCogs?.addEventListener('change', () => {
+	    if (!(purchasePlanRefs.noCogs instanceof HTMLInputElement) || state.inventoryRecap.activeDraftOrderId) return;
+	    state.inventoryRecap.planNoCogs = purchasePlanRefs.noCogs.checked;
+	    state.inventoryRecap.placeRequestKey = '';
+	    renderPurchasePlan();
+	  });
+
 	  purchasePlanRefs.copy?.addEventListener('click', () => {
 	    copyInventoryRecapDraft().catch(() => {});
 	  });
@@ -14870,6 +14912,11 @@ document.addEventListener('DOMContentLoaded', () => {
 	  });
 	  poRefs.detailActions?.addEventListener('click', (event) => {
 	    const target = event.target instanceof Element ? event.target : null;
+	    const markNoCogs = target?.closest('[data-po-mark-no-cogs]');
+	    if (markNoCogs) {
+	      markPoNoCogs(Number(markNoCogs.getAttribute('data-po-mark-no-cogs') || 0)).catch(() => {});
+	      return;
+	    }
 	    const download = target?.closest('[data-po-download]');
 	    if (download) {
 	      const order = purchaseOrders().find((candidate) => Number(candidate.id || 0) === Number(download.getAttribute('data-po-download') || 0));

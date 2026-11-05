@@ -89,6 +89,7 @@ function jg_purchase_orders_ensure_schema(PDO $pdo): void
         if (!in_array('tag', $columns, true)) $pdo->exec('ALTER TABLE purchase_orders ADD COLUMN tag TEXT NOT NULL DEFAULT ""');
         if (!in_array('confirmed_at', $columns, true)) $pdo->exec('ALTER TABLE purchase_orders ADD COLUMN confirmed_at TEXT NULL');
         if (!in_array('order_type', $columns, true)) $pdo->exec('ALTER TABLE purchase_orders ADD COLUMN order_type TEXT NOT NULL DEFAULT "reorder"');
+        if (!in_array('no_cogs', $columns, true)) $pdo->exec('ALTER TABLE purchase_orders ADD COLUMN no_cogs INTEGER NOT NULL DEFAULT 0');
         $pdo->exec(
             'CREATE TABLE IF NOT EXISTS purchase_order_payments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -198,6 +199,7 @@ function jg_purchase_orders_ensure_schema(PDO $pdo): void
         'tag' => 'ALTER TABLE purchase_orders ADD COLUMN tag VARCHAR(120) NOT NULL DEFAULT "" AFTER status',
         'order_type' => 'ALTER TABLE purchase_orders ADD COLUMN order_type VARCHAR(24) NOT NULL DEFAULT "reorder" AFTER status',
         'confirmed_at' => 'ALTER TABLE purchase_orders ADD COLUMN confirmed_at DATETIME NULL AFTER placed_at',
+        'no_cogs' => 'ALTER TABLE purchase_orders ADD COLUMN no_cogs TINYINT(1) NOT NULL DEFAULT 0 AFTER order_type',
     ] as $column => $sql) {
         $columnStmt->execute([':column_name' => $column]);
         if ((int) $columnStmt->fetchColumn() === 0) $pdo->exec($sql);
@@ -288,7 +290,7 @@ function jg_purchase_orders_fetch(PDO $pdo, int $limit = 20, ?int $orderId = nul
     if ($prepareSchema) jg_purchase_orders_ensure_schema($pdo);
     $limit = max(1, min(1000, $limit));
     $ordersStmt = $pdo->prepare(
-        'SELECT id, po_number, status, order_type, tag, note, line_count, ordered_qty, received_qty,
+        'SELECT id, po_number, status, order_type, no_cogs, tag, note, line_count, ordered_qty, received_qty,
                 estimated_total, placed_by, placed_at, confirmed_at, updated_at, completed_at
          FROM purchase_orders' . ($orderId !== null ? ' WHERE id = :order_id' : '') . '
          ORDER BY placed_at DESC, id DESC
@@ -358,12 +360,15 @@ function jg_purchase_orders_fetch(PDO $pdo, int $limit = 20, ?int $orderId = nul
         $paidTotal = array_sum(array_map(static fn (array $payment): float => (float) $payment['amount'], $payments));
         $estimatedTotal = max(0.0, (float) ($order['estimated_total'] ?? 0));
         $amountDue = max(0, $estimatedTotal - $paidTotal);
-        $isPaid = $paidTotal > 0 && $amountDue < 0.01;
+        $noCogs = !empty($order['no_cogs']);
+        // A No COGS PO costs nothing and is settled outside the Pay PO flow.
+        $isPaid = ($paidTotal > 0 || $noCogs) && $amountDue < 0.01;
         return [
             'id' => (int) ($order['id'] ?? 0),
             'po_number' => (string) ($order['po_number'] ?? ''),
             'status' => (string) ($order['status'] ?? 'pending'),
             'order_type' => (string) ($order['order_type'] ?? 'reorder'),
+            'no_cogs' => $noCogs,
             'tag' => (string) ($order['tag'] ?? ''),
             'note' => (string) ($order['note'] ?? ''),
             'line_count' => (int) ($order['line_count'] ?? count($items)),
@@ -494,7 +499,8 @@ function jg_purchase_orders_place(
     string $requestKey,
     string $placedBy = 'Executive',
     string $initialStatus = 'pending',
-    string $orderType = 'reorder'
+    string $orderType = 'reorder',
+    bool $noCogs = false
 ): array {
     jg_purchase_orders_ensure_schema($pdo);
     $requestKey = trim($requestKey);
@@ -547,7 +553,7 @@ function jg_purchase_orders_place(
         $quantity = $orderType === 'overflow'
             ? (int) $request['quantity']
             : (int) (ceil($request['quantity'] / $moq) * $moq);
-        $unitCost = max(0.0, (float) ($row['cogs'] ?? 0));
+        $unitCost = $noCogs ? 0.0 : max(0.0, (float) ($row['cogs'] ?? 0));
         $lines[] = [
             'sku' => $sku,
             'product_name' => jg_purchase_orders_product_name($row),
@@ -565,10 +571,10 @@ function jg_purchase_orders_place(
     try {
         $insertOrder = $pdo->prepare(
             'INSERT INTO purchase_orders (
-                po_number, request_key, status, order_type, note, line_count, ordered_qty,
+                po_number, request_key, status, order_type, no_cogs, note, line_count, ordered_qty,
                 received_qty, estimated_total, placed_by, placed_at, confirmed_at, updated_at
              ) VALUES (
-                :po_number, :request_key, :status, :order_type, :note, :line_count, :ordered_qty,
+                :po_number, :request_key, :status, :order_type, :no_cogs, :note, :line_count, :ordered_qty,
                 0, :estimated_total, :placed_by, :placed_at, :confirmed_at, :updated_at
              )'
         );
@@ -581,6 +587,7 @@ function jg_purchase_orders_place(
                     ':request_key' => $requestKey,
                     ':status' => $initialStatus,
                     ':order_type' => $orderType,
+                    ':no_cogs' => $noCogs ? 1 : 0,
                     ':note' => mb_substr(trim($note), 0, 5000),
                     ':line_count' => count($lines),
                     ':ordered_qty' => $orderedQty,
@@ -634,9 +641,39 @@ function jg_purchase_orders_place(
     throw new RuntimeException('The purchase order was saved but could not be reloaded.');
 }
 
-function jg_purchase_orders_create_draft(PDO $pdo, array $items, string $note, string $requestKey, string $orderType = 'reorder'): array
+function jg_purchase_orders_create_draft(PDO $pdo, array $items, string $note, string $requestKey, string $orderType = 'reorder', bool $noCogs = false): array
 {
-    return jg_purchase_orders_place($pdo, $items, $note, $requestKey, 'Executive', 'draft', $orderType);
+    return jg_purchase_orders_place($pdo, $items, $note, $requestKey, 'Executive', 'draft', $orderType, $noCogs);
+}
+
+/**
+ * Turns an existing PO into a No COGS PO: every line costs Rp0, so the
+ * order total is Rp0 and it counts as paid without an Accounting expense.
+ * Refused once any payment exists, so recorded cash never loses its PO.
+ */
+function jg_purchase_orders_mark_no_cogs(PDO $pdo, int $orderId): array
+{
+    $order = jg_purchase_orders_find($pdo, $orderId);
+    if (!empty($order['no_cogs'])) return $order;
+    if ((string) ($order['status'] ?? '') === 'cancelled') {
+        throw new InvalidArgumentException('A cancelled purchase order cannot be changed.');
+    }
+    if (!empty($order['payments'])) {
+        throw new InvalidArgumentException('This purchase order already has a payment recorded, so it cannot become No COGS.');
+    }
+    $now = jg_purchase_orders_now();
+    $pdo->beginTransaction();
+    try {
+        $pdo->prepare('UPDATE purchase_order_items SET unit_cost = 0, updated_at = :now WHERE purchase_order_id = :id')
+            ->execute([':now' => $now, ':id' => $orderId]);
+        $pdo->prepare('UPDATE purchase_orders SET no_cogs = 1, estimated_total = 0, updated_at = :now WHERE id = :id')
+            ->execute([':now' => $now, ':id' => $orderId]);
+        $pdo->commit();
+    } catch (Throwable $error) {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        throw $error;
+    }
+    return jg_purchase_orders_find($pdo, $orderId);
 }
 
 function jg_purchase_orders_find(PDO $pdo, int $orderId): array

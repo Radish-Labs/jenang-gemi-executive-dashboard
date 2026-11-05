@@ -58,7 +58,7 @@ $sidebarSection = match (true) {
     in_array($requestedView ?? '', ['website', 'site', 'home', 'campaign', 'campaigns', 'landing', 'landing-pages'], true) => 'website',
     default => 'home',
 };
-$dashboardBuildVersion = 'exec3.98.53';
+$dashboardBuildVersion = 'exec3.98.54';
 $adminCssVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/admin.css');
 $adminJsVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/admin.js');
 $storeOpsJsVersion = $dashboardBuildVersion . '-' . (string) @filemtime(dirname(__DIR__) . '/store-ops.js');
@@ -954,6 +954,13 @@ $shipmentArrangementJsVersion = $dashboardBuildVersion . '-' . (string) @filemti
 	                            <span>Purchase note</span>
 	                            <textarea rows="3" data-purchase-plan-note placeholder="Add a supplier, delivery date, or production instruction"></textarea>
 	                        </label>
+	                        <details class="admin-purchase-advanced" data-purchase-plan-advanced>
+	                            <summary>Advanced</summary>
+	                            <label class="admin-purchase-no-cogs">
+	                                <input type="checkbox" data-purchase-plan-no-cogs>
+	                                <span><strong>No COGS</strong><small>Every product in this PO costs Rp0. The PO counts as paid and adds no Accounting expense.</small></span>
+	                            </label>
+	                        </details>
 	                        <div class="admin-purchase-total">
 	                            <span><b data-purchase-plan-lines>0</b> products</span>
 	                            <strong data-purchase-plan-total>Rp0</strong>

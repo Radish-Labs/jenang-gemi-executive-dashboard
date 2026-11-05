@@ -163,7 +163,8 @@ try {
                 (string) ($body['request_key'] ?? ''),
                 'Executive',
                 'pending',
-                (string) ($body['order_type'] ?? 'reorder')
+                (string) ($body['order_type'] ?? 'reorder'),
+                !empty($body['no_cogs'])
             );
         } elseif ($action === 'create_draft') {
             $draftOrder = jg_purchase_orders_create_draft(
@@ -171,7 +172,8 @@ try {
                 is_array($body['items'] ?? null) ? $body['items'] : [],
                 (string) ($body['note'] ?? ''),
                 (string) ($body['request_key'] ?? ''),
-                (string) ($body['order_type'] ?? 'reorder')
+                (string) ($body['order_type'] ?? 'reorder'),
+                !empty($body['no_cogs'])
             );
         } elseif ($action === 'confirm_order') {
             $updatedOrder = jg_purchase_orders_confirm($skuPdo, (int) ($body['order_id'] ?? 0));
@@ -189,6 +191,12 @@ try {
                 throw new InvalidArgumentException('Choose a purchase order to reconcile.');
             }
             $updatedOrder = jg_purchase_orders_mark_historical_paid($skuPdo, (int) $orderId);
+        } elseif ($action === 'mark_no_cogs') {
+            $orderId = filter_var($body['order_id'] ?? null, FILTER_VALIDATE_INT);
+            if ($orderId === false || $orderId < 1) {
+                throw new InvalidArgumentException('Choose a purchase order to mark as No COGS.');
+            }
+            $updatedOrder = jg_purchase_orders_mark_no_cogs($skuPdo, (int) $orderId);
         } elseif ($action === 'pay_order') {
             $analyticsPdo ??= analyticsDb();
             jg_accounting_ensure_schema($analyticsPdo);
