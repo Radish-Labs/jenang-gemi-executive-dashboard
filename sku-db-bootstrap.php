@@ -199,6 +199,14 @@ function jg_sku_ensure_schema(PDO $pdo): void
             KEY idx_sku_packing_costs_sku (sku, year, month),
             CONSTRAINT fk_sku_packing_costs_sku FOREIGN KEY (sku) REFERENCES sku_skus(sku) ON DELETE CASCADE
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
+        'CREATE TABLE IF NOT EXISTS sku_packing_defaults (
+            year SMALLINT UNSIGNED NOT NULL,
+            month TINYINT UNSIGNED NOT NULL,
+            packing_per_item DECIMAL(12,2) NOT NULL DEFAULT 0.00,
+            updated_by VARCHAR(160) NOT NULL DEFAULT "Admin",
+            updated_at DATETIME NOT NULL,
+            PRIMARY KEY (year, month)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
     ];
 
     foreach ($statements as $sql) {
@@ -214,6 +222,8 @@ function jg_sku_ensure_schema(PDO $pdo): void
     jg_sku_ensure_column($pdo, 'sku_skus', 'purchase_moq', 'INT UNSIGNED NOT NULL DEFAULT 1 AFTER inventory_mode');
     jg_sku_ensure_column($pdo, 'sku_skus', 'skip_scan', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER inventory_mode');
     jg_sku_ensure_column($pdo, 'sku_skus', 'packing_required', 'TINYINT(1) NOT NULL DEFAULT 1 AFTER cogs');
+    // 1 = this SKU's packing price was set by hand; 0 = it follows the monthly packing price.
+    jg_sku_ensure_column($pdo, 'sku_packing_costs', 'is_custom', 'TINYINT(1) NOT NULL DEFAULT 0 AFTER packing_per_item');
     jg_sku_ensure_column($pdo, 'sku_skus', 'sale_price', 'DECIMAL(12,2) NOT NULL DEFAULT 0.00 AFTER cogs');
     jg_sku_ensure_column($pdo, 'sku_cogs_history', 'change_mode', 'VARCHAR(24) NOT NULL DEFAULT "legacy" AFTER takes_place');
     jg_sku_ensure_column($pdo, 'sku_cogs_history', 'effective_at', 'DATETIME NULL DEFAULT NULL AFTER change_mode');

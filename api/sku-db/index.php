@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . '/sku-db-bootstrap.php';
 require_once dirname(__DIR__, 2) . '/astra-stock-bootstrap.php';
+require_once dirname(__DIR__, 2) . '/product-costs-bootstrap.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -1061,6 +1062,9 @@ function jg_sku_create_sku(PDO $pdo, array $payload, ?int $approvalRequestId = n
         ':effective_at' => $now,
         ':recorded_at' => $now,
     ]);
+
+    // New SKUs follow the monthly packing price straight away.
+    jg_product_costs_fill_missing_defaults($pdo);
 }
 
 function jg_sku_count_references(PDO $pdo, string $columnName, string $itemId): int

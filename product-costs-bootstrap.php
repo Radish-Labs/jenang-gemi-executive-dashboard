@@ -213,3 +213,101 @@ function jg_product_costs_import_legacy_packing(PDO $skuPdo): void
     );
     $done->execute([':updated_at' => jg_sku_now()]);
 }
+
+/**
+ * Monthly packing prices. One price per month applies to every SKU; a SKU only
+ * differs when its sku_packing_costs row is marked is_custom = 1.
+ *
+ * @return array<int, array{year:int, month:int, packing_per_item:float, updated_at:string}>
+ */
+function jg_product_costs_default_lookup(PDO $pdo, int $year): array
+{
+    $stmt = $pdo->prepare(
+        'SELECT year, month, packing_per_item, updated_at
+         FROM sku_packing_defaults
+         WHERE year = :year
+         ORDER BY month'
+    );
+    $stmt->execute([':year' => $year]);
+    $lookup = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $month = (int) ($row['month'] ?? 0);
+        if ($month < 1 || $month > 12) {
+            continue;
+        }
+        $lookup[$month] = [
+            'year' => $year,
+            'month' => $month,
+            'packing_per_item' => (float) ($row['packing_per_item'] ?? 0),
+            'updated_at' => (string) ($row['updated_at'] ?? ''),
+        ];
+    }
+    return $lookup;
+}
+
+/** The most recent monthly packing price before the given month, used to prefill a new month. */
+function jg_product_costs_previous_default(PDO $pdo, int $year, int $month): ?array
+{
+    $stmt = $pdo->prepare(
+        'SELECT year, month, packing_per_item
+         FROM sku_packing_defaults
+         WHERE year < :year OR (year = :same_year AND month < :month)
+         ORDER BY year DESC, month DESC
+         LIMIT 1'
+    );
+    $stmt->execute([':year' => $year, ':same_year' => $year, ':month' => $month]);
+    $row = $stmt->fetch();
+    if (!is_array($row)) {
+        return null;
+    }
+    $period = jg_product_costs_period((int) $row['year'], (int) $row['month']);
+    return $period + ['packing_per_item' => (float) $row['packing_per_item']];
+}
+
+/**
+ * Save the monthly packing price and write it to every SKU that does not have a
+ * custom price, so every report reading sku_packing_costs picks it up.
+ */
+function jg_product_costs_save_default(PDO $pdo, int $year, int $month, float $price): void
+{
+    $now = jg_sku_now();
+    $amount = number_format($price, 2, '.', '');
+    $pdo->prepare(
+        'INSERT INTO sku_packing_defaults (year, month, packing_per_item, updated_by, updated_at)
+         VALUES (:year, :month, :price, "Admin", :updated_at)
+         ON DUPLICATE KEY UPDATE packing_per_item = VALUES(packing_per_item),
+            updated_by = VALUES(updated_by), updated_at = VALUES(updated_at)'
+    )->execute([':year' => $year, ':month' => $month, ':price' => $amount, ':updated_at' => $now]);
+
+    $pdo->prepare(
+        'UPDATE sku_packing_costs
+         SET packing_per_item = :price, updated_by = "Monthly packing price", updated_at = :updated_at
+         WHERE year = :year AND month = :month AND is_custom = 0'
+    )->execute([':year' => $year, ':month' => $month, ':price' => $amount, ':updated_at' => $now]);
+
+    jg_product_costs_fill_missing_defaults($pdo);
+}
+
+/** Give every SKU (including newly created ones) a row for each month that has a monthly price. */
+function jg_product_costs_fill_missing_defaults(PDO $pdo): void
+{
+    $pdo->exec(
+        'INSERT IGNORE INTO sku_packing_costs
+            (year, month, sku, packing_per_item, is_custom, updated_by, updated_at)
+         SELECT d.year, d.month, s.sku, d.packing_per_item, 0, "Monthly packing price", d.updated_at
+         FROM sku_packing_defaults d
+         CROSS JOIN sku_skus s'
+    );
+}
+
+/** @return array<string, bool> keyed by "SKU|month" for rows set by hand */
+function jg_product_costs_custom_lookup(PDO $pdo, int $year): array
+{
+    $stmt = $pdo->prepare('SELECT sku, month FROM sku_packing_costs WHERE year = :year AND is_custom = 1');
+    $stmt->execute([':year' => $year]);
+    $lookup = [];
+    foreach ($stmt->fetchAll() as $row) {
+        $lookup[strtoupper(trim((string) ($row['sku'] ?? ''))) . '|' . (int) ($row['month'] ?? 0)] = true;
+    }
+    return $lookup;
+}

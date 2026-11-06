@@ -40,7 +40,7 @@ $pageJsVersion = (string) @filemtime(__DIR__ . '/product-costs.js');
                         </button>
                         <div class="admin-topbar-brand">
                             <h1>Product Costs</h1>
-                            <p>Set quarter-aware COGS and next-month packing prices without editing raw SKU records.</p>
+                            <p>Set quarter-aware COGS and one monthly packing price for every product.</p>
                         </div>
                     </div>
                     <?php render_admin_topbar_actions('sku-db'); ?>
@@ -58,6 +58,20 @@ $pageJsVersion = (string) @filemtime(__DIR__ . '/product-costs.js');
                     </label>
                     <button type="button" class="admin-ghost-btn" data-cost-refresh>Refresh</button>
                     <p data-cost-status>Loading product costs…</p>
+                </section>
+
+                <section class="product-costs-default" aria-labelledby="packing-default-title">
+                    <div class="product-costs-default-copy">
+                        <span>Packing cost</span>
+                        <h2 id="packing-default-title" data-default-title>Packing cost per item</h2>
+                        <p data-default-note>Applies to every product unless it has a custom price in Advanced settings.</p>
+                    </div>
+                    <form class="product-costs-default-form" data-default-form>
+                        <div class="product-costs-money"><b>Rp</b><input type="number" name="packing_per_item" min="0" step="0.01" inputmode="decimal" required aria-labelledby="packing-default-title"></div>
+                        <button type="submit" class="admin-primary-btn">Save</button>
+                    </form>
+                    <p class="product-costs-default-status" data-default-status></p>
+                    <p class="admin-form-error" data-default-error hidden></p>
                 </section>
 
                 <section class="product-costs-panel">
@@ -91,24 +105,31 @@ $pageJsVersion = (string) @filemtime(__DIR__ . '/product-costs.js');
 <div class="admin-modal-shell" data-packing-modal hidden>
     <div class="admin-modal-backdrop" data-close-packing></div>
     <div class="admin-modal-card product-costs-modal" role="dialog" aria-modal="true" aria-labelledby="packing-modal-title">
-        <div class="product-costs-modal-head"><div><span>Monthly per-item cost</span><h2 id="packing-modal-title" data-packing-title>Set packing price</h2><p data-packing-period></p></div><button type="button" data-close-packing aria-label="Close">&times;</button></div>
+        <div class="product-costs-modal-head"><div><span>Packing cost</span><h2 id="packing-modal-title" data-packing-title>Packing cost</h2><p data-packing-period></p></div><button type="button" data-close-packing aria-label="Close">&times;</button></div>
         <form data-packing-form>
             <input type="hidden" name="source_sku">
-            <label class="product-costs-toggle"><input type="checkbox" name="packing_required" checked><span><strong>Packing is required</strong><small>Turn this off only when this product needs no shipment packing cost.</small></span></label>
-            <label data-packing-price-field><span>Packing price per physical item</span><div class="product-costs-money"><b>Rp</b><input type="number" name="packing_per_item" min="0" step="0.01" inputmode="decimal" required></div></label>
-            <fieldset class="product-costs-timing product-costs-packing-timing">
-                <legend>When should it apply?</legend>
-                <label><input type="radio" name="change_mode" value="monthly" checked><span><strong>Selected month</strong><small data-packing-month-label>Standard monthly price</small></span></label>
-                <label><input type="radio" name="change_mode" value="period"><span><strong>Specific period</strong><small>Apply the same price across an inclusive month range.</small></span></label>
-                <label class="is-danger"><input type="radio" name="change_mode" value="retroactive"><span><strong>Fully retroactive</strong><small>Overwrite every month from January 2025 through the selected month.</small></span></label>
-            </fieldset>
-            <div class="product-costs-date-range" data-packing-month-range hidden>
-                <label><span>Start month</span><input type="month" name="start_month" min="2025-01" max="2100-12"></label>
-                <label><span>End month</span><input type="month" name="end_month" min="2025-01" max="2100-12"></label>
-            </div>
-            <div class="product-costs-affected"><span>Affected SKUs</span><div data-packing-skus></div></div>
+            <div class="product-costs-packing-summary"><span>Monthly packing cost</span><strong data-packing-default-value>Not set</strong><small data-packing-default-note></small></div>
+            <details class="product-costs-advanced" data-packing-advanced>
+                <summary>Advanced settings</summary>
+                <div class="product-costs-advanced-body">
+                    <label class="product-costs-toggle"><input type="checkbox" name="packing_required" checked><span><strong>Packing is required</strong><small>Turn this off only when this product needs no shipment packing cost.</small></span></label>
+                    <label class="product-costs-toggle" data-packing-custom-field><input type="checkbox" name="custom_price"><span><strong>Use a different packing cost</strong><small>This product ignores the monthly packing cost for the months you choose below.</small></span></label>
+                    <label data-packing-price-field hidden><span>Custom packing price per physical item</span><div class="product-costs-money"><b>Rp</b><input type="number" name="packing_per_item" min="0" step="0.01" inputmode="decimal"></div></label>
+                    <fieldset class="product-costs-timing product-costs-packing-timing">
+                        <legend>Which months?</legend>
+                        <label><input type="radio" name="change_mode" value="monthly" checked><span><strong>Selected month</strong><small data-packing-month-label>Standard monthly price</small></span></label>
+                        <label><input type="radio" name="change_mode" value="period"><span><strong>Specific period</strong><small>Apply the same setting across an inclusive month range.</small></span></label>
+                        <label class="is-danger"><input type="radio" name="change_mode" value="retroactive"><span><strong>Fully retroactive</strong><small>Overwrite every month from January 2025 through the selected month.</small></span></label>
+                    </fieldset>
+                    <div class="product-costs-date-range" data-packing-month-range hidden>
+                        <label><span>Start month</span><input type="month" name="start_month" min="2025-01" max="2100-12"></label>
+                        <label><span>End month</span><input type="month" name="end_month" min="2025-01" max="2100-12"></label>
+                    </div>
+                    <div class="product-costs-affected"><span>Affected SKUs</span><div data-packing-skus></div></div>
+                </div>
+            </details>
             <p class="admin-form-error" data-packing-error hidden></p>
-            <div class="product-costs-modal-actions"><button type="submit" class="admin-primary-btn">Save packing price</button><button type="button" class="admin-ghost-btn" data-close-packing>Cancel</button></div>
+            <div class="product-costs-modal-actions"><button type="submit" class="admin-primary-btn">Save packing settings</button><button type="button" class="admin-ghost-btn" data-close-packing>Cancel</button></div>
         </form>
     </div>
 </div>

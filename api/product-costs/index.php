@@ -49,7 +49,16 @@ function jg_product_costs_date(mixed $value, string $label): string
 
 function jg_product_costs_response(PDO $pdo, int $year, int $month): never
 {
-    jg_product_costs_json(jg_product_costs_read_payload($pdo, $year, $month));
+    $payload = jg_product_costs_read_payload($pdo, $year, $month);
+    $monthDefault = jg_product_costs_default_lookup($pdo, $year)[$month] ?? null;
+    $custom = jg_product_costs_custom_lookup($pdo, $year);
+    foreach ($payload['rows'] as &$row) {
+        $row['packing_custom'] = isset($custom[$row['sku'] . '|' . $month]);
+    }
+    unset($row);
+    $payload['packing_default'] = $monthDefault;
+    $payload['previous_packing_default'] = $monthDefault === null ? jg_product_costs_previous_default($pdo, $year, $month) : null;
+    jg_product_costs_json($payload);
 }
 
 try {
@@ -58,6 +67,11 @@ try {
         jg_product_costs_import_legacy_packing($pdo);
     } catch (Throwable $migrationError) {
         error_log('Unable to migrate legacy packing costs: ' . $migrationError->getMessage());
+    }
+    try {
+        jg_product_costs_fill_missing_defaults($pdo);
+    } catch (Throwable $fillError) {
+        error_log('Unable to fill monthly packing prices: ' . $fillError->getMessage());
     }
 
     $defaultPeriod = jg_product_costs_next_month();
@@ -71,6 +85,17 @@ try {
 
     $body = jg_product_costs_body();
     $action = strtolower(trim((string) ($body['action'] ?? '')));
+
+    if ($action === 'save_packing_default') {
+        $target = jg_product_costs_period((int) ($body['year'] ?? 0), (int) ($body['month'] ?? 0));
+        $price = jg_product_costs_money($body['packing_per_item'] ?? null, 'Packing price');
+        $pdo->beginTransaction();
+        jg_product_costs_save_default($pdo, $target['year'], $target['month'], $price);
+        jg_sku_touch_version($pdo);
+        $pdo->commit();
+        jg_product_costs_response($pdo, $target['year'], $target['month']);
+    }
+
     $sourceSku = strtoupper(trim((string) ($body['source_sku'] ?? '')));
     if (!preg_match('/^[A-Z0-9]{12}$/', $sourceSku)) {
         jg_product_costs_fail('Select a valid SKU group.');
@@ -84,7 +109,9 @@ try {
     if ($action === 'save_packing') {
         $required = filter_var($body['packing_required'] ?? true, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
         $required = $required ?? false;
-        $price = $required ? jg_product_costs_money($body['packing_per_item'] ?? null, 'Packing price') : 0.0;
+        // Older clients always sent a hand-set price, so treat a missing flag as custom.
+        $useCustom = filter_var($body['custom_price'] ?? true, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+        $price = $required && $useCustom ? jg_product_costs_money($body['packing_per_item'] ?? null, 'Packing price') : 0.0;
         $target = jg_product_costs_period((int) ($body['year'] ?? 0), (int) ($body['month'] ?? 0));
         $mode = strtolower(trim((string) ($body['change_mode'] ?? 'monthly')));
         if (!in_array($mode, ['monthly', 'period', 'retroactive'], true)) {
@@ -108,21 +135,36 @@ try {
         $requiredStmt = $pdo->prepare('UPDATE sku_skus SET packing_required = :required, updated_at = :updated_at WHERE sku = :sku');
         $packingStmt = $pdo->prepare(
             'INSERT INTO sku_packing_costs
-                (year, month, sku, packing_per_item, updated_by, updated_at)
+                (year, month, sku, packing_per_item, is_custom, updated_by, updated_at)
              VALUES
-                (:year, :month, :sku, :price, "Admin", :updated_at)
-             ON DUPLICATE KEY UPDATE packing_per_item = VALUES(packing_per_item),
+                (:year, :month, :sku, :price, :is_custom, :updated_by, :updated_at)
+             ON DUPLICATE KEY UPDATE packing_per_item = VALUES(packing_per_item), is_custom = VALUES(is_custom),
                 updated_by = VALUES(updated_by), updated_at = VALUES(updated_at)'
         );
+        $clearStmt = $pdo->prepare('DELETE FROM sku_packing_costs WHERE year = :year AND month = :month AND sku = :sku');
+        $defaultsByYear = [];
         $now = jg_sku_now();
         foreach ($groupSkus as $sku) {
             $requiredStmt->execute([':required' => $required ? 1 : 0, ':updated_at' => $now, ':sku' => $sku]);
             foreach ($targetPeriods as $targetPeriod) {
+                $periodPrice = $price;
+                if (!$useCustom) {
+                    // Go back to the monthly packing price; with none set yet the month stays empty.
+                    $defaultsByYear[$targetPeriod['year']] ??= jg_product_costs_default_lookup($pdo, $targetPeriod['year']);
+                    $monthDefault = $defaultsByYear[$targetPeriod['year']][$targetPeriod['month']] ?? null;
+                    if ($monthDefault === null) {
+                        $clearStmt->execute([':year' => $targetPeriod['year'], ':month' => $targetPeriod['month'], ':sku' => $sku]);
+                        continue;
+                    }
+                    $periodPrice = (float) $monthDefault['packing_per_item'];
+                }
                 $packingStmt->execute([
                     ':year' => $targetPeriod['year'],
                     ':month' => $targetPeriod['month'],
                     ':sku' => $sku,
-                    ':price' => number_format($price, 2, '.', ''),
+                    ':price' => number_format($periodPrice, 2, '.', ''),
+                    ':is_custom' => $useCustom ? 1 : 0,
+                    ':updated_by' => $useCustom ? 'Admin' : 'Monthly packing price',
                     ':updated_at' => $now,
                 ]);
             }

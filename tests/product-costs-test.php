@@ -53,7 +53,7 @@ $script = (string) file_get_contents($root . '/product-costs/product-costs.js');
 $skuPage = (string) file_get_contents($root . '/sku-db/index.php');
 $sales = (string) file_get_contents($root . '/api/sales/index.php');
 $formula = (string) file_get_contents($root . '/sales-summary-stability.php');
-product_costs_expect(str_contains($page, 'Packing price per physical item') && str_contains($page, 'Change COGS'), 'Product Costs must expose user-friendly packing and COGS editors.');
+product_costs_expect(str_contains($page, 'Custom packing price per physical item') && str_contains($page, 'Change COGS'), 'Product Costs must expose user-friendly packing and COGS editors.');
 product_costs_expect(str_contains($page, 'data-cost-missing') && !str_contains($page, 'product-costs-kpis'), 'Packing readiness must use a compact inline count instead of summary cards.');
 product_costs_expect(str_contains($page, 'data-product-costs-back') && !str_contains($page, 'SKU cost control'), 'Product Costs must use a left-side back control without a redundant page eyebrow.');
 product_costs_expect(str_contains($skuPage, 'admin-sku-costs-link') && str_contains($skuPage, 'Product Costs'), 'SKU DB must expose a dedicated Product Costs control.');
@@ -63,5 +63,16 @@ product_costs_expect(str_contains($script, 'data-toggle-cost-details') && str_co
 product_costs_expect(str_contains($page, 'Fully retroactive') && str_contains($page, 'data-packing-month-range'), 'Packing must support monthly, month-range, and fully retroactive timing.');
 product_costs_expect(str_contains($sales, "\$row['packing_cost'] = \$rowPacking") && str_contains($sales, '$cogsQuantity'), 'Sales enrichment must calculate packing from physical quantities.');
 product_costs_expect(str_contains($formula, '$revenue - $cogs - $packing'), 'Final gross profit must subtract COGS and packing separately.');
+
+$api = (string) file_get_contents($root . '/api/product-costs/index.php');
+$skuApi = (string) file_get_contents($root . '/api/sku-db/index.php');
+$bootstrap = (string) file_get_contents($root . '/product-costs-bootstrap.php');
+$skuSchema = (string) file_get_contents($root . '/sku-db-bootstrap.php');
+product_costs_expect(str_contains($page, 'data-default-form') && str_contains($script, "action: 'save_packing_default'"), 'Product Costs must expose one monthly packing price for every product.');
+product_costs_expect(str_contains($page, '<details class="product-costs-advanced"') && str_contains($page, 'name="custom_price"') && str_contains($script, 'custom_price: data.get(\'custom_price\') === \'on\''), 'A per-product packing price must be hidden in Advanced settings.');
+product_costs_expect(str_contains($skuSchema, 'sku_packing_defaults') && str_contains($skuSchema, "'sku_packing_costs', 'is_custom'"), 'Monthly packing prices and custom flags must be stored.');
+product_costs_expect(str_contains($bootstrap, 'WHERE year = :year AND month = :month AND is_custom = 0'), 'Saving the monthly price must not overwrite custom product prices.');
+product_costs_expect(str_contains($api, "\$action === 'save_packing_default'") && str_contains($api, "\$body['custom_price'] ?? true"), 'The API must save monthly prices and keep old clients on custom prices.');
+product_costs_expect(str_contains($skuApi, 'jg_product_costs_fill_missing_defaults($pdo)'), 'New SKUs must pick up the monthly packing price.');
 
 fwrite(STDOUT, "Product Costs tests passed.\n");

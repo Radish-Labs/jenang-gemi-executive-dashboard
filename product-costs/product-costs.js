@@ -2,7 +2,7 @@ const root = document.querySelector('[data-product-costs]');
 
 if (root) {
   const api = root.dataset.apiEndpoint || '../api/product-costs/';
-  const state = { rows: [], groups: [], expandedGroups: new Set(), period: null, defaultPeriod: null, nextQuarter: null, search: '', loading: false };
+  const state = { rows: [], groups: [], expandedGroups: new Set(), period: null, defaultPeriod: null, packingDefault: null, previousDefault: null, nextQuarter: null, search: '', loading: false };
   const refs = {
     back: root.querySelector('[data-product-costs-back]'),
     month: root.querySelector('[data-cost-month]'),
@@ -13,6 +13,15 @@ if (root) {
     missing: root.querySelector('[data-cost-missing]'),
     missingLabel: root.querySelector('[data-cost-missing-label]'),
     readiness: root.querySelector('[data-cost-readiness]'),
+    defaultForm: root.querySelector('[data-default-form]'),
+    defaultTitle: root.querySelector('[data-default-title]'),
+    defaultNote: root.querySelector('[data-default-note]'),
+    defaultStatus: root.querySelector('[data-default-status]'),
+    defaultError: root.querySelector('[data-default-error]'),
+    packingAdvanced: document.querySelector('[data-packing-advanced]'),
+    packingCustomField: document.querySelector('[data-packing-custom-field]'),
+    packingDefaultValue: document.querySelector('[data-packing-default-value]'),
+    packingDefaultNote: document.querySelector('[data-packing-default-note]'),
     packingModal: document.querySelector('[data-packing-modal]'),
     packingForm: document.querySelector('[data-packing-form]'),
     packingTitle: document.querySelector('[data-packing-title]'),
@@ -56,7 +65,8 @@ if (root) {
       const cogsValues = new Set(group.rows.map((row) => Number(row.cogs || 0).toFixed(2)));
       const required = requiredValues.size === 1 ? Boolean(group.rows[0].packing_required) : true;
       const status = !required && requiredValues.size === 1 ? 'not_required' : (packingValues.size === 1 && !packingValues.has('missing') ? 'complete' : 'missing');
-      return { ...group, required, status, packing: packingValues.size === 1 && !packingValues.has('missing') ? Number(group.rows[0].packing_per_item) : null, cogs: cogsValues.size === 1 ? Number(group.rows[0].cogs) : null };
+      const custom = group.rows.some((row) => Boolean(row.packing_custom));
+      return { ...group, required, custom, status, packing: packingValues.size === 1 && !packingValues.has('missing') ? Number(group.rows[0].packing_per_item) : null, cogs: cogsValues.size === 1 ? Number(group.rows[0].cogs) : null };
     });
   };
   const statusLabel = (status) => status === 'complete' ? 'Ready' : status === 'not_required' ? 'No packing' : 'Price needed';
@@ -100,10 +110,38 @@ if (root) {
         <td data-col="Volume"><strong>${escapeHtml(volume(group))}</strong></td>
         <td data-col="Variants"><span class="product-costs-variant-summary"><span><strong>${group.rows.length} SKU${group.rows.length === 1 ? '' : 's'}</strong><small>${group.rows.map((row) => escapeHtml(row.flavor_name || row.sku)).join(' · ')}</small></span><svg viewBox="0 0 20 20" aria-hidden="true"><path d="m6 8 4 4 4-4"/></svg></span></td>
         <td data-col="Current COGS"><strong>${group.cogs === null ? 'Mixed' : money(group.cogs)}</strong></td>
-        <td data-col="Packing / item"><strong>${group.status === 'not_required' ? 'Not required' : group.packing === null ? 'Missing' : money(group.packing)}</strong><small>${escapeHtml(state.period?.label || '')}</small></td>
+        <td data-col="Packing / item"><strong>${group.status === 'not_required' ? 'Not required' : group.packing === null ? (group.rows.some((row) => row.packing_per_item !== null) ? 'Mixed' : 'Missing') : money(group.packing)}</strong>${group.custom && group.status !== 'not_required' ? '<span class="product-costs-custom-tag">Custom</span>' : ''}<small>${escapeHtml(state.period?.label || '')}</small></td>
         <td data-col="Actions"><div class="product-costs-row-actions"><button type="button" data-edit-packing="${escapeHtml(group.key)}">Packing</button><button type="button" data-edit-cogs="${escapeHtml(group.key)}">COGS</button></div></td>
       </tr>${expanded ? skuCogsDetails(group, detailsId) : ''}`;
     }).join('') : '<tr><td colspan="7" class="admin-empty">No product groups match this search.</td></tr>';
+  };
+  const customCount = () => state.groups.filter((group) => group.custom && group.status !== 'not_required').length;
+  const renderDefault = () => {
+    const label = state.period?.label || 'this month';
+    const saved = state.packingDefault;
+    const previous = state.previousDefault;
+    refs.defaultTitle.textContent = `Packing cost per item · ${label}`;
+    const custom = customCount();
+    refs.defaultNote.textContent = `Applies to every product for ${label}${custom ? `, except ${custom} product volume${custom === 1 ? '' : 's'} with a custom price` : ''}. Set a different price per product under Packing → Advanced settings.`;
+    const input = refs.defaultForm.elements.packing_per_item;
+    if (document.activeElement !== input) input.value = saved ? Number(saved.packing_per_item) : (previous ? Number(previous.packing_per_item) : '');
+    refs.defaultStatus.classList.toggle('is-complete', Boolean(saved));
+    refs.defaultStatus.classList.toggle('is-missing', !saved);
+    refs.defaultStatus.textContent = saved
+      ? `Saved for ${label}.`
+      : previous
+        ? `Not saved for ${label} yet. Prefilled with ${previous.label} (${money(previous.packing_per_item)}) — press Save to use it.`
+        : `Not set for ${label} yet.`;
+    refs.defaultError.hidden = true;
+  };
+  const applyPayload = (payload) => {
+    state.rows = Array.isArray(payload.rows) ? payload.rows : [];
+    state.period = payload.period || null;
+    state.packingDefault = payload.packing_default || null;
+    state.previousDefault = payload.previous_packing_default || null;
+    buildGroups();
+    render();
+    renderDefault();
   };
   const load = async (useDefault = false) => {
     if (state.loading) return;
@@ -114,14 +152,11 @@ if (root) {
       let key = refs.month.value;
       const suffix = key && !useDefault ? `?year=${encodeURIComponent(key.slice(0, 4))}&month=${encodeURIComponent(Number(key.slice(5, 7)))}` : '';
       const payload = await request(`${api}${suffix}`);
-      state.rows = Array.isArray(payload.rows) ? payload.rows : [];
-      state.period = payload.period || null;
       state.defaultPeriod = payload.default_period || null;
       state.nextQuarter = payload.next_quarter || null;
+      applyPayload(payload);
       refs.month.value = state.period?.key || state.defaultPeriod?.key || '';
       if (refs.cogsQuarterLabel) refs.cogsQuarterLabel.textContent = `Starts ${state.nextQuarter?.label || 'next quarter'}`;
-      buildGroups();
-      render();
       refs.status.textContent = `${state.groups.length.toLocaleString('id-ID')} grouped product volume${state.groups.length === 1 ? '' : 's'} · prices do not carry into another month`;
     } catch (error) {
       refs.status.textContent = error.message || 'Unable to load product costs.';
@@ -155,11 +190,18 @@ if (root) {
     refs.packingForm.reset();
     refs.packingForm.elements.source_sku.value = group.sourceSku;
     refs.packingForm.elements.packing_required.checked = group.required;
-    refs.packingForm.elements.packing_per_item.value = group.packing ?? '';
+    refs.packingForm.elements.custom_price.checked = group.custom;
+    refs.packingForm.elements.packing_per_item.value = group.custom ? (group.packing ?? '') : '';
+    refs.packingDefaultValue.textContent = state.packingDefault ? money(state.packingDefault.packing_per_item) : 'Not set';
+    refs.packingDefaultNote.textContent = !group.required
+      ? 'Packing is turned off for this product.'
+      : group.custom
+        ? `This product uses a custom price of ${group.packing === null ? 'mixed amounts' : money(group.packing)} for ${state.period?.label || 'this month'}.`
+        : `This product follows the monthly packing cost for ${state.period?.label || 'this month'}.`;
+    refs.packingAdvanced.open = group.custom || !group.required;
     refs.packingForm.elements.start_month.value = state.period?.key || '';
     refs.packingForm.elements.end_month.value = state.period?.key || '';
     refs.packingTitle.textContent = `${group.productName} · ${volume(group)}`;
-    refs.packingPeriod.textContent = `Price for ${state.period?.label || 'selected month'} only`;
     if (refs.packingMonthLabel) refs.packingMonthLabel.textContent = state.period?.label || 'Selected month only';
     refs.packingSkus.innerHTML = skuTokens(group);
     refs.packingError.hidden = true;
@@ -169,8 +211,10 @@ if (root) {
   };
   const syncPackingRequired = () => {
     const required = refs.packingForm.elements.packing_required.checked;
-    refs.packingPriceField.hidden = !required;
-    refs.packingForm.elements.packing_per_item.required = required;
+    const custom = required && refs.packingForm.elements.custom_price.checked;
+    refs.packingCustomField.hidden = !required;
+    refs.packingPriceField.hidden = !custom;
+    refs.packingForm.elements.packing_per_item.required = custom;
   };
   const syncPackingTiming = () => {
     const mode = new FormData(refs.packingForm).get('change_mode') || 'monthly';
@@ -179,10 +223,10 @@ if (root) {
     refs.packingForm.elements.end_month.required = mode === 'period';
     if (refs.packingPeriod) {
       refs.packingPeriod.textContent = mode === 'period'
-        ? 'The same per-item price will be written to every month in the range.'
+        ? 'The same setting will be written to every month in the range.'
         : mode === 'retroactive'
           ? `Overwrites January 2025 through ${state.period?.label || 'the selected month'}. Future months stay separate.`
-          : `Price for ${state.period?.label || 'selected month'} only`;
+          : `Settings for ${state.period?.label || 'selected month'}`;
     }
   };
   const openCogs = (group) => {
@@ -233,6 +277,23 @@ if (root) {
   refs.month.addEventListener('change', () => load());
   refs.refresh.addEventListener('click', () => load());
   refs.packingForm.elements.packing_required.addEventListener('change', syncPackingRequired);
+  refs.packingForm.elements.custom_price.addEventListener('change', () => {
+    syncPackingRequired();
+    if (refs.packingForm.elements.custom_price.checked) refs.packingForm.elements.packing_per_item.focus();
+  });
+  refs.defaultForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    refs.defaultError.hidden = true;
+    const submit = refs.defaultForm.querySelector('[type="submit"]');
+    submit.disabled = true;
+    try {
+      const payload = await request(api, { method: 'POST', body: JSON.stringify({ action: 'save_packing_default', year: state.period.year, month: state.period.month, packing_per_item: refs.defaultForm.elements.packing_per_item.value }) });
+      refs.defaultForm.elements.packing_per_item.blur();
+      applyPayload(payload);
+      refs.status.textContent = `Packing cost saved for ${state.period.label}.`;
+    } catch (error) { refs.defaultError.textContent = error.message; refs.defaultError.hidden = false; }
+    finally { submit.disabled = false; }
+  });
   refs.packingForm.querySelectorAll('[name="change_mode"]').forEach((input) => input.addEventListener('change', syncPackingTiming));
   refs.cogsForm.querySelectorAll('[name="change_mode"]').forEach((input) => input.addEventListener('change', syncCogsTiming));
   refs.cogsSkus.addEventListener('click', (event) => {
@@ -261,15 +322,14 @@ if (root) {
     refs.packingError.hidden = true;
     const data = new FormData(refs.packingForm);
     const mode = data.get('change_mode') || 'monthly';
-    if (mode === 'retroactive' && !window.confirm(`Overwrite packing prices from January 2025 through ${state.period?.label || 'the selected month'}?`)) return;
+    if (mode === 'retroactive' && !window.confirm(`Overwrite packing settings from January 2025 through ${state.period?.label || 'the selected month'}?`)) return;
     const submit = refs.packingForm.querySelector('[type="submit"]');
     submit.disabled = true;
     try {
-      const payload = await request(api, { method: 'POST', body: JSON.stringify({ action: 'save_packing', source_sku: data.get('source_sku'), year: state.period.year, month: state.period.month, packing_required: data.get('packing_required') === 'on', packing_per_item: data.get('packing_per_item'), change_mode: mode, start_month: data.get('start_month'), end_month: data.get('end_month') }) });
-      state.rows = payload.rows || [];
-      state.period = payload.period;
-      buildGroups(); render(); close(refs.packingModal);
-      refs.status.textContent = mode === 'monthly' ? `Packing price saved for ${state.period.label}.` : mode === 'period' ? 'Packing price saved for the selected month range.' : `Packing price applied retroactively through ${state.period.label}.`;
+      const payload = await request(api, { method: 'POST', body: JSON.stringify({ action: 'save_packing', source_sku: data.get('source_sku'), year: state.period.year, month: state.period.month, packing_required: data.get('packing_required') === 'on', custom_price: data.get('custom_price') === 'on', packing_per_item: data.get('packing_per_item'), change_mode: mode, start_month: data.get('start_month'), end_month: data.get('end_month') }) });
+      applyPayload(payload);
+      close(refs.packingModal);
+      refs.status.textContent = mode === 'monthly' ? `Packing settings saved for ${state.period.label}.` : mode === 'period' ? 'Packing settings saved for the selected month range.' : `Packing settings applied retroactively through ${state.period.label}.`;
     } catch (error) { refs.packingError.textContent = error.message; refs.packingError.hidden = false; }
     finally { submit.disabled = false; }
   });
@@ -289,9 +349,8 @@ if (root) {
     submit.disabled = true;
     try {
       const payload = await request(api, { method: 'POST', body: JSON.stringify({ action: 'save_cogs', source_sku: data.get('source_sku'), selected_skus: selectedSkus, new_price: data.get('new_price'), change_mode: mode, start_date: data.get('start_date'), end_date: data.get('end_date'), year: state.period.year, month: state.period.month }) });
-      state.rows = payload.rows || [];
-      state.period = payload.period;
-      buildGroups(); render(); close(refs.cogsModal);
+      applyPayload(payload);
+      close(refs.cogsModal);
       refs.status.textContent = mode === 'quarterly' ? `COGS scheduled for ${payload.next_quarter?.label || 'next quarter'}.` : 'COGS timeline updated.';
     } catch (error) { refs.cogsError.textContent = error.message; refs.cogsError.hidden = false; }
     finally { submit.disabled = selectedCogsSkus().length === 0; }
