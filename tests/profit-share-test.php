@@ -186,6 +186,8 @@ expect_profit_share(jg_profit_share_authorize($derived, 'Bearer wrong')[0] === 4
 expect_profit_share(jg_profit_share_authorize($derived, $derived)[0] === 401, 'A token without the Bearer scheme must be 401.');
 expect_profit_share(jg_profit_share_authorize($derived, 'Basic ' . $derived)[0] === 401, 'Other schemes must be 401.');
 expect_profit_share(jg_profit_share_authorize($derived, 'Bearer ' . $derived) === null, 'The correct bearer token is accepted.');
+expect_profit_share(jg_profit_share_authorize($derived, '')[1]['error'] === 'missing_token', 'A missing token is reported as missing.');
+expect_profit_share(jg_profit_share_authorize($derived, 'Bearer wrong')[1]['error'] === 'invalid_token', 'A wrong token is reported as invalid.');
 
 // HTTP-level rejections, run in a separate process so no DB is touched (auth happens first).
 $php = PHP_BINARY;
@@ -207,9 +209,11 @@ $runEndpoint = static function (array $server, array $env) use ($php, $endpoint)
     return [(int) ($status[1] ?? 0), json_decode((string) $stdout, true)];
 };
 [$status, $body] = $runEndpoint(['REQUEST_METHOD' => 'GET'], ['JG_ARUS_PROFIT_SHARE_TOKEN' => 'endpoint-test-token']);
-expect_profit_share($status === 401 && $body === ['ok' => false, 'error' => 'unauthorized'], 'The endpoint rejects a missing token with 401.');
+expect_profit_share($status === 401 && $body === ['ok' => false, 'error' => 'missing_token'], 'The endpoint rejects a missing token with 401.');
 [$status, $body] = $runEndpoint(['REQUEST_METHOD' => 'GET', 'HTTP_AUTHORIZATION' => 'Bearer nope', 'HTTP_COOKIE' => 'jg_admin_session=abc'], ['JG_ARUS_PROFIT_SHARE_TOKEN' => 'endpoint-test-token']);
-expect_profit_share($status === 401 && $body === ['ok' => false, 'error' => 'unauthorized'], 'The endpoint rejects a wrong token with 401 even with an admin cookie.');
+expect_profit_share($status === 401 && $body === ['ok' => false, 'error' => 'invalid_token'], 'The endpoint rejects a wrong token with 401 even with an admin cookie.');
+[$status, $body] = $runEndpoint(['REQUEST_METHOD' => 'POST', 'HTTP_X_ARUS_PROFIT_SHARE_TOKEN' => 'endpoint-test-token'], ['JG_ARUS_PROFIT_SHARE_TOKEN' => 'endpoint-test-token']);
+expect_profit_share($status === 405, 'The custom Arus header authenticates when Authorization is stripped.');
 [$status, $body] = $runEndpoint(['REQUEST_METHOD' => 'POST', 'HTTP_AUTHORIZATION' => 'Bearer endpoint-test-token'], ['JG_ARUS_PROFIT_SHARE_TOKEN' => 'endpoint-test-token']);
 expect_profit_share($status === 405, 'The endpoint only allows GET.');
 
