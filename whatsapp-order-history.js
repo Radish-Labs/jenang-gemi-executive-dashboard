@@ -314,7 +314,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const stock = refs.archiveForm?.querySelector('input[name="restore_stock"]');
     if (charts instanceof HTMLInputElement) charts.checked = true;
     if (financials instanceof HTMLInputElement) financials.checked = true;
-    if (stock instanceof HTMLInputElement) stock.checked = false;
+    if (stock instanceof HTMLInputElement) {
+      // Walk-ins never take stock out, so there is nothing to redeem.
+      const canRestore = order.can_restore_stock !== false;
+      stock.checked = false;
+      stock.disabled = !canRestore;
+      const option = stock.closest('label');
+      if (option) {
+        option.classList.toggle('is-disabled', !canRestore);
+        option.title = canRestore ? '' : 'Walk-in orders never take stock out, so there is no stock to redeem.';
+      }
+    }
     refs.archiveDialog?.showModal?.();
   };
   const archiveOrder = async () => {

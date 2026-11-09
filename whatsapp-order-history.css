@@ -636,6 +636,11 @@
   background: color-mix(in srgb, #3b82f6 7%, var(--admin-surface));
 }
 
+.whatsapp-archive-options label.is-disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
 .whatsapp-archive-options input {
   width: 18px;
   height: 18px;

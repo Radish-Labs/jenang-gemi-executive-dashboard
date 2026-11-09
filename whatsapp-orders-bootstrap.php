@@ -625,6 +625,8 @@ function jg_whatsapp_format_order(PDO $pdo, array $row, bool $includeItems = tru
             'restore_stock' => (int) ($row['archive_restore_stock'] ?? 0) === 1,
         ],
         'can_archive' => empty($row['archived_at']),
+        // Walk-ins never take stock out, so there is nothing to redeem.
+        'can_restore_stock' => jg_whatsapp_sales_channel($row['sales_channel'] ?? 'whatsapp') !== 'walk_in',
         'can_edit_quantities' => jg_whatsapp_can_edit_quantities($row),
         'queued' => strtoupper(trim((string) $row['status'])) === 'QUEUED',
         'can_confirm_payment' => $paymentStatus === 'unpaid' && empty($row['archived_at']),
@@ -1122,6 +1124,23 @@ function jg_whatsapp_confirm_payment(PDO $pdo, string $orderId, mixed $method): 
 
 function jg_whatsapp_ensure_inventory_restore_schema(PDO $skuPdo): void
 {
+    if (strtolower((string) $skuPdo->getAttribute(PDO::ATTR_DRIVER_NAME)) === 'sqlite') {
+        $skuPdo->exec(
+            'CREATE TABLE IF NOT EXISTS direct_order_inventory_restorations (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, order_id TEXT NOT NULL, sku TEXT NOT NULL,
+                quantity INTEGER NOT NULL, restored_at TEXT NOT NULL, UNIQUE (order_id, sku)
+            )'
+        );
+        $skuPdo->exec(
+            'CREATE TABLE IF NOT EXISTS sku_stock_lots (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, sku TEXT NOT NULL, po_number TEXT NOT NULL,
+                received_qty_astra REAL NOT NULL DEFAULT 0, remaining_qty_astra REAL NOT NULL DEFAULT 0,
+                cogs_per_astra REAL NOT NULL DEFAULT 0, received_at TEXT NOT NULL,
+                created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+            )'
+        );
+        return;
+    }
     $skuPdo->exec(
         'CREATE TABLE IF NOT EXISTS direct_order_inventory_restorations (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -1151,31 +1170,101 @@ function jg_whatsapp_ensure_inventory_restore_schema(PDO $skuPdo): void
 }
 
 /**
- * Restore an archived direct order to SKU stock exactly once. The unique audit
- * row and the stock mutation share one SKU-database transaction, so a retried
- * request cannot add the same quantity twice.
+ * Work out how much stock Store Ops actually took out for a direct order, in
+ * base (ASTRA) units per base stock SKU. Only WhatsApp orders packed in Store
+ * Ops are deducted; walk-in orders are completed at the counter and never
+ * touch stock, so there is nothing to restore for them.
+ *
+ * @return array<string,int> base stock SKU => base units deducted
+ */
+function jg_whatsapp_order_deducted_stock(PDO $analyticsPdo, PDO $skuPdo, array $order): array
+{
+    $orderId = trim((string) ($order['order_id'] ?? ''));
+    if (jg_whatsapp_sales_channel($order['sales_channel'] ?? 'whatsapp') === 'walk_in') {
+        throw new RuntimeException('Walk-in orders never take stock out, so there is no stock to restore. Archive without "Redeem stock".');
+    }
+
+    // Store Ops' ledger records exactly what each packed order deducted.
+    $ledger = null;
+    try {
+        $stmt = $skuPdo->prepare(
+            'SELECT status, deductions_json FROM store_ops_inventory_order_deductions
+             WHERE source_platform = :source_platform AND source_account = :source_account AND order_id = :order_id
+             LIMIT 1'
+        );
+        $stmt->execute([':source_platform' => 'whatsapp', ':source_account' => 'whatsapp', ':order_id' => $orderId]);
+        $ledger = $stmt->fetch() ?: null;
+    } catch (Throwable) {
+        $ledger = null;
+    }
+    if (is_array($ledger) && strtolower(trim((string) ($ledger['status'] ?? ''))) === 'deducted') {
+        $lines = json_decode((string) ($ledger['deductions_json'] ?? ''), true);
+        $deducted = [];
+        foreach (is_array($lines) ? $lines : [] as $line) {
+            if (!is_array($line)) continue;
+            $stockSku = trim((string) ($line['stock_sku'] ?? $line['sku'] ?? ''));
+            $base = max(0, (int) ($line['base_deducted_quantity'] ?? $line['base_quantity'] ?? 0));
+            if ($stockSku !== '' && $base > 0) $deducted[$stockSku] = ($deducted[$stockSku] ?? 0) + $base;
+        }
+        return $deducted;
+    }
+
+    // Orders packed before the ledger existed only carry a timestamp marker.
+    $legacyDeducted = false;
+    try {
+        $stmt = $skuPdo->prepare(
+            'SELECT stock_deducted_at FROM store_ops_website_orders
+             WHERE source_platform = :source_platform AND order_id = :order_id LIMIT 1'
+        );
+        $stmt->execute([':source_platform' => 'whatsapp', ':order_id' => $orderId]);
+        $legacyDeducted = trim((string) ($stmt->fetchColumn() ?: '')) !== '';
+    } catch (Throwable) {
+        $legacyDeducted = false;
+    }
+    if (!$legacyDeducted) {
+        throw new RuntimeException('Store Ops never took stock out for this order, so there is no stock to restore. Archive without "Redeem stock".');
+    }
+    $deducted = [];
+    foreach (jg_whatsapp_order_items($analyticsPdo, (int) ($order['id'] ?? 0)) as $item) {
+        $sku = trim((string) ($item['sku'] ?? ''));
+        $quantity = max(0, (int) ($item['quantity'] ?? 0));
+        if ($sku === '' || $quantity <= 0) continue;
+        $target = jg_astra_stock_resolve($skuPdo, $sku);
+        if ($target === null) {
+            throw new RuntimeException(sprintf('SKU %s no longer exists. Inventory was not changed.', $sku));
+        }
+        $stockSku = (string) ($target['stock_sku'] ?? $sku);
+        $deducted[$stockSku] = ($deducted[$stockSku] ?? 0)
+            + jg_astra_stock_to_base_units($quantity, (float) ($target['stock_ratio'] ?? 1.0));
+    }
+    return $deducted;
+}
+
+/**
+ * Put back exactly what Store Ops took out for an archived direct order, once.
+ * Stock is added to the base stock SKU and linked sizes are re-derived, so the
+ * restore is not lost when ASTRA stock is synchronized. The unique audit row and
+ * the stock change share one transaction, so a retry cannot add stock twice.
  */
 function jg_whatsapp_restore_order_inventory(PDO $analyticsPdo, PDO $skuPdo, array $order): void
 {
     $orderId = trim((string) ($order['order_id'] ?? ''));
     if ($orderId === '') throw new InvalidArgumentException('Choose a direct order to restore.');
 
-    $quantities = [];
-    foreach (jg_whatsapp_order_items($analyticsPdo, (int) ($order['id'] ?? 0)) as $item) {
-        $sku = trim((string) ($item['sku'] ?? ''));
-        $quantity = max(0, (int) ($item['quantity'] ?? 0));
-        if ($sku !== '' && $quantity > 0) $quantities[$sku] = ($quantities[$sku] ?? 0) + $quantity;
-    }
-    if ($quantities === []) throw new RuntimeException('This order has no SKU quantities to restore.');
+    $quantities = jg_whatsapp_order_deducted_stock($analyticsPdo, $skuPdo, $order);
+    if ($quantities === []) throw new RuntimeException('Store Ops recorded no stock taken out for this order. Inventory was not changed.');
     ksort($quantities);
 
     // DDL can implicitly commit in MySQL, so both tables must exist before the
     // inventory transaction starts.
     jg_whatsapp_ensure_inventory_restore_schema($skuPdo);
     $now = jg_sku_now();
+    $lockSuffix = strtolower((string) $skuPdo->getAttribute(PDO::ATTR_DRIVER_NAME)) === 'mysql' ? ' FOR UPDATE' : '';
     $skuPdo->beginTransaction();
     try {
-        $lockSku = $skuPdo->prepare('SELECT sku, current_stock, cogs FROM sku_skus WHERE sku = :sku FOR UPDATE');
+        // Live MySQL uses native prepares, which reject a named placeholder used
+        // twice in one statement. Every placeholder below is unique.
+        $lockSku = $skuPdo->prepare('SELECT sku, current_stock, cogs FROM sku_skus WHERE sku = :sku' . $lockSuffix);
         $findAudit = $skuPdo->prepare(
             'SELECT id FROM direct_order_inventory_restorations WHERE order_id = :order_id AND sku = :sku LIMIT 1'
         );
@@ -1190,7 +1279,7 @@ function jg_whatsapp_restore_order_inventory(PDO $analyticsPdo, PDO $skuPdo, arr
             'INSERT INTO sku_stock_lots
                 (sku, po_number, received_qty_astra, remaining_qty_astra, cogs_per_astra, received_at, created_at, updated_at)
              VALUES
-                (:sku, :po_number, :quantity, :quantity, :cogs, :received_at, :created_at, :updated_at)'
+                (:sku, :po_number, :received_qty, :remaining_qty, :cogs, :received_at, :created_at, :updated_at)'
         );
         $addHistory = $skuPdo->prepare(
             'INSERT INTO sku_cogs_history
@@ -1200,13 +1289,17 @@ function jg_whatsapp_restore_order_inventory(PDO $analyticsPdo, PDO $skuPdo, arr
         );
 
         foreach ($quantities as $sku => $quantity) {
+            $sku = (string) $sku;
             $lockSku->execute([':sku' => $sku]);
             $skuRow = $lockSku->fetch();
+            $lockSku->closeCursor();
             if (!is_array($skuRow)) {
                 throw new RuntimeException(sprintf('SKU %s no longer exists. Inventory was not changed.', $sku));
             }
             $findAudit->execute([':order_id' => $orderId, ':sku' => $sku]);
-            if ($findAudit->fetchColumn() !== false) continue;
+            $alreadyRestored = $findAudit->fetchColumn() !== false;
+            $findAudit->closeCursor();
+            if ($alreadyRestored) continue;
 
             $cogs = max(0.0, (float) ($skuRow['cogs'] ?? 0));
             $insertAudit->execute([
@@ -1216,10 +1309,12 @@ function jg_whatsapp_restore_order_inventory(PDO $analyticsPdo, PDO $skuPdo, arr
                 ':restored_at' => $now,
             ]);
             $addStock->execute([':quantity' => $quantity, ':updated_at' => $now, ':sku' => $sku]);
+            $lotQuantity = number_format((float) $quantity, 2, '.', '');
             $addLot->execute([
                 ':sku' => $sku,
                 ':po_number' => mb_substr('DIRECT-ARCHIVE-' . $orderId, 0, 80),
-                ':quantity' => number_format((float) $quantity, 2, '.', ''),
+                ':received_qty' => $lotQuantity,
+                ':remaining_qty' => $lotQuantity,
                 ':cogs' => number_format($cogs, 2, '.', ''),
                 ':received_at' => $now,
                 ':created_at' => $now,
