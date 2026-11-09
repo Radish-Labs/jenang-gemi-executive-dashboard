@@ -186,7 +186,7 @@ $historyJsVersion = (string) @filemtime(dirname(__DIR__) . '/whatsapp-order-hist
                     <label>
                         <input type="checkbox" name="restore_stock">
                         <span class="whatsapp-archive-option-icon"><svg viewBox="0 0 24 24"><path d="M20 8 12 3 4 8v9l8 4 8-4V8Z"/><path d="m4 8 8 4 8-4m-8 4v9m6-16-8 5"/></svg></span>
-                        <span><strong>Redeem stock</strong><small>Add every ordered unit back to its SKU stock. Retries cannot add stock twice.</small></span>
+                        <span><strong>Redeem stock</strong><small>Put back the stock Store Ops took out when it packed this order. Retries cannot add stock twice.</small></span>
                     </label>
                 </div>
                 <p class="whatsapp-archive-notice"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-8h.01"/></svg><span>This does not cancel the order in Store Ops or change its fulfillment state.</span></p>
