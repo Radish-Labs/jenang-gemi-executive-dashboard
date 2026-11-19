@@ -16,7 +16,7 @@
       "id": "products",
       "title": "Products & stock",
       "icon": "box",
-      "landing": "catalog"
+      "landing": "breakdowns"
     },
     {
       "id": "finance",

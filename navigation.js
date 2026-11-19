@@ -14,14 +14,27 @@ if (rail) {
   const parentOf = page => page.parent ? parentOf(pages.get(page.parent)) : page;
   const normalizeView = view => view === 'home' ? 'campaigns' : view;
   const areaTitle = id => map.areas.find(area => area.id === id).title;
+  const groups = [...rail.querySelectorAll('[data-ed-group]')];
+  const setGroupOpen = (group, open) => {
+    group.classList.toggle('is-open', open);
+    group.querySelector('[data-ed-group-toggle]').setAttribute('aria-expanded', String(open));
+  };
+  // Arriving in an area shows that area's pages and folds the others away; the
+  // chevrons then let the owner peek into any other area without leaving the page.
+  let shownArea = '';
   const showArea = id => {
     rail.querySelectorAll('[data-ed-area]').forEach(button => {
       button.classList.toggle('is-selected', button.dataset.edArea === id);
       if (button.dataset.edArea === id) button.setAttribute('aria-current', 'location');
       else button.removeAttribute('aria-current');
     });
-    rail.querySelectorAll('[data-ed-section]').forEach(section => section.hidden = section.dataset.edSection !== id);
+    if (shownArea !== id) groups.forEach(group => setGroupOpen(group, group.dataset.edGroup === id));
+    else setGroupOpen(groups.find(group => group.dataset.edGroup === id), true);
+    shownArea = id;
   };
+  groups.forEach(group => group.querySelector('[data-ed-group-toggle]').addEventListener('click', () => setGroupOpen(group, !group.classList.contains('is-open'))));
+  const searchKey = rail.querySelector('[data-ed-search-key]');
+  if (searchKey && /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)) searchKey.textContent = '⌘ /';
   const host = document.querySelector('.admin-shell-main') || (document.body.classList.contains('ed-standalone') ? document.querySelector('main') : null);
   const breadcrumb = document.createElement('nav');
   breadcrumb.className = 'ed-breadcrumb';
@@ -120,6 +133,86 @@ if (rail) {
     links.forEach((a,i) => a.classList.toggle('is-selected', i === resultIndex));
     links[resultIndex].scrollIntoView({block:'nearest'});
   });
+  // Sidebar width. From 1200px up the owner chooses full or icon rail and the choice
+  // is remembered on this device. From 768px to 1199px it is always the rail, and
+  // the same button opens the full panel over the page until a page is chosen.
+  const docEl = document.documentElement;
+  const wideQuery = matchMedia('(min-width: 1200px)');
+  const railQuery = matchMedia('(min-width: 768px)');
+  const collapseButton = rail.querySelector('[data-ed-collapse]');
+  const collapseKey = 'ed-nav-collapsed';
+  const storedCollapsed = () => { try { return localStorage.getItem(collapseKey) === '1'; } catch (_) { return false; } };
+  const isPeek = () => rail.classList.contains('is-peek');
+  const isRail = () => railQuery.matches && docEl.dataset.edNav === 'rail' && !isPeek();
+  const syncCollapseButton = () => {
+    const expanded = !isRail();
+    collapseButton.setAttribute('aria-expanded', String(expanded));
+    collapseButton.setAttribute('aria-label', expanded ? 'Collapse sidebar' : 'Expand sidebar');
+    collapseButton.title = expanded ? 'Collapse sidebar' : 'Expand sidebar';
+  };
+  let flyout = null, flyoutTimer = 0, keepFlyoutClosed = false;
+  const closeFlyout = () => {
+    clearTimeout(flyoutTimer);
+    flyout?.classList.remove('is-flyout');
+    flyout = null;
+  };
+  const openFlyout = group => {
+    clearTimeout(flyoutTimer);
+    if (!isRail() || flyout === group) return;
+    closeFlyout();
+    flyout = group;
+    group.classList.add('is-flyout');
+    // Line the panel up with its icon, then pull it up if it would leave the window.
+    const panel = group.querySelector('.ed-group-pages');
+    panel.style.top = '8px';
+    panel.style.top = Math.max(8, Math.min(group.getBoundingClientRect().top, innerHeight - panel.offsetHeight - 8)) + 'px';
+  };
+  groups.forEach(group => {
+    group.addEventListener('pointerenter', event => {
+      if (event.pointerType === 'touch') return;
+      clearTimeout(flyoutTimer);
+      if (flyout) openFlyout(group); else flyoutTimer = setTimeout(() => openFlyout(group), 90);
+    });
+    // Leaving one area must not close another area's flyout that has since opened.
+    group.addEventListener('pointerleave', () => { clearTimeout(flyoutTimer); flyoutTimer = setTimeout(() => { if (flyout === group) closeFlyout(); }, 220); });
+    group.addEventListener('focusin', () => { if (!keepFlyoutClosed) openFlyout(group); });
+    group.addEventListener('focusout', event => { if (flyout === group && !group.contains(event.relatedTarget)) closeFlyout(); });
+  });
+  rail.querySelector('.ed-navigation-columns').addEventListener('scroll', closeFlyout, {passive: true});
+  const setPeek = open => {
+    if (isPeek() === open) return;
+    closeFlyout();
+    rail.classList.toggle('is-peek', open);
+    syncCollapseButton();
+  };
+  const applyNavMode = () => {
+    docEl.dataset.edNav = !wideQuery.matches || storedCollapsed() ? 'rail' : 'full';
+    if (wideQuery.matches || !railQuery.matches) rail.classList.remove('is-peek');
+    closeFlyout();
+    syncCollapseButton();
+  };
+  collapseButton.addEventListener('click', () => {
+    if (!wideQuery.matches) { setPeek(!isPeek()); return; }
+    try { localStorage.setItem(collapseKey, docEl.dataset.edNav === 'rail' ? '0' : '1'); } catch (_) {}
+    applyNavMode();
+    // Charts and tables that size themselves on resize need to hear about the new width.
+    window.dispatchEvent(new Event('resize'));
+  });
+  document.addEventListener('pointerdown', event => { if (isPeek() && !rail.contains(event.target)) setPeek(false); });
+  rail.addEventListener('click', event => {
+    if (event.target instanceof Element && event.target.closest('a')) { setPeek(false); closeFlyout(); }
+  });
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || (!flyout && !isPeek())) return;
+    // Escape from inside a flyout returns focus to its area icon without reopening it.
+    const focused = flyout?.contains(document.activeElement) ? flyout : null;
+    closeFlyout();
+    setPeek(false);
+    if (focused) { keepFlyoutClosed = true; focused.querySelector('[data-ed-area]').focus(); keepFlyoutClosed = false; }
+  });
+  wideQuery.addEventListener('change', applyNavMode);
+  railQuery.addEventListener('change', applyNavMode);
+  applyNavMode();
   // Preserve unpaid-order, stock and low-ad-credit awareness when an area is closed.
   const syncAlerts = () => {
     const lowCredit = rail.querySelector('[data-ed-page="ads"]')?.classList.contains('is-credit-alert') || false;

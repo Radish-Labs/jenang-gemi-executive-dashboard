@@ -43,13 +43,12 @@
   .ed-toggle-close-icon { display: none; }
   body.admin-rail-open .ed-toggle-menu-icon { display: none; }
   body.admin-rail-open .ed-toggle-close-icon { display: block; }
-  .ed-areas { overflow-y: auto; overscroll-behavior: contain; gap: 6px; padding-block: 10px; }
-  .ed-area { width: 44px; height: 44px; min-height: 44px; }
-  .ed-pages { padding-inline: 8px; }
-  .ed-page { min-height: 44px; font-size: 13px !important; }
+  .ed-area,
+  .ed-page,
+  .ed-search-open,
+  .ed-nav-footer > a { min-height: 44px; }
+  .ed-group-toggle { width: 44px; }
   .ed-brand { white-space: normal; line-height: 1.4; }
-  .ed-nav-footer { gap: 8px; padding: 16px 8px; }
-  .ed-nav-footer > :is(a, button) { min-height: 44px; }
   .ed-search { max-height: calc(100dvh - 24px); margin-top: 12px; }
   .ed-search-head { padding: 10px; gap: 8px; }
   .ed-search-results { max-height: calc(100dvh - 160px); }
@@ -222,12 +221,12 @@
   body:has(#admin-rail-nav.ed-nav) .admin-po-payment-modes > .admin-toggle-pill.is-active { background: var(--ui-card); border-color: var(--ui-accent); }
 }
 
-/* Tablets retain the desktop sidebar and horizontal segmented controls. */
+/* Tablets retain the desktop sidebar, as its icon rail, and horizontal segmented controls. */
 @media screen and (min-width: 768px) and (max-width: 1024px) {
   body:has(#admin-rail-nav.ed-nav) { --mobile-bottom-space: 24px; }
   body .admin-rail.ed-nav,
   body .admin-rail.ed-nav:hover,
-  body .admin-rail.ed-nav:focus-within { width: var(--ed-width) !important; transform: none !important; visibility: visible !important; z-index: 80 !important; }
+  body .admin-rail.ed-nav:focus-within { width: var(--ed-nav-width) !important; transform: none !important; visibility: visible !important; z-index: 80 !important; }
   body:has(#admin-rail-nav.ed-nav) .admin-shell { margin-left: calc(var(--ed-width) + 24px) !important; }
   body:has(#admin-rail-nav.ed-nav) :is(.admin-mobile-tabbar, .ed-mobile-toggle, .admin-mobile-rail-backdrop) { display: none !important; }
   .product-analytics-segment[data-scope-controls],

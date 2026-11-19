@@ -94,7 +94,7 @@
 .whatsapp-history-metrics span,
 .whatsapp-detail-metrics span {
   color: var(--admin-muted);
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -111,7 +111,7 @@
 .whatsapp-history-metrics small,
 .whatsapp-detail-metrics small {
   color: var(--admin-muted);
-  font-size: 10px;
+  font-size: .625rem;
 }
 
 .whatsapp-detail-metrics {
@@ -146,13 +146,13 @@
 .whatsapp-detail-panel-head h3 {
   margin: 4px 0 0;
   color: var(--admin-text);
-  font: 700 21px/1.2 "Space Grotesk", sans-serif;
+  font: 700 1.3125rem/1.2 "Space Grotesk", sans-serif;
 }
 
 .whatsapp-history-ledger-head > span,
 .whatsapp-detail-panel-head > span {
   color: var(--admin-muted);
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 800;
   letter-spacing: .06em;
   text-transform: uppercase;
@@ -172,7 +172,7 @@
 
 .whatsapp-history-filters label > span {
   color: var(--admin-muted);
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 800;
   letter-spacing: .08em;
   text-transform: uppercase;
@@ -213,7 +213,7 @@
   padding: 13px 12px;
   border-bottom: 1px solid var(--admin-border);
   color: var(--admin-muted);
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 800;
   letter-spacing: .08em;
   text-align: left;
@@ -226,7 +226,7 @@
   padding: 16px 12px;
   border-bottom: 1px solid var(--admin-border);
   color: var(--admin-text);
-  font-size: 13px;
+  font-size: .8125rem;
   vertical-align: middle;
 }
 
@@ -263,7 +263,7 @@
 .whatsapp-history-table td small,
 .whatsapp-detail-items-table td small {
   color: var(--admin-muted);
-  font-size: 10px;
+  font-size: .625rem;
   line-height: 1.35;
 }
 
@@ -276,7 +276,7 @@
   border-radius: 999px;
   color: var(--admin-muted);
   background: var(--admin-surface-soft);
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 850;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -328,7 +328,7 @@
   padding: 7px 10px;
   border: 1px solid var(--admin-border);
   border-radius: 999px;
-  font: 850 10px/1 "Plus Jakarta Sans", sans-serif;
+  font: 850 .625rem/1 "Plus Jakarta Sans", sans-serif;
   letter-spacing: .03em;
   text-transform: uppercase;
 }
@@ -456,7 +456,7 @@
 .whatsapp-history-pagination span {
   min-width: 100px;
   color: var(--admin-muted);
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 800;
   text-align: center;
 }
@@ -468,7 +468,7 @@
 
 .whatsapp-detail-identity > div > span:not(.admin-panel-kicker) {
   color: var(--admin-muted);
-  font: 800 11px/1.2 "Space Grotesk", sans-serif;
+  font: 800 .6875rem/1.2 "Space Grotesk", sans-serif;
   letter-spacing: .08em;
   text-transform: uppercase;
 }
@@ -536,7 +536,7 @@
   border-radius: 999px;
   color: #f59e0b;
   background: color-mix(in srgb, #f59e0b 7%, var(--admin-surface));
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 850;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -604,7 +604,7 @@
 .whatsapp-archive-dialog-copy {
   margin: 0;
   color: var(--admin-muted);
-  font-size: 13px;
+  font-size: .8125rem;
   line-height: 1.65;
 }
 
@@ -672,12 +672,12 @@
 
 .whatsapp-archive-options strong {
   color: var(--admin-text);
-  font-size: 13px;
+  font-size: .8125rem;
 }
 
 .whatsapp-archive-options small {
   color: var(--admin-muted);
-  font-size: 11px;
+  font-size: .6875rem;
   line-height: 1.45;
 }
 
@@ -687,7 +687,7 @@
   gap: 9px;
   margin: -4px 0 0;
   color: var(--admin-muted);
-  font-size: 11px;
+  font-size: .6875rem;
   line-height: 1.5;
 }
 
@@ -741,7 +741,7 @@
 .whatsapp-detail-item-actions > span,
 .whatsapp-detail-quantity-note {
   color: var(--admin-muted);
-  font-size: 12px;
+  font-size: .75rem;
   line-height: 1.6;
 }
 
@@ -816,7 +816,7 @@
 
 .whatsapp-detail-facts dt {
   color: var(--admin-muted);
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 800;
   letter-spacing: .06em;
   text-transform: uppercase;
@@ -826,13 +826,13 @@
   margin: 0;
   overflow-wrap: anywhere;
   color: var(--admin-text);
-  font-size: 13px;
+  font-size: .8125rem;
   font-weight: 700;
   line-height: 1.5;
 }
 
 .whatsapp-detail-facts.is-financial dd {
-  font: 750 18px/1.2 "Space Grotesk", sans-serif;
+  font: 750 1.125rem/1.2 "Space Grotesk", sans-serif;
 }
 
 .whatsapp-detail-loading {
@@ -914,7 +914,7 @@
 /* Direct history uses a compact ledger, with the channel explicit on every row. */
 body:has(#admin-rail-nav.ed-nav) .whatsapp-history-layout{width:100%;padding:24px 0 64px}
 body:has(#admin-rail-nav.ed-nav) .whatsapp-history-hero{border:0;border-radius:0;box-shadow:none;background:transparent;padding:0 0 20px;align-items:center;gap:16px}
-body:has(#admin-rail-nav.ed-nav) .whatsapp-history-hero h2{font-size:18px;margin:0 0 6px}
+body:has(#admin-rail-nav.ed-nav) .whatsapp-history-hero h2{font-size:1.125rem;margin:0 0 6px}
 body:has(#admin-rail-nav.ed-nav) .whatsapp-history-hero .admin-panel-kicker{display:none}
 body:has(#admin-rail-nav.ed-nav) .whatsapp-history-metrics{gap:0;border-block:1px solid var(--admin-border);margin:0 0 24px}
 body:has(#admin-rail-nav.ed-nav) .whatsapp-history-metrics article{background:transparent;border:0;border-radius:0;box-shadow:none;padding:20px;border-right:1px solid var(--admin-border)}
@@ -923,7 +923,7 @@ body:has(#admin-rail-nav.ed-nav) .whatsapp-history-ledger{border:0;border-radius
 body:has(#admin-rail-nav.ed-nav) .whatsapp-history-filters{grid-template-columns:minmax(180px,2fr) repeat(3,minmax(130px,1fr))}
 body:has(#admin-rail-nav.ed-nav) .whatsapp-history-invoice-dialog{width:min(780px,calc(100vw - 32px));max-height:85dvh;overflow:auto;padding:24px;border:1px solid var(--admin-border);border-radius:8px;background:var(--admin-surface);color:var(--admin-text)}
 .whatsapp-history-invoice-heading{display:flex;align-items:center;justify-content:space-between;gap:16px}
-.whatsapp-history-invoice-heading h2{font-size:20px;margin:0}
+.whatsapp-history-invoice-heading h2{font-size:1.25rem;margin:0}
 .whatsapp-history-invoice-dialog .whatsapp-history-table{min-width:560px}
 .whatsapp-history-invoice-totals{margin:20px 0 0 auto;max-width:400px}
 .whatsapp-history-invoice-totals>div{display:flex;justify-content:space-between;gap:16px;padding:10px 0;border-bottom:1px solid var(--admin-border)}
