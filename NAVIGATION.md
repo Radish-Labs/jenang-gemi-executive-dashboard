@@ -90,7 +90,8 @@ now targets Stock coverage, with an area dot on Products & stock. Record search,
 the notification bell and the mobile sidebar opener retain their current roles.
 
 Area icons are native links to their configured `landing` destination: Overview,
-All orders, SKU database, Accounting, Shopee ads, Partner program and Preferences.
+All orders, SKU database (Product performance since exec3.99.0), Accounting,
+Shopee ads, Partner program and Preferences.
 They retain modifier-click/open-in-new-tab behavior and the dashboard's existing
 fast view switching. The submenu shows the destination's area on arrival.
 
@@ -166,3 +167,43 @@ against isolated v2 tables, adapting MySQL date arithmetic for SQLite;
 `tests/store-ops-query-test.php` checks native prepared-statement bindings.
 `tests/executive-catalog-orders-browser.cjs` exercises native SKU/Orders controls
 and Store Ops refresh/error recovery in a browser using isolated fixture responses.
+
+## Sidebar layout and window-size scaling (exec3.99.0)
+
+The sidebar is one column. Each business area is a labeled row with its icon; the
+area the current page belongs to is open and lists its pages under a guide line.
+The area name is still a native link to the area's landing page. The chevron
+beside it opens or closes that area's pages without navigating, so another area
+can be checked without leaving the page. Arriving in a different area opens it
+and closes the rest. Settings stays at the bottom, above the Launch Pad link.
+Products & stock now lands on Product performance instead of the SKU database:
+the SKU database asks for its own sign-in, which got in the way when the owner
+only wanted another page in the area. It is still the first page in the list.
+The separate "All pages" button is gone: it opened the same dialog as Find a page.
+
+From 1200px the panel button in the header collapses the sidebar to an icon rail
+and restores it; the choice is kept in `localStorage` (`ed-nav-collapsed`) on that
+device. From 768px to 1199px the sidebar is always the rail, so reports get the
+width, and the same button opens the full panel over the page until a page is
+chosen, the page is clicked, or Escape is pressed. On the rail, pointing at or
+focusing an area icon opens that area's pages beside it; Escape returns focus to
+the icon. Phones below 768px keep the drawer. `navigation.php` sets
+`data-ed-nav="rail|full"` on `<html>` before first paint; `navigation.js` keeps
+it current while the window is resized.
+
+Text scales with the window. `navigation.css` sets the root size: the browser
+default up to 1440px wide, rising to 112.5% (18px) at 1900px and wider. Font
+sizes in the shared and page stylesheets are now `rem` at exactly their previous
+values (11px is .6875rem), so nothing changes at or below 1440px, on pages without
+the sidebar, or in print. The blog editor and article preview keep pixel sizes so
+drafts still match the published site. `clamp()` sizes were already fluid.
+
+Fixed alongside: Accounting no longer extends past the window (the liquidity bar's
+unused in-place tooltips were invisible but still laid out); the section label
+above finance page titles lines up with the title; the category and bill pickers
+match the fields beside them; the unpaid-order marker is a visible dot again; and
+Product costs fits a 320px phone.
+
+`tests/executive-sidebar-browser.cjs` checks the labeled areas, in-place toggles,
+remembered collapse, type scale, rail flyouts by pointer and keyboard, the overlay
+panel, live resizing, light theme and the phone drawer against the native harness.

@@ -2,40 +2,40 @@
 .product-purchases-layout { display: grid; gap: 20px; padding-bottom: 40px; }
 .product-purchases-filters { display: grid; grid-template-columns: minmax(240px, 2fr) minmax(150px, 1fr) minmax(135px, 1fr) minmax(135px, 1fr) auto; align-items: end; gap: 14px; padding: 20px; border: 1px solid var(--admin-border); border-radius: 12px; background: var(--admin-surface); }
 .product-purchases-filters label { display: grid; gap: 7px; min-width: 0; }
-.product-purchases-filters label > span { color: var(--admin-muted); font-size: 12px; font-weight: 600; }
-.product-purchases-filters :is(input, select), .product-purchases-search input { width: 100%; min-width: 0; min-height: 42px; padding: 9px 12px; border: 1px solid var(--admin-border); border-radius: 7px; background: var(--admin-surface-soft); color: var(--admin-text); font: inherit; font-size: 13px; color-scheme: dark; }
+.product-purchases-filters label > span { color: var(--admin-muted); font-size: .75rem; font-weight: 600; }
+.product-purchases-filters :is(input, select), .product-purchases-search input { width: 100%; min-width: 0; min-height: 42px; padding: 9px 12px; border: 1px solid var(--admin-border); border-radius: 7px; background: var(--admin-surface-soft); color: var(--admin-text); font: inherit; font-size: .8125rem; color-scheme: dark; }
 :root[data-admin-theme='light'] .product-purchases-filters :is(input, select) { color-scheme: light; }
 .product-purchases-filters input:disabled { opacity: .45; }
 .product-purchases-filters .admin-ghost-btn { min-height: 42px; }
-.product-purchases-status { margin: 0; color: var(--admin-muted); font-size: 13px; }
+.product-purchases-status { margin: 0; color: var(--admin-muted); font-size: .8125rem; }
 .product-purchases-status.is-error { color: var(--admin-danger, #ef4444); }
 .product-purchases-results { display: grid; gap: 22px; }
 .product-purchases-results[hidden], .product-purchases-layout [hidden] { display: none !important; }
 .product-purchases-report-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
 .product-purchases-report-head h2 { margin: 8px 0; font-size: clamp(24px, 3vw, 34px); font-weight: 600; letter-spacing: -.6px; }
-.product-purchases-report-head p { margin: 0; color: var(--admin-muted); font-size: 13px; }
+.product-purchases-report-head p { margin: 0; color: var(--admin-muted); font-size: .8125rem; }
 .product-purchases-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
 .product-purchases-metrics article { display: grid; gap: 10px; padding: 22px 18px; border: 1px solid var(--admin-border); border-radius: 10px; background: var(--admin-surface); }
-.product-purchases-metrics span { color: var(--admin-muted); font-size: 12px; }
+.product-purchases-metrics span { color: var(--admin-muted); font-size: .75rem; }
 .product-purchases-metrics strong { font-size: clamp(22px, 2.4vw, 32px); font-weight: 600; letter-spacing: -.6px; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
-.product-purchases-metrics small { color: var(--admin-muted); font-size: 11px; line-height: 1.5; }
+.product-purchases-metrics small { color: var(--admin-muted); font-size: .6875rem; line-height: 1.5; }
 .product-purchases-panel { min-width: 0; overflow: hidden; border: 1px solid var(--admin-border); border-radius: 10px; background: var(--admin-surface); }
 .product-purchases-panel > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px; border-bottom: 1px solid var(--admin-border); }
-.product-purchases-panel h3 { margin: 0; font-size: 16px; font-weight: 600; }
+.product-purchases-panel h3 { margin: 0; font-size: 1rem; font-weight: 600; }
 .product-purchases-search { width: min(280px, 50%); }
 .product-purchases-table-wrap { overflow: auto; }
-.product-purchases-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.product-purchases-table { width: 100%; border-collapse: collapse; font-size: .8125rem; }
 .product-purchases-table :is(th, td) { padding: 15px 18px; text-align: right; white-space: nowrap; border-bottom: 1px solid var(--admin-border); font-variant-numeric: tabular-nums; }
 .product-purchases-table :is(th, td):first-child { text-align: left; min-width: 240px; white-space: normal; }
-.product-purchases-table th { color: var(--admin-muted); font-size: 11px; font-weight: 600; }
+.product-purchases-table th { color: var(--admin-muted); font-size: .6875rem; font-weight: 600; }
 .product-purchases-table tr:last-child td { border-bottom: 0; }
-.product-purchases-table td small { display: block; margin-top: 5px; color: var(--admin-muted); font-size: 11px; }
+.product-purchases-table td small { display: block; margin-top: 5px; color: var(--admin-muted); font-size: .6875rem; }
 .product-purchases-table a { color: var(--admin-text); font-weight: 600; text-decoration: none; }
 .product-purchases-table a:hover { color: var(--admin-accent-primary); text-decoration: underline; }
 .product-purchases-table a:focus-visible { outline: 2px solid var(--admin-accent-primary); outline-offset: 5px; }
 .product-purchases-table .product-purchases-empty { padding: 36px 18px; text-align: center; color: var(--admin-muted); }
-.product-purchases-note { margin: 0; max-width: 1100px; color: var(--admin-muted); font-size: 12px; line-height: 1.8; }
-.product-purchases-history-link { justify-self: start; color: var(--admin-muted); font-size: 13px; }
+.product-purchases-note { margin: 0; max-width: 1100px; color: var(--admin-muted); font-size: .75rem; line-height: 1.8; }
+.product-purchases-history-link { justify-self: start; color: var(--admin-muted); font-size: .8125rem; }
 @media (max-width: 1200px) {
     .product-purchases-filters { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .product-purchases-picker { grid-column: 1 / -1; }
@@ -47,7 +47,7 @@
     .product-purchases-filters button { grid-column: 1 / -1; }
     .product-purchases-report-head { align-items: start; flex-direction: column; gap: 12px; }
     .product-purchases-metrics article { padding: 16px 12px; }
-    .product-purchases-metrics strong { font-size: 23px; }
+    .product-purchases-metrics strong { font-size: 1.4375rem; }
     .product-purchases-panel > header { align-items: stretch; flex-direction: column; }
     .product-purchases-search { width: 100%; }
 }

@@ -622,7 +622,7 @@
 
 .partner-directory-title span {
   color: #fff;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 800;
 }
 
@@ -635,7 +635,7 @@
   border-radius: 999px;
   background: #fff;
   color: #000;
-  font-size: 14px;
+  font-size: .875rem;
 }
 
 .partner-directory-search {
@@ -650,7 +650,7 @@
 .partner-directory-partner span,
 .partner-directory-row-stats small {
   color: rgba(255, 255, 255, 0.5);
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 800;
   letter-spacing: 0;
 }
@@ -696,7 +696,7 @@
 
 .partner-directory-metrics strong {
   color: #fff;
-  font-size: 24px;
+  font-size: 1.5rem;
   line-height: 1;
 }
 
@@ -751,7 +751,7 @@
 
 .partner-directory-partner strong {
   color: #fff;
-  font-size: 15px;
+  font-size: .9375rem;
 }
 
 .partner-directory-row-stats {
@@ -769,7 +769,7 @@
 
 .partner-directory-row-stats strong {
   color: #fff;
-  font-size: 16px;
+  font-size: 1rem;
 }
 
 .partner-directory-brand-strip {
@@ -785,7 +785,7 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.78);
-  font-size: 12px;
+  font-size: .75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -808,7 +808,7 @@
 
 .partner-create-head > span {
   color: #fff;
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 800;
 }
 
@@ -826,7 +826,7 @@
 .partner-access-search span,
 .partner-access-question-index {
   color: rgba(255, 255, 255, 0.52);
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 800;
   letter-spacing: 0;
   text-transform: none;
@@ -887,7 +887,7 @@
   margin: 0;
   border-color: currentColor;
   color: rgba(255, 255, 255, 0.58);
-  font-size: 11px;
+  font-size: .6875rem;
 }
 
 .partner-access-step .partner-access-step-index {
@@ -896,7 +896,7 @@
 
 .partner-access-step strong {
   color: rgba(255, 255, 255, 0.76);
-  font-size: 13px;
+  font-size: .8125rem;
 }
 
 .partner-access-step.is-active .partner-access-step-index,
@@ -970,13 +970,13 @@
 .partner-access-summary-card span {
   margin: 0;
   color: rgba(255, 255, 255, 0.52);
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 800;
 }
 
 .partner-access-summary-card strong {
   color: #fff;
-  font-size: 22px;
+  font-size: 1.375rem;
   line-height: 1;
 }
 
@@ -1060,7 +1060,7 @@
 .partner-create-preview span,
 .partner-create-preview small {
   color: rgba(255, 255, 255, 0.52);
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 800;
 }
 
@@ -1074,7 +1074,7 @@
 }
 
 .partner-create-title strong {
-  font-size: 22px;
+  font-size: 1.375rem;
   line-height: 1.05;
 }
 
@@ -1095,7 +1095,7 @@
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.04);
   color: rgba(255, 255, 255, 0.76);
-  font-size: 12px;
+  font-size: .75rem;
   font-weight: 800;
 }
 
@@ -1168,7 +1168,7 @@
 }
 
 .partner-create-panel-head strong {
-  font-size: 15px;
+  font-size: .9375rem;
 }
 
 .partner-create-field-grid {
@@ -1200,7 +1200,7 @@
 }
 
 .partner-create-preview strong {
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 
 [data-partner-modal] .partner-access-steps {
@@ -1460,7 +1460,7 @@
 .partner-profile-sku-head span,
 .partner-profile-field-stack label span,
 .partner-profile-sku-table-head {
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 800;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1545,7 +1545,7 @@
 
 .partner-profile-code-row input {
   font-family: "Space Grotesk", monospace;
-  font-size: 13px;
+  font-size: .8125rem;
   font-weight: 700;
 }
 
@@ -1572,7 +1572,7 @@
   min-height: 42px;
   padding: 0 10px;
   border-radius: 12px;
-  font-size: 12px;
+  font-size: .75rem;
   font-weight: 800;
 }
 
@@ -1649,7 +1649,7 @@
 }
 
 .partner-profile-field-stack label small {
-  font-size: 12px;
+  font-size: .75rem;
   line-height: 1.45;
 }
 
@@ -1694,14 +1694,14 @@
 .partner-profile-discount-heading strong,
 .partner-profile-bulk-copy strong {
   color: #fff;
-  font-size: 13px;
+  font-size: .8125rem;
 }
 
 .partner-profile-discount-heading span,
 .partner-profile-discount-card > small,
 .partner-profile-bulk-copy span {
   color: rgba(255, 255, 255, 0.46);
-  font-size: 11px;
+  font-size: .6875rem;
   line-height: 1.45;
 }
 
@@ -1715,7 +1715,7 @@
   background: rgba(0, 0, 0, 0.25);
   color: rgba(255, 255, 255, 0.58);
   cursor: pointer;
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 800;
 }
 
@@ -1757,7 +1757,7 @@
 .partner-profile-discount-input > span:first-child,
 .partner-profile-bulk-price > span {
   color: rgba(255, 255, 255, 0.54);
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -1823,7 +1823,7 @@
   min-height: 40px;
   padding: 0 10px;
   text-align: right;
-  font-size: 12px;
+  font-size: .75rem;
   font-weight: 800;
 }
 
@@ -1851,7 +1851,7 @@
 
 .partner-profile-filter-choice strong {
   color: rgba(255, 255, 255, 0.42);
-  font-size: 12px;
+  font-size: .75rem;
 }
 
 .partner-profile-filter-choice:hover,
@@ -1957,7 +1957,7 @@
 
 .partner-profile-product-filter small {
   color: rgba(255, 255, 255, 0.42);
-  font-size: 11px;
+  font-size: .6875rem;
 }
 
 .partner-profile-check-btn {
@@ -1993,7 +1993,7 @@
 
 .partner-profile-sku-table-head {
   padding: 0 10px 8px;
-  font-size: 10px;
+  font-size: .625rem;
 }
 
 .partner-profile-sku-list {
@@ -2018,7 +2018,7 @@
   min-width: 0;
   overflow: hidden;
   color: rgba(255, 255, 255, 0.68);
-  font-size: 13px;
+  font-size: .8125rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2032,7 +2032,7 @@
   display: block;
   overflow: hidden;
   color: #fff;
-  font-size: 13px;
+  font-size: .8125rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -2043,14 +2043,14 @@
   display: block;
   margin-top: 3px;
   color: rgba(255, 255, 255, 0.44);
-  font-size: 11px;
+  font-size: .6875rem;
 }
 
 .partner-profile-price input {
   min-height: 36px;
   padding: 0 8px;
   text-align: right;
-  font-size: 12px;
+  font-size: .75rem;
   font-weight: 800;
 }
 
@@ -2062,7 +2062,7 @@
   padding: 14px 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.48);
-  font-size: 12px;
+  font-size: .75rem;
 }
 
 .partner-profile-selected-rail {
@@ -2115,7 +2115,7 @@
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.68);
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 900;
 }
 
@@ -2123,7 +2123,7 @@
   min-height: 30px;
   padding: 0 9px;
   border-radius: 8px;
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 800;
 }
 
@@ -2151,7 +2151,7 @@
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  font-size: 13px;
+  font-size: .8125rem;
 }
 
 .partner-profile-summary-lines strong {
@@ -2160,7 +2160,7 @@
 
 .partner-profile-portal-note {
   overflow-wrap: anywhere;
-  font-size: 12px;
+  font-size: .75rem;
   line-height: 1.45;
 }
 
@@ -2186,7 +2186,7 @@
 
 .partner-profile-toast span {
   color: rgba(0, 0, 0, 0.56);
-  font-size: 12px;
+  font-size: .75rem;
 }
 
 .partner-branch-tier-card {
@@ -2206,7 +2206,7 @@
 
 .partner-branch-tier-form label span {
   color: rgba(255, 255, 255, 0.64);
-  font-size: 12px;
+  font-size: .75rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -2219,7 +2219,7 @@
   padding: 0 12px;
   background: rgba(0, 0, 0, 0.36);
   color: #fff;
-  font: 700 14px/1.2 "Space Grotesk", monospace;
+  font: 700 .875rem/1.2 "Space Grotesk", monospace;
   outline: none;
 }
 
@@ -3228,7 +3228,7 @@
 .partner-sales-identity span,
 .partner-sales-panel-head span,
 .partner-sales-ledger-head > div > span {
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -3245,7 +3245,7 @@
 
 .partner-sales-identity p {
   margin: 0;
-  font-size: 12px;
+  font-size: .75rem;
   font-weight: 700;
   letter-spacing: 0.06em;
 }
@@ -3333,7 +3333,7 @@
   background: transparent;
   color: var(--partner-muted);
   font: inherit;
-  font-size: 12px;
+  font-size: .75rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -3356,7 +3356,7 @@
 .partner-sales-date-range label span,
 .partner-sales-search span,
 .partner-sales-filter span {
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -3390,7 +3390,7 @@
 }
 
 .partner-sales-updated {
-  font-size: 11px;
+  font-size: .6875rem;
   text-align: right;
 }
 
@@ -3409,7 +3409,7 @@
 }
 
 .partner-sales-stat-grid span {
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3424,7 +3424,7 @@
 }
 
 .partner-sales-stat-grid small {
-  font-size: 11px;
+  font-size: .6875rem;
 }
 
 .partner-sales-analysis-grid {
@@ -3455,14 +3455,14 @@
   margin: 0;
   color: var(--partner-text);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 18px;
+  font-size: 1.125rem;
   letter-spacing: -0.025em;
 }
 
 .partner-sales-panel-head > strong {
   color: var(--partner-text);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 28px;
+  font-size: 1.75rem;
 }
 
 .partner-sales-chart {
@@ -3513,7 +3513,7 @@
 .partner-sales-chart-column small {
   overflow: hidden;
   color: var(--partner-muted);
-  font-size: 9px;
+  font-size: .5625rem;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3550,7 +3550,7 @@
 .partner-sales-status-list span,
 .partner-sales-status-list small {
   color: var(--partner-muted);
-  font-size: 11px;
+  font-size: .6875rem;
 }
 
 .partner-sales-status-list strong {
@@ -3558,7 +3558,7 @@
   align-self: center;
   color: var(--partner-text);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 20px;
+  font-size: 1.25rem;
 }
 
 .partner-sales-breakdown-grid {
@@ -3593,7 +3593,7 @@
 .partner-sales-ranking-row > span {
   overflow: hidden;
   color: var(--partner-text);
-  font-size: 12px;
+  font-size: .75rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3601,7 +3601,7 @@
 .partner-sales-ranking-row small {
   overflow: hidden;
   color: var(--partner-muted);
-  font-size: 10px;
+  font-size: .625rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3644,14 +3644,14 @@
 
 .partner-sales-payment-row strong {
   color: var(--partner-text);
-  font-size: 12px;
+  font-size: .75rem;
 }
 
 .partner-sales-payment-row small,
 .partner-sales-payment-row > span {
   overflow: hidden;
   color: var(--partner-muted);
-  font-size: 10px;
+  font-size: .625rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3663,7 +3663,7 @@
   background: transparent;
   color: var(--partner-muted);
   font: inherit;
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -3729,7 +3729,7 @@
   padding: 11px 20px;
   border-bottom: 1px solid var(--partner-border);
   color: var(--partner-muted);
-  font-size: 9px;
+  font-size: .5625rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -3790,7 +3790,7 @@
 .partner-sales-order-main > span {
   overflow: hidden;
   color: var(--partner-text);
-  font-size: 12px;
+  font-size: .75rem;
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3799,7 +3799,7 @@
 .partner-sales-order-main small {
   overflow: hidden;
   color: var(--partner-muted);
-  font-size: 10px;
+  font-size: .625rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -3869,7 +3869,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   margin-bottom: 8px;
   color: var(--partner-muted);
-  font-size: 10px;
+  font-size: .625rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
@@ -3888,7 +3888,7 @@
   border-radius: 9px;
   background: transparent;
   color: var(--partner-text);
-  font: 700 9px/1 "Plus Jakarta Sans", sans-serif;
+  font: 700 .5625rem/1 "Plus Jakarta Sans", sans-serif;
   letter-spacing: 0;
   text-transform: none;
   cursor: pointer;
@@ -3918,14 +3918,14 @@
 .partner-sales-item-row span,
 .partner-sales-order-payment strong {
   color: var(--partner-text);
-  font-size: 11px;
+  font-size: .6875rem;
 }
 
 .partner-sales-item-row small,
 .partner-sales-order-payment span,
 .partner-sales-order-payment small {
   color: var(--partner-muted);
-  font-size: 9px;
+  font-size: .5625rem;
 }
 
 .partner-sales-price-editor {
@@ -3947,7 +3947,7 @@
 .partner-sales-price-editor i {
   padding-left: 9px;
   color: var(--partner-muted);
-  font-size: 9px;
+  font-size: .5625rem;
   font-style: normal;
 }
 
@@ -3960,7 +3960,7 @@
   outline: 0;
   background: transparent;
   color: var(--partner-text);
-  font: 700 10px/1 "Plus Jakarta Sans", sans-serif;
+  font: 700 .625rem/1 "Plus Jakarta Sans", sans-serif;
   text-align: right;
 }
 
@@ -4006,7 +4006,7 @@
 .partner-sales-order-detail :is(dt, dd, p, aside > small) {
   margin: 0;
   color: var(--partner-muted);
-  font-size: 10px;
+  font-size: .625rem;
 }
 
 .partner-sales-order-detail dd {
@@ -4021,14 +4021,14 @@
   gap: 14px;
   padding: 14px 20px;
   color: var(--partner-muted);
-  font-size: 10px;
+  font-size: .625rem;
 }
 
 .partner-sales-empty {
   margin: 0;
   padding: 22px 0;
   color: var(--partner-muted);
-  font-size: 11px;
+  font-size: .6875rem;
 }
 
 .partner-sales-ledger-empty {
@@ -4050,8 +4050,8 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-settlement-detail-modal > header span,
 .partner-settlement-hero > span,
 .partner-settlement-updates > header span,
-.partner-settlement-detail-body > footer span { color:var(--partner-muted); font-size:10px; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
-.partner-settlement-detail-modal h3 { margin:0; color:var(--partner-text); font-family:'Space Grotesk',sans-serif; font-size:24px; }
+.partner-settlement-detail-body > footer span { color:var(--partner-muted); font-size:.625rem; font-weight:800; letter-spacing:.09em; text-transform:uppercase; }
+.partner-settlement-detail-modal h3 { margin:0; color:var(--partner-text); font-family:'Space Grotesk',sans-serif; font-size:1.5rem; }
 .partner-settlement-detail-body { display:grid; grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr); gap:16px; padding:20px; }
 .partner-settlement-hero,
 .partner-settlement-timeline,
@@ -4060,7 +4060,7 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-settlement-no-proof,
 .partner-settlement-detail-body > footer { border:1px solid var(--partner-border); border-radius:14px; background:var(--partner-panel-soft); }
 .partner-settlement-hero { display:grid; align-content:center; gap:7px; min-height:142px; padding:20px; }
-.partner-settlement-hero > strong { color:var(--partner-text); font-family:'Space Grotesk',sans-serif; font-size:34px; }
+.partner-settlement-hero > strong { color:var(--partner-text); font-family:'Space Grotesk',sans-serif; font-size:2.125rem; }
 .partner-settlement-hero > small { color:var(--partner-muted); }
 .partner-settlement-timeline { display:grid; align-content:center; gap:18px; padding:20px; }
 .partner-settlement-timeline > div { display:grid; grid-template-columns:auto minmax(0,1fr); gap:11px; align-items:start; }
@@ -4071,8 +4071,8 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-settlement-proof > header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:14px 16px; border-bottom:1px solid var(--partner-border); }
 .partner-settlement-proof > header > div { display:grid; gap:3px; }
 .partner-settlement-proof > header span,
-.partner-settlement-proof > header small { color:var(--partner-muted); font-size:10px; }
-.partner-settlement-proof > header a { color:var(--partner-text); font-size:11px; font-weight:800; text-decoration:none; }
+.partner-settlement-proof > header small { color:var(--partner-muted); font-size:.625rem; }
+.partner-settlement-proof > header a { color:var(--partner-text); font-size:.6875rem; font-weight:800; text-decoration:none; }
 .partner-settlement-proof-frame { display:grid; place-items:center; min-height:320px; max-height:520px; overflow:auto; background:#050505; }
 .partner-settlement-proof-frame object { width:100%; min-height:500px; border:0; }
 .partner-settlement-proof-frame img { display:block; max-width:100%; max-height:500px; object-fit:contain; }
@@ -4084,9 +4084,9 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-settlement-updates article > div,
 .partner-settlement-updates article > span { display:grid; gap:3px; }
 .partner-settlement-updates article > span { text-align:right; }
-.partner-settlement-updates article small { color:var(--partner-muted); font-size:10px; }
+.partner-settlement-updates article small { color:var(--partner-muted); font-size:.625rem; }
 .partner-settlement-no-proof { grid-column:1/-1; display:grid; gap:5px; padding:18px; }
-.partner-settlement-no-proof span { color:var(--partner-muted); font-size:11px; }
+.partner-settlement-no-proof span { color:var(--partner-muted); font-size:.6875rem; }
 .partner-settlement-detail-body > footer { grid-column:1/-1; display:flex; justify-content:space-between; gap:18px; padding:16px; }
 
 .partner-disputes-modal-shell {
@@ -4122,7 +4122,7 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-disputes-modal-head span,
 .partner-disputes-picker > span {
   color: var(--partner-muted);
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -4137,14 +4137,14 @@ body.partner-settlement-open { overflow:hidden; }
 }
 
 .partner-disputes-modal-head h3 {
-  font-size: 25px;
+  font-size: 1.5625rem;
 }
 
 .partner-disputes-modal-head p,
 .partner-disputes-picker > p {
   margin: 0;
   color: var(--partner-muted);
-  font-size: 11px;
+  font-size: .6875rem;
   line-height: 1.55;
 }
 
@@ -4199,7 +4199,7 @@ body.partner-settlement-open { overflow:hidden; }
 
 .partner-disputes-picker > p {
   max-width: 460px;
-  font-size: 12px;
+  font-size: .75rem;
 }
 
 .partner-disputes-picker form {
@@ -4223,7 +4223,7 @@ body.partner-settlement-open { overflow:hidden; }
 
 .partner-disputes-picker form label > span {
   color: var(--partner-muted);
-  font-size: 9px;
+  font-size: .5625rem;
   font-weight: 800;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -4238,7 +4238,7 @@ body.partner-settlement-open { overflow:hidden; }
   background: var(--partner-input);
   color: var(--partner-text);
   font: inherit;
-  font-size: 12px;
+  font-size: .75rem;
   font-weight: 700;
 }
 
@@ -4275,7 +4275,7 @@ body.partner-settlement-open { overflow:hidden; }
   background: transparent;
   color: var(--partner-muted);
   font: inherit;
-  font-size: 11px;
+  font-size: .6875rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -4297,7 +4297,7 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-disputes-history-toolbar > span {
   color: var(--partner-text);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 14px;
+  font-size: .875rem;
   font-weight: 700;
 }
 
@@ -4319,7 +4319,7 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-disputes-summary span,
 .partner-disputes-summary small {
   color: var(--partner-muted);
-  font-size: 9px;
+  font-size: .5625rem;
 }
 
 .partner-disputes-summary span {
@@ -4331,7 +4331,7 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-disputes-summary strong {
   color: var(--partner-text);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 22px;
+  font-size: 1.375rem;
   letter-spacing: -0.03em;
 }
 
@@ -4397,7 +4397,7 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-disputes-card > header small {
   overflow: hidden;
   color: var(--partner-muted);
-  font-size: 9px;
+  font-size: .5625rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -4406,13 +4406,13 @@ body.partner-settlement-open { overflow:hidden; }
   margin: 0;
   color: var(--partner-text);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 
 .partner-disputes-card > header > strong {
   color: var(--partner-text);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 18px;
+  font-size: 1.125rem;
   white-space: nowrap;
 }
 
@@ -4438,7 +4438,7 @@ body.partner-settlement-open { overflow:hidden; }
   gap: 12px;
   margin-bottom: 10px;
   color: var(--partner-muted);
-  font-size: 9px;
+  font-size: .5625rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -4465,14 +4465,14 @@ body.partner-settlement-open { overflow:hidden; }
 
 .partner-disputes-order-card strong {
   color: var(--partner-text);
-  font-size: 10px;
+  font-size: .625rem;
 }
 
 .partner-disputes-order-card small,
 .partner-disputes-order-card span {
   overflow: hidden;
   color: var(--partner-muted);
-  font-size: 8px;
+  font-size: .5rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -4506,19 +4506,19 @@ body.partner-settlement-open { overflow:hidden; }
 
 .partner-disputes-message strong {
   color: var(--partner-text);
-  font-size: 9px;
+  font-size: .5625rem;
 }
 
 .partner-disputes-message span,
 .partner-disputes-message time {
   color: var(--partner-muted);
-  font-size: 8px;
+  font-size: .5rem;
 }
 
 .partner-disputes-message p {
   margin: 0;
   color: var(--partner-text);
-  font-size: 10px;
+  font-size: .625rem;
   line-height: 1.55;
   white-space: pre-wrap;
 }
@@ -4558,7 +4558,7 @@ body.partner-settlement-open { overflow:hidden; }
 
 .partner-disputes-evidence-link em {
   color: var(--partner-muted);
-  font-size: 8px;
+  font-size: .5rem;
   font-style: normal;
   font-weight: 800;
   letter-spacing: 0.07em;
@@ -4587,20 +4587,20 @@ body.partner-settlement-open { overflow:hidden; }
 
 .partner-disputes-file-preview strong {
   color: var(--partner-muted);
-  font-size: 9px;
+  font-size: .5625rem;
   letter-spacing: 0.12em;
 }
 
 .partner-disputes-evidence-link strong,
 .partner-disputes-no-evidence strong {
   color: var(--partner-text);
-  font-size: 10px;
+  font-size: .625rem;
 }
 
 .partner-disputes-evidence-link small,
 .partner-disputes-no-evidence span {
   color: var(--partner-muted);
-  font-size: 8px;
+  font-size: .5rem;
 }
 
 .partner-disputes-no-evidence {
@@ -4653,14 +4653,14 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-disputes-empty strong {
   color: var(--partner-text);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 19px;
+  font-size: 1.1875rem;
 }
 
 .partner-disputes-empty p {
   max-width: 430px;
   margin: 0;
   color: var(--partner-muted);
-  font-size: 10px;
+  font-size: .625rem;
   line-height: 1.55;
 }
 
@@ -4690,7 +4690,7 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-payment-fields label > span,
 .partner-payment-balance span {
   color: var(--partner-muted);
-  font-size: 10px;
+  font-size: .625rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -4700,7 +4700,7 @@ body.partner-settlement-open { overflow:hidden; }
   margin: 0;
   color: var(--partner-text);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 22px;
+  font-size: 1.375rem;
 }
 
 .partner-sales-modal-close {
@@ -4728,7 +4728,7 @@ body.partner-settlement-open { overflow:hidden; }
 .partner-payment-balance strong {
   color: var(--partner-text);
   font-family: 'Space Grotesk', sans-serif;
-  font-size: 24px;
+  font-size: 1.5rem;
 }
 
 .partner-payment-fields {
@@ -4930,7 +4930,7 @@ body.partner-settlement-open { overflow:hidden; }
 
   .partner-disputes-card > header > strong {
     grid-column: 2;
-    font-size: 16px;
+    font-size: 1rem;
   }
 
   .partner-sales-stat-grid article:last-child {

@@ -47,8 +47,8 @@ Private admin dashboard for `admin.jenanggemi.com` behind a public Launch Pad.
 The shared navigation includes `mobile.css` and `mobile.js` for touch and layout
 fixes up to 1024px. Phones below 768px use a drawer menu that overlays page headers,
 keeps background controls inactive, and restores focus when closed. Tablets from
-768px retain the desktop sidebar and horizontal segmented controls, with no phone
-tab bar or floating menu button. Forms use touch-sized controls; dialogs scroll
+768px retain the desktop sidebar, as its icon rail below 1200px, and horizontal
+segmented controls, with no phone tab bar or floating menu button. Forms use touch-sized controls; dialogs scroll
 inside the viewport. Wide reports retain horizontal scrolling with a visible
 swipe hint. Product history chart values also respond to touch.
 
